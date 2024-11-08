@@ -54,7 +54,7 @@ The deployment region for this model is fixed in 'East US'
 
 ## Deployment
 
-The automated deployment process is very straightforward and simplified via a single [deployment script](./resourcedeployment.ps1) that completes in approximately 10-15 minutes:
+The automated deployment process is very straightforward and simplified via a single [deployment script](./Deployment/resourcedeployment.ps1) that completes in approximately 10-15 minutes:
 
 ### Automated Deployment Steps:
 1. Deploy Azure resources.
