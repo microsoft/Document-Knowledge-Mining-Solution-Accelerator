@@ -52,25 +52,6 @@ updates:
     target-branch: "dependabotchanges"
     open-pull-requests-limit: 30
 
-  # .NET NuGet dependencies for Kernel Memory Extensions
-  - package-ecosystem: "nuget"
-    directory: "/App/kernel-memory/extensions/Anthropic"
-    schedule:
-      interval: "monthly"
-    commit-message:
-      prefix: "build"
-    target-branch: "dependabotchanges"
-    open-pull-requests-limit: 30
-
-  - package-ecosystem: "nuget"
-    directory: "/App/kernel-memory/extensions/AWS/S3"
-    schedule:
-      interval: "monthly"
-    commit-message:
-      prefix: "build"
-    target-branch: "dependabotchanges"
-    open-pull-requests-limit: 30
-
   # npm dependencies for Frontend App
   - package-ecosystem: "npm"
     directory: "/App/frontend-app"
