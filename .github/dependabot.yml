@@ -11,7 +11,7 @@ updates:
       interval: "monthly"
     commit-message:
       prefix: "build"
-    target-branch: "dependentbotchanges"
+    target-branch: "dependabotchanges"
     open-pull-requests-limit: 10
 
   # .NET NuGet dependencies for Backend API (Multiple Projects)
@@ -21,7 +21,7 @@ updates:
       interval: "monthly"
     commit-message:
       prefix: "build"
-    target-branch: "dependentbotchanges"
+    target-branch: "dependabotchanges"
     open-pull-requests-limit: 20
 
   - package-ecosystem: "nuget"
@@ -30,7 +30,7 @@ updates:
       interval: "monthly"
     commit-message:
       prefix: "build"
-    target-branch: "dependentbotchanges"
+    target-branch: "dependabotchanges"
     open-pull-requests-limit: 20
 
   # .NET NuGet dependencies for Kernel Memory Clients
@@ -40,7 +40,7 @@ updates:
       interval: "monthly"
     commit-message:
       prefix: "build"
-    target-branch: "dependentbotchanges"
+    target-branch: "dependabotchanges"
     open-pull-requests-limit: 10
 
   - package-ecosystem: "nuget"
@@ -49,7 +49,7 @@ updates:
       interval: "monthly"
     commit-message:
       prefix: "build"
-    target-branch: "dependentbotchanges"
+    target-branch: "dependabotchanges"
     open-pull-requests-limit: 10
 
   # .NET NuGet dependencies for Kernel Memory Extensions
@@ -59,7 +59,7 @@ updates:
       interval: "monthly"
     commit-message:
       prefix: "build"
-    target-branch: "dependentbotchanges"
+    target-branch: "dependabotchanges"
     open-pull-requests-limit: 10
 
   - package-ecosystem: "nuget"
@@ -68,7 +68,7 @@ updates:
       interval: "monthly"
     commit-message:
       prefix: "build"
-    target-branch: "dependentbotchanges"
+    target-branch: "dependabotchanges"
     open-pull-requests-limit: 10
 
   # .NET NuGet dependencies for Kernel Memory Core Service
@@ -78,7 +78,7 @@ updates:
       interval: "monthly"
     commit-message:
       prefix: "build"
-    target-branch: "dependentbotchanges"
+    target-branch: "dependabotchanges"
     open-pull-requests-limit: 10
 
   # npm dependencies for Frontend App
@@ -88,5 +88,5 @@ updates:
       interval: "monthly"
     commit-message:
       prefix: "build"
-    target-branch: "dependentbotchanges"
+    target-branch: "dependabotchanges"
     open-pull-requests-limit: 20

@@ -36,7 +36,7 @@ jobs:
           # Merge main branch changes
           git merge main --no-edit
 
-          # Push changes back to dependabotchanges branch
+          # Push changes back to dependabotchanges1 branch
           git push origin dependabotchanges
 
       - name: Notify on Failure
