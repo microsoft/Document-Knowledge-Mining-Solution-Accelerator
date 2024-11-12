@@ -60,4 +60,4 @@ updates:
     commit-message:
       prefix: "build"
     target-branch: "dependabotchanges"
-    open-pull-requests-limit: 40
+    open-pull-requests-limit: 50
