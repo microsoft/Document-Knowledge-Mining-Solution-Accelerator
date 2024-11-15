@@ -1,8 +1,10 @@
 import React, { MouseEventHandler, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
-import { useMsal } from "@azure/msal-react";
-import { Auth } from "../../utils/auth/auth";
+//import { useMsal } from "@azure/msal-react";
+//import { Auth } from "../../utils/auth/auth";
+
+//import { loginRequest } from "../../msaConfig";
 import { RedirectRequest } from "@azure/msal-browser";
 import {
     Avatar,
@@ -17,6 +19,12 @@ import {
 import resolveConfig from "tailwindcss/resolveConfig";
 import TailwindConfig from "../../../tailwind.config";
 import { isPlatformAdmin } from "../../utils/auth/roles";
+
+
+import { useMsal, useIsAuthenticated } from "@azure/msal-react";
+import { msalInstance } from "../../providers/msalInstance";
+import { loginRequest } from "../../msaConfig";
+import { AccountInfo } from "@azure/msal-browser";
 
 const fullConfig = resolveConfig(TailwindConfig);
 const useStylesAvatar = makeStyles({
@@ -51,14 +59,18 @@ interface NavItem {
 export function HeaderBar({ location }: { location?: NavLocation }) {
     const { t } = useTranslation();
     const [openDrawer, setOpenDrawer] = useState(false);
-    const { instance, accounts } = useMsal();
+    //const { instance, accounts } = useMsal();
     const navigate = useNavigate();
     const stylesAvatar = useStylesAvatar();
 
     const linkClasses = "cursor-pointer hover:no-underline hover:border-b-[3px] h-9 min-h-0 block text-white";
     const linkCurrent = "pointer-events-none border-b-[3px]";
-    const isAuthenticated = accounts.length > 0;
-    const isAdmin = isPlatformAdmin(accounts);
+    //const isAuthenticated = accounts.length > 0;
+    //const isAdmin = isPlatformAdmin(accounts);
+
+    const { accounts, instance } = useMsal();
+    const isAuthenticated = useIsAuthenticated();
+    const activeAccount: AccountInfo | undefined = accounts[0];
 
     const navItems: (NavItem | null)[] = useMemo(
         () => [
@@ -79,21 +91,21 @@ export function HeaderBar({ location }: { location?: NavLocation }) {
             //     : null,
             isAuthenticated
                 ? {
-                      key: "sign-out",
-                      label: t("components.header-bar.sign-out"),
-                      isPrimary: false,
-                      action: signOut,
-                  }
+                    key: "sign-out",
+                    label: t("components.header-bar.sign-out"),
+                    isPrimary: false,
+                    action: signOut,
+                }
                 : null,
-            isAuthenticated
-                ? {
-                      key: "personalDocuments",
-                      label: "Personal Documents",
-                      isPrimary: false,
-                      location: NavLocation.PersonalDocs,
-                      to: "/personalDocuments",
-                  }
-                : null,
+            // isAuthenticated
+            //     ? {
+            //           key: "personalDocuments",
+            //           label: "Personal Documents",
+            //           isPrimary: false,
+            //           location: NavLocation.PersonalDocs,
+            //           to: "/personalDocuments",
+            //       }
+            //     : null,
         ],
         [accounts]
     );
@@ -102,13 +114,28 @@ export function HeaderBar({ location }: { location?: NavLocation }) {
         setOpenDrawer((openDrawer) => !openDrawer);
     }
 
-    function signIn() {
-        instance.loginRedirect(Auth.getAuthenticationRequest() as RedirectRequest);
-    }
+    // function signIn() {
+    //     instance.loginRedirect(Auth.getAuthenticationRequest() as RedirectRequest);
+    // }
 
-    function signOut() {
-        instance.logoutRedirect();
-    }
+    // function signOut() {
+    //     instance.logoutRedirect();
+    // }
+
+    async function signOut() {
+        if (activeAccount) {
+            try {
+                await instance.logoutRedirect({
+                    account: activeAccount,
+                    onRedirectNavigate: () => false, // Prevent default navigation
+                });
+            } catch (error) {
+                console.error("Logout failed:", error);
+            }
+        } else {
+            console.warn("No active account found for logout.");
+        }
+    };
 
     function renderLink(nav: NavItem, className?: string) {
         return (
@@ -138,17 +165,17 @@ export function HeaderBar({ location }: { location?: NavLocation }) {
         <>
             <div className="flex mr-20 ml-20 justify-between">
                 <div className="flex justify-between gap-3">
-                    <img className="my-auto" src="/img/Contoso_Logo_sm.png" alt="logo" />  
+                    <img className="my-auto" src="/img/Contoso_Logo_sm.png" alt="logo" />
                     <div className="my-auto pb-3 text-lg font-semibold leading-tight text-white mt-3">
                         {t("components.header-bar.title")}
                     </div>
                     <div className="border border-zinc-500"></div>
-                    
+
                     <div className="order-5 my-auto pb-3 text-lg font-semibold leading-tight text-white mt-3">
                         {t("components.header-bar.sub-title")}
                     </div>
                 </div>
- 
+
                 <nav className="whitespace-nowrap text-lg font-semibold leading-10">
                     <ul
                         className={

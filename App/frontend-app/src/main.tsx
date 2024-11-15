@@ -7,20 +7,20 @@ import "./index.scss";
 import { AppContextProvider } from "./AppContext";
 
 declare global {
-    interface Window {
-        ENV: any; // eslint-disable-line @typescript-eslint/no-explicit-any
-        WcpConsent: any; // eslint-disable-line @typescript-eslint/no-explicit-any
-        
-    }
+  interface Window {
+    ENV: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    WcpConsent: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+
+  }
 }
 
 initializeLanguage();
 initializeFileTypeIcons();
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-    // <React.StrictMode>
-    <AppContextProvider>
-        <App />
-    </AppContextProvider>
-    // </React.StrictMode>
+  // <React.StrictMode>
+  <AppContextProvider>
+    <App />
+  </AppContextProvider>
+  // </React.StrictMode>
 );

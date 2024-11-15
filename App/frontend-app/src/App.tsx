@@ -11,6 +11,11 @@ import { SnackbarProvider } from "notistack";
 import { SnackbarSuccess } from "./components/snackbar/snackbarSuccess";
 import { SnackbarError } from "./components/snackbar/snackbarError";
 
+
+import { MsalProvider } from '@azure/msal-react';
+import { msalInstance } from './providers/msalInstance';
+import AuthWrapper from './providers/AuthWrapper';
+
 /* Application insights initialization */
 //const reactPlugin: ReactPlugin = Telemetry.initAppInsights(window.ENV.APP_INSIGHTS_CS, true);
 
@@ -24,23 +29,27 @@ webLightTheme.colorNeutralForeground1 = (fullConfig.theme!.colors as any).black;
 
 function App() {
     return (
-        <Suspense>
-            {/* Removed MsalProvider and MsalAuthenticationTemplate */}
-            {/* <AppInsightsContext.Provider value={reactPlugin}> */}
-                <FluentProvider theme={webLightTheme}>
-                    <BrowserRouter>
-                        <SnackbarProvider
-                            anchorOrigin={{ vertical: "top", horizontal: "center" }}
-                            Components={{ success: SnackbarSuccess, error: SnackbarError }}
-                        >
-                            <Layout>
-                                <AppRoutes />
-                            </Layout>
-                        </SnackbarProvider>
-                    </BrowserRouter>
-                </FluentProvider>
-            {/* </AppInsightsContext.Provider> */}
-        </Suspense>
+        <MsalProvider instance={msalInstance}>
+            <AuthWrapper>
+                <Suspense>
+                    {/* Removed MsalProvider and MsalAuthenticationTemplate */}
+                    {/* <AppInsightsContext.Provider value={reactPlugin}> */}
+                    <FluentProvider theme={webLightTheme}>
+                        <BrowserRouter>
+                            <SnackbarProvider
+                                anchorOrigin={{ vertical: "top", horizontal: "center" }}
+                                Components={{ success: SnackbarSuccess, error: SnackbarError }}
+                            >
+                                <Layout>
+                                    <AppRoutes />
+                                </Layout>
+                            </SnackbarProvider>
+                        </BrowserRouter>
+                    </FluentProvider>
+                    {/* </AppInsightsContext.Provider> */}
+                </Suspense>
+            </AuthWrapper>
+        </MsalProvider>
     );
 }
 

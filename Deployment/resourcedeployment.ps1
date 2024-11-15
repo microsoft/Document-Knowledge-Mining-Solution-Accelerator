@@ -25,7 +25,7 @@ function startBanner() {
 }
 
 #https://patorjk.com/software/taag
-function successBanner(){
+function successBanner() {
     Write-Host "   _____                              __       _           "
     Write-Host "  / ____|                            / _|     | |          "
     Write-Host " | (___  _   _  ___ ___ ___  ___ ___| |_ _   _| |          "
@@ -97,9 +97,9 @@ function PromptForParameters {
 
     return @{
         subscriptionID = $subscriptionID
-        location = $location
-        modelLocation = $modelLocation
-        email = $email
+        location       = $location
+        modelLocation  = $modelLocation
+        email          = $email
     }
 }
 
@@ -112,10 +112,10 @@ $modelLocation = $params.modelLocation
 $email = $params.email
 
 function LoginAzure([string]$subscriptionID) {
-        Write-Host "Log in to Azure.....`r`n" -ForegroundColor Yellow
-        az login
-        az account set --subscription $subscriptionID
-        Write-Host "Switched subscription to '$subscriptionID' `r`n" -ForegroundColor Yellow
+    Write-Host "Log in to Azure.....`r`n" -ForegroundColor Yellow
+    az login
+    az account set --subscription $subscriptionID
+    Write-Host "Switched subscription to '$subscriptionID' `r`n" -ForegroundColor Yellow
 }
 
 function DeployAzureResources([string]$location, [string]$modelLocation) {
@@ -152,7 +152,8 @@ function DeployAzureResources([string]$location, [string]$modelLocation) {
         $jsonString = ConvertFrom-Json $joinedString 
         
         return $jsonString
-    } catch {
+    }
+    catch {
         Write-Host "An error occurred during the deployment process:" -ForegroundColor Red
         Write-Host $_.Exception.Message -ForegroundColor Red
         Write-Host $_.InvocationInfo.PositionMessage -ForegroundColor Red
@@ -208,7 +209,7 @@ function Get-ExternalIP {
 # Function to generate a dynamic banner
 function Show-Banner {
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$Title
     )
 
@@ -224,7 +225,8 @@ function Show-Banner {
     # Check if the title length is odd or even and adjust the padding. the boderLine width and the paddedTitle width should be the same
     if ($paddedTitle.Length -lt $borderLength) {
         $paddedTitle += " "
-    } else {
+    }
+    else {
         $paddedTitle = $paddedTitle.Substring(0, $bannerWidth - 1) + "*"
     }
     
@@ -316,7 +318,7 @@ class DeploymentResult {
         $this.StorageAccountName = $jsonString.properties.outputs.gs_storageaccount_name.value
         # Azure Search
         $this.AzSearchServiceName = $jsonString.properties.outputs.gs_azsearch_name.value
-        $this.AzSearchServicEndpoint =  "https://$($this.AzSearchServiceName).search.windows.net"
+        $this.AzSearchServicEndpoint = "https://$($this.AzSearchServiceName).search.windows.net"
         # Azure Kubernetes
         $this.AksName = $jsonString.properties.outputs.gs_aks_name.value
         $this.AksMid = $jsonString.properties.outputs.gs_aks_serviceprincipal_id.value
@@ -348,17 +350,20 @@ class DeploymentResult {
 
 function Check-Docker {
     try {
-         # Try to get Docker info to check if Docker daemon is running
-         $dockerInfo = docker info 2>&1
+        # Try to get Docker info to check if Docker daemon is running
+        $dockerInfo = docker info 2>&1
         if ($dockerInfo -match "ERROR: error during connect") {
             return $false
-        } else {
+        }
+        else {
             return $true
         }
-    } catch {
+    }
+    catch {
         Write-Host "An error occurred while checking Docker status." -ForegroundColor Red
         Write-Host $_.Exception.Message -ForegroundColor Red
-        return $false    }
+        return $false    
+    }
 }
 
 # Check if Docker is running before proceeding
@@ -418,39 +423,39 @@ try {
     # Define the placeholders and their corresponding values for AI service configuration
     
     $aiServicePlaceholders = @{
-        '{gpt-4o-mini-endpoint}' = $deploymentResult.AzOpenAiServiceEndpoint
-        '{gpt-4o-mini-apikey}' = $deploymentResult.AzOpenAiServiceKey
-        '{azureaisearch-apikey}' = $deploymentResult.AzSearchAdminKey
-        '{documentintelligence-apikey}' = $deploymentResult.AzCognitiveServiceKey 
-        '{cosmosmongo-connection-string}' = $deploymentResult.AzCosmosDBConnectionString 
-        '{azureblobs-connection-string}' = $deploymentResult.StorageAccountConnectionString 
-        '{azureblobs-account}' = $deploymentResult.StorageAccountName
-        '{azureaisearch-endpoint}' = $deploymentResult.AzSearchServicEndpoint 
-        '{gpt-4o-mini-modelname}' = $deploymentResult.AzGPT4oModelId  
-        '{gpt-4o-endpoint}' =  $deploymentResult.AzOpenAiServiceEndpoint 
-        '{textembedding-endpoint}' = $deploymentResult.AzOpenAiServiceEndpoint
-        '{azureopenaiembedding-endpoint}' = $deploymentResult.AzOpenAiServiceEndpoint
-        '{azureopenaitext-endpoint}' = $deploymentResult.AzOpenAiServiceEndpoint
-        '{azureopenaitext-deployment}' = $deploymentResult.AzGPT4oModelId 
-        '{gpt-4o-key}' = $deploymentResult.AzOpenAiServiceKey
-        '{textembedding-key}' = $deploymentResult.AzOpenAiServiceKey
-        '{azureopenaiembedding-apikey}' = $deploymentResult.AzOpenAiServiceKey
-        '{azureopenaitext-apikey}' = $deploymentResult.AzOpenAiServiceKey
-        '{textembedding-modelname}' = $deploymentResult.AzGPTEmbeddingModelName
-        '{azureaidocintel-apikey}' =  $deploymentResult.AzCognitiveServiceKey 
-        '{cosmosmongo-chat-history-collection}' = "ChatHistory"
-        '{cosmosmongo-chat-history-database}' = "DPS"
+        '{gpt-4o-mini-endpoint}'                    = $deploymentResult.AzOpenAiServiceEndpoint
+        '{gpt-4o-mini-apikey}'                      = $deploymentResult.AzOpenAiServiceKey
+        '{azureaisearch-apikey}'                    = $deploymentResult.AzSearchAdminKey
+        '{documentintelligence-apikey}'             = $deploymentResult.AzCognitiveServiceKey 
+        '{cosmosmongo-connection-string}'           = $deploymentResult.AzCosmosDBConnectionString 
+        '{azureblobs-connection-string}'            = $deploymentResult.StorageAccountConnectionString 
+        '{azureblobs-account}'                      = $deploymentResult.StorageAccountName
+        '{azureaisearch-endpoint}'                  = $deploymentResult.AzSearchServicEndpoint 
+        '{gpt-4o-mini-modelname}'                   = $deploymentResult.AzGPT4oModelId  
+        '{gpt-4o-endpoint}'                         = $deploymentResult.AzOpenAiServiceEndpoint 
+        '{textembedding-endpoint}'                  = $deploymentResult.AzOpenAiServiceEndpoint
+        '{azureopenaiembedding-endpoint}'           = $deploymentResult.AzOpenAiServiceEndpoint
+        '{azureopenaitext-endpoint}'                = $deploymentResult.AzOpenAiServiceEndpoint
+        '{azureopenaitext-deployment}'              = $deploymentResult.AzGPT4oModelId 
+        '{gpt-4o-key}'                              = $deploymentResult.AzOpenAiServiceKey
+        '{textembedding-key}'                       = $deploymentResult.AzOpenAiServiceKey
+        '{azureopenaiembedding-apikey}'             = $deploymentResult.AzOpenAiServiceKey
+        '{azureopenaitext-apikey}'                  = $deploymentResult.AzOpenAiServiceKey
+        '{textembedding-modelname}'                 = $deploymentResult.AzGPTEmbeddingModelName
+        '{azureaidocintel-apikey}'                  = $deploymentResult.AzCognitiveServiceKey 
+        '{cosmosmongo-chat-history-collection}'     = "ChatHistory"
+        '{cosmosmongo-chat-history-database}'       = "DPS"
         '{cosmosmongo-document-manager-collection}' = "Documents"
-        '{cosmosmongo-document-manager-database}' = "DPS"
-        '{azureaidocintel-endpoint}' = $deploymentResult.AzCognitiveServiceEndpoint 
-        '{documentintelligence-endpoint}' = $deploymentResult.AzCognitiveServiceEndpoint 
-        '{azureblobs-container}' = "smemory"
-        '{azurequeues-account}' = $deploymentResult.StorageAccountName
-        '{azurequeues-connection-string}' = $deploymentResult.StorageAccountConnectionString
-        '{gpt-4o-modelname}' = $deploymentResult.AzGPT4oModelName 
-        '{azureopenaiembedding-deployment}' = $deploymentResult.AzGPTEmbeddingModelName 
-        '{kernelmemory-endpoint}' = "http://kernelmemory-service" 
-        }
+        '{cosmosmongo-document-manager-database}'   = "DPS"
+        '{azureaidocintel-endpoint}'                = $deploymentResult.AzCognitiveServiceEndpoint 
+        '{documentintelligence-endpoint}'           = $deploymentResult.AzCognitiveServiceEndpoint 
+        '{azureblobs-container}'                    = "smemory"
+        '{azurequeues-account}'                     = $deploymentResult.StorageAccountName
+        '{azurequeues-connection-string}'           = $deploymentResult.StorageAccountConnectionString
+        '{gpt-4o-modelname}'                        = $deploymentResult.AzGPT4oModelName 
+        '{azureopenaiembedding-deployment}'         = $deploymentResult.AzGPTEmbeddingModelName 
+        '{kernelmemory-endpoint}'                   = "http://kernelmemory-service" 
+    }
 
     ## Load and update the AI service configuration template
     $aiServiceConfigTemplate = Get-Content -Path .\appconfig\aiservice\appconfig.jsonl -Raw
@@ -489,7 +494,8 @@ try {
     if (Test-Path $aiServiceConfigPath) {
         Remove-Item $aiServiceConfigPath -Force
         #Write-Host "File '$aiServiceConfigPath' has been deleted."
-    } else {
+    }
+    else {
         Write-Host "File '$aiServiceConfigPath' does not exist."
     }
     $ErrorActionPreference = "Continue"
@@ -512,13 +518,15 @@ try {
             az aks update --name $deploymentResult.AksName --resource-group $deploymentResult.ResourceGroupName --attach-acr $deploymentResult.AzContainerRegistryName
             Write-Host "AKS cluster updated successfully."
             break
-        } catch {
+        }
+        catch {
             $errorMessage = $_.Exception.Message
             if ($errorMessage -match "OperationNotAllowed" -and $errorMessage -match "Another operation \(Updating\) is in progress") {
                 Write-Host "Operation not allowed: Another operation is in progress. Retrying in $delay seconds..."
                 Start-Sleep -Seconds $delay
                 $retryCount++
-            } else {
+            }
+            else {
                 Write-Host "An unexpected error occurred: $errorMessage" -ForegroundColor Red
                 throw $_
             }
@@ -591,7 +599,8 @@ try {
         if ($externalIP -and $externalIP -ne "<none>") {
             Write-Host "Get EXTERNAL-IP for nginx in $appRoutingNamespace namespace is: $externalIP"
             break
-        } else {
+        }
+        else {
             Write-Host "Waiting for EXTERNAL-IP to be assigned..."
             Start-Sleep -Seconds 10
         }
@@ -600,7 +609,7 @@ try {
     # 6. Assign DNS Name to the public IP address
     #  6-1. Get Az Network resource Name with the public IP address
     Write-Host "Assign DNS Name to the public IP address" -ForegroundColor Green
-    $publicIpName=$(az network public-ip list --query "[?ipAddress=='$externalIP'].name" --output tsv)
+    $publicIpName = $(az network public-ip list --query "[?ipAddress=='$externalIP'].name" --output tsv)
 
     #  6-2. Generate Unique backend API fqdn Name - esgdocanalysis-3 digit random number with padding 0
     $dnsName = "kmgs$($(Get-Random -Minimum 0 -Maximum 9999).ToString("D4"))"
@@ -685,9 +694,9 @@ try {
 
 
     $deploymentTemplatePlaceholders = @{
-        '{{ aiservice-imagepath }}' = $acrAIServiceTag
+        '{{ aiservice-imagepath }}'    = $acrAIServiceTag
         '{{ kernelmemory-imagepath }}' = $acrKernelMemoryTag
-        '{{ frontapp-imagepath }}' = $acrFrontAppTag
+        '{{ frontapp-imagepath }}'     = $acrFrontAppTag
     }
 
     $deploymentTemplate = Get-Content -Path .\kubernetes\deploy.deployment.yaml.template -Raw
@@ -707,7 +716,8 @@ try {
             if ($certManagerPods -eq "Running Running Running") {
                 Write-Host "Cert-Manager is running." -ForegroundColor Green
                 break
-            } else {
+            }
+            else {
                 Write-Host "Cert-Manager is not ready yet. Waiting..." -ForegroundColor Yellow
                 Start-Sleep -Seconds 10
             }
@@ -725,7 +735,7 @@ try {
     Wait-ForCertManager
 
 
-#======================================================================================================================================================================
+    #======================================================================================================================================================================
     # App Deployment after finishing the AKS infrastructure setup
     
     $appConfigServicePlaceholders = @{
@@ -760,10 +770,55 @@ try {
     # Front App
     ###############################
     
+    
+    ###############################
+    # App Registration
+    ###############################
+    # Sign in to Azure
+    Connect-AzAccount
+
+    # Prompt for App Name
+    $appName = Read-Host -Prompt "Enter the name for the Azure AD App Registration"
+
+    # Variables
+    $tenantId = (Get-AzContext).Tenant.Id
+    $redirectUri = "https://$fqdn"  # Change this to your app's redirect URI
+    $secretDuration = (Get-Date).AddYears(1)  # Secret valid for 1 year
+
+    # Step 1: Create the App Registration
+    Write-Host "Creating Azure AD App Registration for '$appName'..."
+    $app = New-AzADApplication -DisplayName $appName -ReplyUrls $redirectUri
+    Write-Host "App Registration '$appName' created successfully!"
+
+    # Step 2: Update platform type to 'Single-page application'
+    Write-Host "Setting platform type to 'Single-page application' with redirect URI '$redirectUri'..."
+    $updatedApp = Set-AzADApplication -ObjectId $app.Id -SPARedirectUri $redirectUri
+    Write-Host "Platform set to 'Single-page application' with redirect URI '$redirectUri'."
+
+
+    # Step 3: Generate a Client Secret
+    Write-Host "Generating Client Secret for '$appName'..."
+
+    Write-Host "Client Secret generated successfully for '$appName'!"
+
+    # Output the required configuration values
+    $clientId = $app.AppId
+    $authority = "https://login.microsoftonline.com/$tenantId"
+
+    Write-Host "================== Configuration Details =================="
+    Write-Host "Client ID:  $($clientId)"
+    Write-Host "Authority: $authority"
+    Write-Host "Redirect URI: $redirectUri"
+    #Write-Host "Client Secret: $clientSecretValue"  # Store this securely
+    Write-Host "==========================================================="
+
     $frontAppConfigServicePlaceholders = @{
         '{{ backend-fqdn }}' = "https://${fqdn}/backend"
+        '{{ clientId }}'     = $clientId
+        '{{ authority }}'    = $authority
+        '{{ redirectUri }}'  = $redirectUri
     }
-    
+
     ## Load and update the front app configuration template
     $frontAppConfigTemplate = Get-Content -Path .\appconfig\frontapp\.env.template -Raw
     $frontAppConfigTemplate = Invoke-PlaceholdersReplacement $frontAppConfigTemplate $frontAppConfigServicePlaceholders
@@ -809,7 +864,7 @@ try {
     docker build ..\App\frontend-app\. --no-cache -t $acrFrontAppTag
     docker push $acrFrontAppTag
 
-#======================================================================================================================================================================
+    #======================================================================================================================================================================
 
     # 7.2. Deploy ClusterIssuer in Kubernetes for SSL/TLS certificate
     kubectl apply -f .\kubernetes\deploy.certclusterissuer.yaml
@@ -838,12 +893,12 @@ try {
     successBanner
 
     $messageString = "Please find the deployment details below: `r`n" +
-                    "1. Check Front Web Application with this URL - https://${fqdn} `n`r" +
-                    "2. Check GPT Model's TPM rate in your resource group - $($deploymentResult.ResourceGroupName) `n`r" +
-                    "Please set each value high as much as you can set`n`r" +
-                    "`t- Open AI Resource Name - $($deploymentResult.AzOpenAiServiceName) `n`r" +
-                    "`t- GPT4o Model - $($deploymentResult.AzGPT4oModelName) `n`r" +
-                    "`t- GPT Embedding Model - $($deploymentResult.AzGPTEmbeddingModelName) `n`r"
+    "1. Check Front Web Application with this URL - https://${fqdn} `n`r" +
+    "2. Check GPT Model's TPM rate in your resource group - $($deploymentResult.ResourceGroupName) `n`r" +
+    "Please set each value high as much as you can set`n`r" +
+    "`t- Open AI Resource Name - $($deploymentResult.AzOpenAiServiceName) `n`r" +
+    "`t- GPT4o Model - $($deploymentResult.AzGPT4oModelName) `n`r" +
+    "`t- GPT Embedding Model - $($deploymentResult.AzGPTEmbeddingModelName) `n`r"
     Write-Host $messageString -ForegroundColor Yellow
     Write-Host "Don't forget to control the TPM rate for your GPT and Embedding Model in Azure Open AI Studio Deployments section." -ForegroundColor Red
     Write-Host "After controlling the TPM rate for your GPT and Embedding Model, let's start Data file import process with this command." -ForegroundColor Yellow
