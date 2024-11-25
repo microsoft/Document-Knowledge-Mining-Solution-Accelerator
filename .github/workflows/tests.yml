@@ -1,0 +1,87 @@
+name: Unit Tests - DKM
+
+on:
+  push:
+    branches: main
+    # Trigger on changes in these specific paths
+    
+  pull_request:
+    branches: main
+    types:
+      - opened
+      - ready_for_review
+      - reopened
+      - synchronize
+   
+
+jobs:
+  backend_api_tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.0.x'
+
+      - name: Restore and run tests for Backend API
+        working-directory: ./App/backend-api
+        run: |
+          if [ -f "Microsoft.GS.DPS.sln" ]; then
+            dotnet restore Microsoft.GS.DPS.sln
+            dotnet test Microsoft.GS.DPS.sln --no-build --verbosity normal
+          else
+            echo "No solution file found in Backend API. Skipping tests."
+          fi
+
+  kernel_memory_tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.0.x'
+
+      - name: Restore and run tests for Kernel Memory
+        working-directory: ./App/kernel-memory
+        run: |
+          if [ -f "KernelMemory.sln" ]; then
+            dotnet restore KernelMemory.sln
+            dotnet test KernelMemory.sln --no-build --verbosity normal
+          else
+            echo "No solution file found in Kernel Memory. Skipping tests."
+          fi
+
+  frontend_tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Install dependencies
+        working-directory: ./App/frontend-app
+        run: npm install
+
+      - name: Run tests for Frontend App
+        working-directory: ./App/frontend-app
+        run: |
+          if ls src/**/*.test.tsx src/**/*.spec.tsx > /dev/null 2>&1; then
+            npm test
+          else
+            echo "No test files found in Frontend App. Skipping tests."
+          fi
+ 
+  
