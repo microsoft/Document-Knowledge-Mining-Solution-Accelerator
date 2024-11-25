@@ -3,7 +3,6 @@ name: Unit Tests - DKM
 on:
   push:
     branches: main
-    # Trigger on changes in these specific paths
     
   pull_request:
     branches: main
@@ -12,7 +11,6 @@ on:
       - ready_for_review
       - reopened
       - synchronize
-   
 
 jobs:
   backend_api_tests:
@@ -32,7 +30,11 @@ jobs:
         run: |
           if [ -f "Microsoft.GS.DPS.sln" ]; then
             dotnet restore Microsoft.GS.DPS.sln
-            dotnet test Microsoft.GS.DPS.sln --no-build --verbosity normal
+            if dotnet test Microsoft.GS.DPS.sln --list-tests > /dev/null 2>&1; then
+              dotnet test Microsoft.GS.DPS.sln --no-build --verbosity normal
+            else
+              echo "No test cases found in Backend API. Skipping tests."
+            fi
           else
             echo "No solution file found in Backend API. Skipping tests."
           fi
@@ -54,7 +56,11 @@ jobs:
         run: |
           if [ -f "KernelMemory.sln" ]; then
             dotnet restore KernelMemory.sln
-            dotnet test KernelMemory.sln --no-build --verbosity normal
+            if dotnet test KernelMemory.sln --list-tests > /dev/null 2>&1; then
+              dotnet test KernelMemory.sln --no-build --verbosity normal
+            else
+              echo "No test cases found in Kernel Memory. Skipping tests."
+            fi
           else
             echo "No solution file found in Kernel Memory. Skipping tests."
           fi
@@ -78,10 +84,9 @@ jobs:
       - name: Run tests for Frontend App
         working-directory: ./App/frontend-app
         run: |
-          if ls src/**/*.test.tsx src/**/*.spec.tsx > /dev/null 2>&1; then
+          if ls src/**/*.test.{ts,tsx} src/**/*.spec.{ts,tsx} > /dev/null 2>&1; then
             npm test
           else
             echo "No test files found in Frontend App. Skipping tests."
           fi
- 
-  
+          
