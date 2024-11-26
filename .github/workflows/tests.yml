@@ -81,7 +81,13 @@ jobs:
         working-directory: ./App/frontend-app
         run: |
           npm install || echo "Warning: Dependency installation failed. Proceeding."
-
+  
+      - name: Verify Jest Installation
+        working-directory: ./App/frontend-app
+        run: |
+          npx jest -v || echo "Jest not found. Installing Jest."
+          npm install jest ts-jest ts-node @types/jest typescript --save-dev
+  
       - name: Run tests for Frontend App
         working-directory: ./App/frontend-app
         run: |
@@ -91,10 +97,3 @@ jobs:
           else
             echo "No test files found in Frontend App. Skipping tests."
           fi
-
-      - name: Debug Node.js and npm
-        working-directory: ./App/frontend-app
-        run: |
-          node -v
-          npm -v
-          npx jest -v
