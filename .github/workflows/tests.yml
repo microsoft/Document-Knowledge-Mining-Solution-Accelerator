@@ -87,6 +87,7 @@ jobs:
         run: |
           if find src -type f \( -name "*.test.tsx" -o -name "*.spec.tsx" -o -name "*.test.ts" -o -name "*.spec.ts" \) | grep -q .; then
             echo "Test files found. Proceeding with tests."
+            npm run test -- --coverage
           else
             echo "No test files found in Frontend App. Skipping tests."
           fi
