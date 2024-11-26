@@ -24,6 +24,17 @@ module.exports = {
         // SCSS files
         "\\.scss$": "identity-obj-proxy",
     },
+    collectCoverage: true,
+  //collectCoverageFrom: ['src/**/*.{ts,tsx}'],  // Adjust the path as needed
+  //coverageReporters: ['json', 'lcov', 'text', 'clover'],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+  },
 
     // Project's path which coverage will be reported
     collectCoverageFrom: ["src/**/*.ts", "src/**/*.tsx"],
