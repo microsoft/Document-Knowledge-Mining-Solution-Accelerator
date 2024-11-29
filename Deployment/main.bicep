@@ -1,5 +1,5 @@
 // Copyright (c) Microsoft Corporation.
-// Licensed under the MIT license.
+// Licensed under the MIT license. 
 @description('The Data Center where the model is deployed.')
 param modeldatacenter string
 
