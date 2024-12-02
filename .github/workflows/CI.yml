@@ -13,25 +13,17 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Setup Azure CLI
+      - name: Set up environment variables
         run: |
-          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-          az --version  # Verify installation
+          echo "AZURE_SUBSCRIPTION_ID=your-subscription-id" >> $GITHUB_ENV
+          echo "AZURE_LOCATION=EastUS" >> $GITHUB_ENV
+          echo "GPT_MODEL_LOCATION=EastUS2" >> $GITHUB_ENV
+          echo "EMAIL_ADDRESS=your-email@example.com" >> $GITHUB_ENV
 
-      - name: Login to Azure
-        run: |
-          az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
-      
-      - name: Run PowerShell script file
-        run: |
-          pwsh ./Deployment/resourcedeployment.ps1 -SubscriptionId ${{ secrets.AZURE_TENANT_ID }} -Region $(AZURE_REGION) -GPTModelRegion $(GPT_MODEL_REGION) -Email $(EMAIL)
-        env:
-          AZURE_SUBSCRIPTION_ID: 1d5876cd-7603-407a-96d2-ae5ca9a9c5f3
-          AZURE_REGION: NorthCentralUS
-          GPT_MODEL_REGION: SwedenCentral
-          EMAIL: v-harmanprka@MngEnvMCAP993385.onmicrosoft.com
-    
   
+      - name: Run Azure Deployment Script
+        run: |
+          pwsh ./Deployment/resourcedeployment.ps1
       # - name: Install Bicep CLI
       #   run: az bicep install
     
