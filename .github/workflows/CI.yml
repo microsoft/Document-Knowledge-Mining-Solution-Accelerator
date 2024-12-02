@@ -20,11 +20,11 @@ jobs:
           echo "GPT_MODEL_LOCATION=EastUS2" >> $GITHUB_ENV
           echo "EMAIL_ADDRESS=v-harmanprka@MngEnvMCAP993385.onmicrosoft.com" >> $GITHUB_ENV
   
-          - name: Run PowerShell Script to Manage RG
-          run: |
+      - name: Run PowerShell Script to Manage RG
+        run: |
             Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
             ./Deployment/resourcedeployment.ps1 -subscriptionID ${{ secrets.AZURE_SUBSCRIPTION_ID }} -location EastUS -modelLocation EastUS2 -email v-harmanprka@MngEnvMCAP993385.onmicrosoft.com
-          shell: pwsh
+        shell: pwsh
       # - name: Install Bicep CLI
       #   run: az bicep install
     
