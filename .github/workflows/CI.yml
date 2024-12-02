@@ -15,15 +15,28 @@ jobs:
 
       - name: Set up environment variables
         run: |
-          echo "AZURE_SUBSCRIPTION_ID=your-subscription-id" >> $GITHUB_ENV
+          echo "AZURE_SUBSCRIPTION_ID=1d5876cd-7603-407a-96d2-ae5ca9a9c5f3" >> $GITHUB_ENV
           echo "AZURE_LOCATION=EastUS" >> $GITHUB_ENV
           echo "GPT_MODEL_LOCATION=EastUS2" >> $GITHUB_ENV
-          echo "EMAIL_ADDRESS=your-email@example.com" >> $GITHUB_ENV
-
+          echo "EMAIL_ADDRESS=your-v-harmanprka@MngEnvMCAP993385.onmicrosoft.com" >> $GITHUB_ENV
   
-      - name: Run Azure Deployment Script
+      - name: Install Expect
+        run: sudo apt-get install expect
+  
+      - name: Automate script input
         run: |
-          pwsh ./Deployment/resourcedeployment.ps1
+          expect <<EOF
+            spawn pwsh ./Deployment/resourcedeployment.ps1
+            expect "Please enter your Azure subscription ID to deploy your resources"
+            send "$AZURE_SUBSCRIPTION_ID\r"
+            expect "Please enter the Azure Data Center Region to deploy your resources"
+            send "$AZURE_LOCATION\r"
+            expect "Please enter the Azure Data Center Region to deploy your GPT model"
+            send "$GPT_MODEL_LOCATION\r"
+            expect "Please enter your email address for certificate management"
+            send "$EMAIL_ADDRESS\r"
+            interact
+          EOF
       # - name: Install Bicep CLI
       #   run: az bicep install
     
