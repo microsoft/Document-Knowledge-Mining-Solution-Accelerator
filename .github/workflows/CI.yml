@@ -8,7 +8,7 @@ on:
     
 jobs:
   deploy:
-    runs-on: ubantu-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -37,7 +37,7 @@ jobs:
           # Change to the 'Deployment' directory (relative to the root of the repository) 
           cd $GITHUB_WORKSPACE/Deploy
 
-          
+
           # Check the current working directory (debugging step)
           echo "Working directory after 'cd ./Deployment': $(pwd)"
           
