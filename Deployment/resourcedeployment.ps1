@@ -110,6 +110,10 @@ function PromptForParameters {
 # Prompt for parameters with kind messages
 $params = PromptForParameters -subscriptionID $subscriptionID -location $location -modelLocation $modelLocation -email $email
 # Assign the parameters to variables
+ Write-Host "Subscription ID: $subscriptionID"
+    Write-Host "Location: $location"
+    Write-Host "Model Location: $modelLocation"
+    Write-Host "Email: $email"
 $subscriptionID = $params.subscriptionID
 $location = $params.location
 $modelLocation = $params.modelLocation
