@@ -28,12 +28,18 @@ jobs:
           ls -R ./Deployment/bicep
       - name: Check current directory in GitHub Actions
         run: |     
-          echo "Current directory: $(pwd)"     ls -R
+          echo "Current directory: $(pwd)"     
+          ls -R
 
       - name: Deploy Resources
         run: |
           az login --service-principal --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
-          cd ./Deployment
+          # Change to the 'Deployment' directory (relative to the root of the repository) 
+          cd $GITHUB_WORKSPACE/Deploy
+
+          
+          # Check the current working directory (debugging step)
+          echo "Working directory after 'cd ./Deployment': $(pwd)"
           
           chmod +x ./resourcedeployment.ps1
           pwsh ./resourcedeployment.ps1 -subscriptionID ${{ secrets.AZURE_SUBSCRIPTION_ID }} -location EastUS -modelLocation EastUS2 -email v-harmanprka@MngEnvMCAP993385.onmicrosoft.com
