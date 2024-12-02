@@ -381,8 +381,19 @@ try {
     $deploymentResult = [DeploymentResult]::new()
     if ($env:CI -eq "false"){
         LoginAzure($subscriptionID)
+        
 
     }
+   if ($env:CI -eq "true") {
+    if (-not $location) {
+        Write-Error "Error: --location is required in CI mode."
+        exit 1
+    }
+    if (-not $modelLocation) {
+        Write-Error "Error: --modelLocation is required in CI mode."
+        exit 1
+    }
+}
     
     # Deploy Azure Resources
     Write-Host "Deploying Azure resources in $location region.....`r`n" -ForegroundColor Yellow
