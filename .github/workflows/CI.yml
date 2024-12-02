@@ -27,8 +27,8 @@ jobs:
       - name: Deploy Resources
         run: |
           az login --service-principal --username $AZURE_CLIENT_ID --password $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
-          cd Deployment
-          resourcedeployment.ps1 -subscriptionID ${{ secrets.AZURE_SUBSCRIPTION_ID }} -location EastUS -modelLocation EastUS2 -email v-harmanprka@MngEnvMCAP993385.onmicrosoft.com
+          chmod +x ./Deployment/resourcedeployment.ps1
+          pwsh ./Deployment/resourcedeployment.ps1 -subscriptionID ${{ secrets.AZURE_SUBSCRIPTION_ID }} -location EastUS -modelLocation EastUS2 -email v-harmanprka@MngEnvMCAP993385.onmicrosoft.com
         shell: pwsh
       # - name: Install Bicep CLI
       #   run: az bicep install
