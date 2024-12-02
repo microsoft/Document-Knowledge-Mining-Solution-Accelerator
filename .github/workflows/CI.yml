@@ -25,11 +25,11 @@ jobs:
       - name: Run PowerShell script file
         run: |
           pwsh ./Deployment/resourcedeployment.ps1 -SubscriptionId $(AZURE_SUBSCRIPTION_ID) -Region $(AZURE_REGION) -GPTModelRegion $(GPT_MODEL_REGION) -Email $(EMAIL)
-          env:
-            AZURE_SUBSCRIPTION_ID: 1d5876cd-7603-407a-96d2-ae5ca9a9c5f3
-            AZURE_REGION: NorthCentralUS
-            GPT_MODEL_REGION: SwedenCentral
-            EMAIL: v-harmanprka@MngEnvMCAP993385.onmicrosoft.com
+        env:
+          AZURE_SUBSCRIPTION_ID: 1d5876cd-7603-407a-96d2-ae5ca9a9c5f3
+          AZURE_REGION: NorthCentralUS
+          GPT_MODEL_REGION: SwedenCentral
+          EMAIL: v-harmanprka@MngEnvMCAP993385.onmicrosoft.com
       # - name: Install Bicep CLI
       #   run: az bicep install
     
