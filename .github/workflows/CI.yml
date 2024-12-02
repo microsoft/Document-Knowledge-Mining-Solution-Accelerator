@@ -35,7 +35,7 @@ jobs:
           # Change to the 'Deployment' directory (relative to the root of the repository) 
          
           echo "Current directory: $(GITHUB_WORKSPACE)"
-          cd $GITHUB_WORKSPACE/Deploy
+          cd $GITHUB_WORKSPACE/Deployment
           
 
 
