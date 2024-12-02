@@ -44,11 +44,12 @@ function successBanner(){
 # Function to prompt for parameters with kind messages
 function PromptForParameters {
     param(
-        [string]$subscriptionID,
-        [string]$location,
-        [string]$modelLocation,
-        [string]$email
+        [string]$subscriptionID = $env:AZURE_SUBSCRIPTION_ID,
+        [string]$location = $env:LOCATION,
+        [string]$modelLocation = $env:MODEL_LOCATION,
+        [string]$email = $env:EMAIL
     )
+    
     Write-Host "Subscription ID: $subscriptionID"
     Write-Host "Location: $location"
     Write-Host "Model Location: $modelLocation"
