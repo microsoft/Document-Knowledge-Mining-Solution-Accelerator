@@ -385,6 +385,7 @@ try {
 
     }
    if ($env:CI -eq "true") {
+    Write-Host "subscritipon $subscriptionID"
     if (-not $location) {
         Write-Error "Error: --location is required in CI mode."
         exit 1
