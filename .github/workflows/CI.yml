@@ -20,13 +20,11 @@ jobs:
           echo "GPT_MODEL_LOCATION=EastUS2" >> $GITHUB_ENV
           echo "EMAIL_ADDRESS=your-v-harmanprka@MngEnvMCAP993385.onmicrosoft.com" >> $GITHUB_ENV
   
-      - name: Install Expect
-        run: sudo apt-get install expect
-  
-      - name: Run Deployment Script with Expect
-        run: |
-          chmod +x ./github/auto_input.expect
-          ./github/auto_input.expect
+          - name: Run PowerShell Script to Manage RG
+          run: |
+            Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+            ./Deployment/resourcedeployment.ps1 -subscriptionID ${{ secrets.AZURE_SUBSCRIPTION_ID }} -location ${{ secrets.AZURE_REGION }} -modelLocation ${{ secrets.AZURE_MODEL_REGION }} -email ${{ secrets.NOTIFICATION_EMAIL }}
+          shell: pwsh
       # - name: Install Bicep CLI
       #   run: az bicep install
     
