@@ -26,6 +26,9 @@ jobs:
       - name: List files in bicep directory (Debugging)
         run: |
           ls -R ./Deployment/bicep
+      - name: Check current directory in GitHub Actions
+        run: |     
+          echo "Current directory: $(pwd)"     ls -R
 
       - name: Deploy Resources
         run: |
