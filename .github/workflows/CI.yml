@@ -18,12 +18,12 @@ jobs:
           echo "AZURE_SUBSCRIPTION_ID=1d5876cd-7603-407a-96d2-ae5ca9a9c5f3" >> $GITHUB_ENV
           echo "AZURE_LOCATION=EastUS" >> $GITHUB_ENV
           echo "GPT_MODEL_LOCATION=EastUS2" >> $GITHUB_ENV
-          echo "EMAIL_ADDRESS=your-v-harmanprka@MngEnvMCAP993385.onmicrosoft.com" >> $GITHUB_ENV
+          echo "EMAIL_ADDRESS=v-harmanprka@MngEnvMCAP993385.onmicrosoft.com" >> $GITHUB_ENV
   
           - name: Run PowerShell Script to Manage RG
           run: |
             Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-            ./Deployment/resourcedeployment.ps1 -subscriptionID ${{ secrets.AZURE_SUBSCRIPTION_ID }} -location ${{ secrets.AZURE_REGION }} -modelLocation ${{ secrets.AZURE_MODEL_REGION }} -email ${{ secrets.NOTIFICATION_EMAIL }}
+            ./Deployment/resourcedeployment.ps1 -subscriptionID ${{ secrets.AZURE_SUBSCRIPTION_ID }} -location EastUS -modelLocation EastUS2 -email v-harmanprka@MngEnvMCAP993385.onmicrosoft.com
           shell: pwsh
       # - name: Install Bicep CLI
       #   run: az bicep install
