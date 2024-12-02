@@ -34,7 +34,7 @@ jobs:
           az login --service-principal --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
           # Change to the 'Deployment' directory (relative to the root of the repository) 
          
-          echo "Current directory: $(GITHUB_WORKSPACE)"
+          echo "Current directory: $GITHUB_WORKSPACE"
           cd $GITHUB_WORKSPACE/Deployment
           
 
