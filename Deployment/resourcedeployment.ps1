@@ -49,6 +49,10 @@ function PromptForParameters {
         [string]$modelLocation,
         [string]$email
     )
+    Write-Host "Subscription ID: $subscriptionID"
+    Write-Host "Location: $location"
+    Write-Host "Model Location: $modelLocation"
+    Write-Host "Email: $email"
 
     Clear-Host
 
