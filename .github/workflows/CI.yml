@@ -23,20 +23,10 @@ jobs:
       - name: Install Expect
         run: sudo apt-get install expect
   
-      - name: Automate script input
+      - name: Run Deployment Script with Expect
         run: |
-          expect <<EOF
-            spawn pwsh ./Deployment/resourcedeployment.ps1
-            expect "Please enter your Azure subscription ID to deploy your resources"
-            send "$AZURE_SUBSCRIPTION_ID\r"
-            expect "Please enter the Azure Data Center Region to deploy your resources"
-            send "$AZURE_LOCATION\r"
-            expect "Please enter the Azure Data Center Region to deploy your GPT model"
-            send "$GPT_MODEL_LOCATION\r"
-            expect "Please enter your email address for certificate management"
-            send "$EMAIL_ADDRESS\r"
-            interact
-          EOF
+          chmod +x ./auto_input.expect
+          ./auto_input.expect
       # - name: Install Bicep CLI
       #   run: az bicep install
     
