@@ -379,7 +379,11 @@ try {
     Show-Banner -Title "Step 1 : Deploy Azure resources"
     ###############################################################
     $deploymentResult = [DeploymentResult]::new()
-    LoginAzure($subscriptionID)
+    if ($env:CI -eq "false"){
+        LoginAzure($subscriptionID)
+
+    }
+    
     # Deploy Azure Resources
     Write-Host "Deploying Azure resources in $location region.....`r`n" -ForegroundColor Yellow
 
