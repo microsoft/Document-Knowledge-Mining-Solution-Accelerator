@@ -26,7 +26,7 @@ jobs:
 
       - name: Deploy Resources
         run: |
-          az login --service-principal --username $AZURE_CLIENT_ID --password $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
+          az login --service-principal --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
           chmod +x ./Deployment/resourcedeployment.ps1
           pwsh ./Deployment/resourcedeployment.ps1 -subscriptionID ${{ secrets.AZURE_SUBSCRIPTION_ID }} -location EastUS -modelLocation EastUS2 -email v-harmanprka@MngEnvMCAP993385.onmicrosoft.com
         shell: pwsh
