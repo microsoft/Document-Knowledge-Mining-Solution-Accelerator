@@ -25,8 +25,8 @@ jobs:
   
       - name: Run Deployment Script with Expect
         run: |
-          chmod +x ./auto_input.expect
-          ./auto_input.expect
+          chmod +x ./github/auto_input.expect
+          ./github/auto_input.expect
       # - name: Install Bicep CLI
       #   run: az bicep install
     
