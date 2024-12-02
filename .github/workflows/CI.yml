@@ -13,16 +13,20 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Set up environment variables
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: |
+            {
+              "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
+              "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
+              "tenantId": "${{ secrets.AZURE_TENANT_ID }}",
+              "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+            }
+
+      - name: Deploy Resources
         run: |
-          echo "AZURE_SUBSCRIPTION_ID=1d5876cd-7603-407a-96d2-ae5ca9a9c5f3" >> $GITHUB_ENV
-          echo "AZURE_LOCATION=EastUS" >> $GITHUB_ENV
-          echo "GPT_MODEL_LOCATION=EastUS2" >> $GITHUB_ENV
-          echo "EMAIL_ADDRESS=v-harmanprka@MngEnvMCAP993385.onmicrosoft.com" >> $GITHUB_ENV
-  
-      - name: Run PowerShell Script to Manage RG
-        run: |
-            ./Deployment/resourcedeployment.ps1 -subscriptionID 1d5876cd-7603-407a-96d2-ae5ca9a9c5f3 -location EastUS -modelLocation EastUS2 -email v-harmanprka@MngEnvMCAP993385.onmicrosoft.com
+          ./Deployment/resourcedeployment.ps1 -subscriptionID ${{ secrets.AZURE_SUBSCRIPTION_ID }} -location EastUS -modelLocation EastUS2 -email v-harmanprka@MngEnvMCAP993385.onmicrosoft.com
         shell: pwsh
       # - name: Install Bicep CLI
       #   run: az bicep install
