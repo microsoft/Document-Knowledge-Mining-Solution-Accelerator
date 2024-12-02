@@ -23,9 +23,7 @@ jobs:
               "tenantId": "${{ secrets.AZURE_TENANT_ID }}",
               "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
             }
-      - name: List files in bicep directory (Debugging)
-        run: |
-          ls -R ./Deployment/bicep
+
       - name: Check current directory in GitHub Actions
         run: |     
           echo "Current directory: $(pwd)"     
