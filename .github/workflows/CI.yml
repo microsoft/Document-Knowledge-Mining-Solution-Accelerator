@@ -23,6 +23,12 @@ jobs:
               "tenantId": "${{ secrets.AZURE_TENANT_ID }}",
               "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
             }
+      - name: Set environment variables
+        run: |
+          echo "AZURE_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }}" >> $GITHUB_ENV
+          echo "LOCATION=${{ secrets.LOCATION }}" >> $GITHUB_ENV
+          echo "MODEL_LOCATION=${{ secrets.MODEL_LOCATION }}" >> $GITHUB_ENV
+          echo "EMAIL=${{ secrets.EMAIL }}" >> $GITHUB_ENV
 
 
 
