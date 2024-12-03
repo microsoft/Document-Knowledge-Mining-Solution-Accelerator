@@ -102,43 +102,9 @@ function PromptForParameters {
         $email = Read-Host -Prompt '> '
     }
      # If running interactively, prompt for values
-    if ($isInteractive) {
-        if (-not $subscriptionID) {
-            Write-Host "Please enter your Azure subscription ID to deploy your resources" -ForegroundColor Cyan
-            $subscriptionID = Read-Host -Prompt '> '
-        }
+  
 
-        if (-not $location) {
-            Write-Host "Please enter the Azure Data Center Region to deploy your resources" -ForegroundColor Cyan
-            Write-Host "Available regions are:" -ForegroundColor Cyan
-            Write-Host ($availableRegions -join ', ') -ForegroundColor Yellow
-            $location = Read-Host -Prompt '> '
-        }
-
-        if (-not $modelLocation) {
-            Write-Host "Please enter the Azure Data Center Region to deploy your GPT model" -ForegroundColor Cyan
-            Write-Host "Available regions are:" -ForegroundColor Cyan
-            Write-Host ($availableModelRegions -join ', ') -ForegroundColor Yellow
-            $modelLocation = Read-Host -Prompt '> '
-        }
-
-        if (-not $email) {
-            Write-Host "Please enter your email address for certificate management" -ForegroundColor Cyan
-            $email = Read-Host -Prompt '> '
-        }
-    }
-
-    # If not running interactively, check for environment variables (for CI/CD)
-    if (-not $subscriptionID) { $subscriptionID = $env:AZURE_SUBSCRIPTION_ID }
-    if (-not $location) { $location = $env:LOCATION }
-    if (-not $modelLocation) { $modelLocation = $env:MODEL_LOCATION }
-    if (-not $email) { $email = $env:EMAIL }
-
-    # Ensure we have all required parameters, otherwise throw an error
-    if (-not $subscriptionID -or -not $location -or -not $modelLocation -or -not $email) {
-        Write-Error "All required parameters (subscriptionID, location, modelLocation, email) must be provided."
-        return $null
-    }
+ 
 
     return @{
         subscriptionID = $subscriptionID
@@ -428,11 +394,11 @@ try {
     Show-Banner -Title "Step 1 : Deploy Azure resources"
     ###############################################################
     $deploymentResult = [DeploymentResult]::new()
-    if ($env:CI -eq "false"){
-        LoginAzure($subscriptionID)
+    # if ($env:CI -eq "false"){
+    #     LoginAzure($subscriptionID)
         
 
-    }
+    # }
    if ($env:CI -eq "true") {
     Write-Host "subscritipon $subscriptionID"
     if (-not $location) {
