@@ -14,7 +14,7 @@ resource gs_resourcegroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
 }
 
 // Create a storage account
-module gs_storageaccount 'Bicep/azurestorageaccount.bicep' = {
+module gs_storageaccount 'bicep/azurestorageaccount.bicep' = {
   name: 'blob${resourceprefix_name}${resourceprefix}'
   scope: gs_resourcegroup
   params: {
@@ -24,7 +24,7 @@ module gs_storageaccount 'Bicep/azurestorageaccount.bicep' = {
 }
 
 // Create a Azure Search Service
-module gs_azsearch 'Bicep/azuresearch.bicep' = {
+module gs_azsearch 'bicep/azuresearch.bicep' = {
   name: 'search-${resourceprefix_name}${resourceprefix}'
   scope: gs_resourcegroup
   params: {
@@ -35,7 +35,7 @@ module gs_azsearch 'Bicep/azuresearch.bicep' = {
 
 
 // Create Container Registry
-module gs_containerregistry 'Bicep/azurecontainerregistry.bicep' = {
+module gs_containerregistry 'bicep/azurecontainerregistry.bicep' = {
   name: 'acr${resourceprefix_name}${resourceprefix}'
   scope: gs_resourcegroup
   params: {
@@ -45,7 +45,7 @@ module gs_containerregistry 'Bicep/azurecontainerregistry.bicep' = {
 }
 
 // Create AKS Cluster
-module gs_aks 'Bicep/azurekubernetesservice.bicep' = {
+module gs_aks 'bicep/azurekubernetesservice.bicep' = {
   name: 'aks-${resourceprefix_name}${resourceprefix}'
   scope: gs_resourcegroup
   params: {
@@ -73,7 +73,7 @@ module gs_aks 'Bicep/azurekubernetesservice.bicep' = {
 
 
 // Create Azure Cognitive Service
-module gs_azcognitiveservice 'Bicep/azurecognitiveservice.bicep' = {
+module gs_azcognitiveservice 'bicep/azurecognitiveservice.bicep' = {
   name: 'cognitiveservice-${resourceprefix_name}${resourceprefix}'
   scope: gs_resourcegroup
   params: {
@@ -83,7 +83,7 @@ module gs_azcognitiveservice 'Bicep/azurecognitiveservice.bicep' = {
 }
 
 // Create Azure Open AI Service
-module gs_openaiservice 'Bicep/azureopenaiservice.bicep' = {
+module gs_openaiservice 'bicep/azureopenaiservice.bicep' = {
   name: 'openaiservice-${resourceprefix_name}${resourceprefix}'
   scope: gs_resourcegroup
   params: {
@@ -97,7 +97,7 @@ module gs_openaiservice 'Bicep/azureopenaiservice.bicep' = {
 // Due to limited of Quota, not easy to control per each model deployment.
 // Set the minimum capacity of each model
 // Based on customer's Model capacity, it needs to be updated in Azure Portal.
-module gs_openaiservicemodels_gpt4o 'Bicep/azureopenaiservicemodel.bicep' = {
+module gs_openaiservicemodels_gpt4o 'bicep/azureopenaiservicemodel.bicep' = {
   scope: gs_resourcegroup
   name: 'gpt-4o-mini'
   params: {
@@ -117,7 +117,7 @@ module gs_openaiservicemodels_gpt4o 'Bicep/azureopenaiservicemodel.bicep' = {
   ]
 }
 
-module gs_openaiservicemodels_text_embedding 'Bicep/azureopenaiservicemodel.bicep' = {
+module gs_openaiservicemodels_text_embedding 'bicep/azureopenaiservicemodel.bicep' = {
   scope: gs_resourcegroup
   name: 'text-embedding-large'
   params: {
@@ -137,7 +137,7 @@ module gs_openaiservicemodels_text_embedding 'Bicep/azureopenaiservicemodel.bice
 }
 
 // Create Azure Cosmos DB Mongo
-module gs_cosmosdb 'Bicep/azurecosmosdb.bicep' = {
+module gs_cosmosdb 'bicep/azurecosmosdb.bicep' = {
   name: 'cosmosdb-${resourceprefix_name}${resourceprefix}'
   scope: gs_resourcegroup
   params: {
@@ -147,7 +147,7 @@ module gs_cosmosdb 'Bicep/azurecosmosdb.bicep' = {
 }
 
 // Create Azure App Configuration
-module gs_appconfig 'Bicep/azureappconfigservice.bicep' = {
+module gs_appconfig 'bicep/azureappconfigservice.bicep' = {
   name: 'appconfig-${resourceprefix_name}${resourceprefix}'
   scope: gs_resourcegroup
   params: {
