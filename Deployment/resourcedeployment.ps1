@@ -395,7 +395,7 @@ try {
     ###############################################################
     $deploymentResult = [DeploymentResult]::new()
     # if ($env:CI -eq "false"){
-    #     LoginAzure($subscriptionID)
+      LoginAzure($subscriptionID)
         
 
     # }
