@@ -1,4 +1,4 @@
-name: Deploy Resources
+name: Deploy Resources 
 
 on:
   push:
