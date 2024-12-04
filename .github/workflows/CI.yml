@@ -19,13 +19,12 @@ jobs:
       run: |
         # Optionally, check PowerShell version or install dependencies
         $PSVersionTable.PSVersion
-    - name: Change Directory to Deployment
-      shell: pwsh
-      run: cd Deployment
+   
 
     - name: Run Deployment Script with Input
       shell: pwsh
       run: |
+        cd Deployment
         $input = @"
         ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         EastUS
