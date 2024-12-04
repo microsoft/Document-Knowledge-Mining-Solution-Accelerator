@@ -24,7 +24,7 @@ jobs:
       shell: pwsh
       run: |
         # Path to your script
-        pwsh ./Deployment/resourcedeployment.ps1
+        pwsh ./Deployment/resourcedeployment.ps1 -SubscriptionId $env:AZURE_SUBSCRIPTION_ID -Location $env:eastus -ModelLocation $env:eastus2 -Email $env:ADMIN_EMAIL
       env:
         AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}  # Replace with your Azure subscription ID
         AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}  # Replace with your Azure tenant ID
