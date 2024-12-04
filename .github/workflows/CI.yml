@@ -3,12 +3,10 @@ on:
   push:
     branches:
       - main
-  # schedule:
-  #   - cron: '0 6,18 * * *'  # Runs at 6:00 AM and 6:00 PM GMT
-    
+
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -23,27 +21,24 @@ jobs:
               "tenantId": "${{ secrets.AZURE_TENANT_ID }}",
               "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
             }
-      - name: Set environment variables
-        run: |
-          echo "AZURE_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }}" >> $GITHUB_ENV
-          echo "LOCATION=${{ secrets.LOCATION }}" >> $GITHUB_ENV
-          echo "MODEL_LOCATION=${{ secrets.MODEL_LOCATION }}" >> $GITHUB_ENV
-          echo "EMAIL=${{ secrets.EMAIL }}" >> $GITHUB_ENV
 
-
+      - name: Set script permissions
+        run: chmod +x ./Deployment/resourcedeployment.ps1
 
       - name: Deploy Resources
         run: |
-          az login --service-principal --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
-          cd ./Deployment
-          chmod +x ./resourcedeployment.ps1
-          pwsh ./resourcedeployment.ps1 `
+          Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+          pwsh ./Deployment/resourcedeployment.ps1 `
             -subscriptionID ${{ secrets.AZURE_SUBSCRIPTION_ID }} `
-            -location "EastUS" `
-            -modelLocation "EastUS2" `
-            -email "v-harmanprka@MngEnvMCAP993385.onmicrosoft.com" `
+            -location "${{ secrets.LOCATION }}" `
+            -modelLocation "${{ secrets.MODEL_LOCATION }}" `
+            -email "${{ secrets.EMAIL }}"
         shell: pwsh
-          
+
+
+
+
+
       # - name: Install Bicep CLI
       #   run: az bicep install
     
