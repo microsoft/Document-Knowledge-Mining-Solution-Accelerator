@@ -30,6 +30,7 @@ jobs:
         CanadaCentral
         SwedenCentral
         v-harmanprka@MngEnvMCAP993385.onmicrosoft.com
+        yes
         "@
         $input | pwsh ./resourcedeployment.ps1
     env:
