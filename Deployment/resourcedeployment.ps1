@@ -128,7 +128,15 @@ $email = $params.email
 
 function LoginAzure([string]$subscriptionID) {
         Write-Host "Log in to Azure.....`r`n" -ForegroundColor Yellow
+        if ($env:CI -eq "false"){
         az login
+        }
+        else{
+            az login --service-principal `
+        --username $env:AZURE_CLIENT_ID `
+        --password $env:AZURE_CLIENT_SECRET `
+        --tenant $env:AZURE_TENANT_ID
+        }
         az account set --subscription $subscriptionID
         Write-Host "Switched subscription to '$subscriptionID' `r`n" -ForegroundColor Yellow
 }
