@@ -29,7 +29,7 @@ jobs:
         WestUS3
         v-harmanprka@MngEnvMCAP993385.onmicrosoft.com
         "@
-        $input | pwsh ./resourcedeployment.ps1
+        $input | pwsh ./Deployment/resourcedeployment.ps1
     env:
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
