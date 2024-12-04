@@ -1,39 +1,35 @@
-name: CI-Validate Deployment
+name: Deploy Resources
+
 on:
   push:
     branches:
-      - main
+      - main  # Adjust this to the branch you want to trigger the deployment on
+  workflow_dispatch:  # Allows manual triggering of the workflow
 
 jobs:
   deploy:
-    runs-on: windows-latest
+    runs-on: windows-latest  # Use a Windows runner for PowerShell scripts
+
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+    - name: Checkout Code
+      uses: actions/checkout@v3  # Checks out your repository
 
-      - name: Log in to Azure
-        uses: azure/login@v1
-        with:
-          creds: |
-            {
-              "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
-              "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
-              "tenantId": "${{ secrets.AZURE_TENANT_ID }}",
-              "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
-            }
+    - name: Setup PowerShell
+      shell: pwsh
+      run: |
+        # Optionally, check PowerShell version or install dependencies
+        $PSVersionTable.PSVersion
 
-      - name: Set script permissions
-        run: chmod +x ./Deployment/resourcedeployment.ps1
-
-      - name: Deploy Resources
-        run: |
-          Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
-          pwsh ./Deployment/resourcedeployment.ps1 `
-            -subscriptionID ${{ secrets.AZURE_SUBSCRIPTION_ID }} `
-            -location "${{ secrets.LOCATION }}" `
-            -modelLocation "${{ secrets.MODEL_LOCATION }}" `
-            -email "${{ secrets.EMAIL }}"
-        shell: pwsh
+    - name: Run Deployment Script
+      shell: pwsh
+      run: |
+        # Path to your script
+        ./resourcedeployment.ps1
+      env:
+        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}  # Replace with your Azure subscription ID
+        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}  # Replace with your Azure tenant ID
+        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}  # Replace with your Azure client ID
+        AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}  # Replace with your Azure client secret
 
 
 
