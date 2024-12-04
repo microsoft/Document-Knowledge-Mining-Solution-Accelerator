@@ -20,16 +20,18 @@ jobs:
         # Optionally, check PowerShell version or install dependencies
         $PSVersionTable.PSVersion
 
-    - name: Run Deployment Script
+    - name: Run Deployment Script with Input
       shell: pwsh
       run: |
-        # Path to your script
-        pwsh ./Deployment/resourcedeployment.ps1 -SubscriptionId $env:AZURE_SUBSCRIPTION_ID -Location $env:eastus -ModelLocation $env:eastus2 -Email $env:ADMIN_EMAIL
-      env:
-        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}  # Replace with your Azure subscription ID
-        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}  # Replace with your Azure tenant ID
-        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}  # Replace with your Azure client ID
-        AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}  # Replace with your Azure client secret
+        $input = @"
+        ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        EastUS
+        WestUS3
+        v-harmanprka@MngEnvMCAP993385.onmicrosoft.com
+        "@
+        $input | pwsh ./resourcedeployment.ps1
+    env:
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
 
 
