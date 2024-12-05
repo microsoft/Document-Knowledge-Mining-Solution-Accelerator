@@ -1,5 +1,5 @@
 #!/usr/bin/expect -f
-set timeout -1
+set timeout -1 
 
 # Start the PowerShell script
 spawn pwsh ./Deployment/resourcedeployment.ps1
