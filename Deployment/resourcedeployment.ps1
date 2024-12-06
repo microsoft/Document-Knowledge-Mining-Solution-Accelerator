@@ -209,6 +209,7 @@ function DisplayResult([pscustomobject]$jsonString) {
     Write-Host "* Azure Storage Account " -ForegroundColor Yellow -NoNewline; Write-Host "$storageAccountName" -ForegroundColor Green
     Write-Host "* Azure Cosmos DB " -ForegroundColor Yellow -NoNewline; Write-Host "$azcosmosDBName" -ForegroundColor Green
     Write-Host "* Azure App Configuration Endpoint " -ForegroundColor Yellow -NoNewline; Write-Host "$azappConfigEndpoint" -ForegroundColor Green
+    Write-Output "::set-output name=rg_name::$resourcegroupName"
 }
 
 # Function to replace placeholders in a template with actual values
