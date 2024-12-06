@@ -1,4 +1,4 @@
-name: Deploy Resources 
+name: Deploy Resources
 
 on:
   push:
@@ -19,7 +19,6 @@ jobs:
       run: |
         # Optionally, check PowerShell version or install dependencies
         $PSVersionTable.PSVersion
-   
 
     - name: Run Deployment Script with Input
       shell: pwsh
@@ -33,14 +32,24 @@ jobs:
         yes
         "@
         $input | pwsh ./resourcedeployment.ps1
-    env:
-      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+        Write-Output "::set-output name=rg_name::$ResourceGroupName"
+      env:
+        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
 
-
-
+    - name: Cleanup Resource Group
+      if: always()  # Ensures this step runs even if the deployment fails
+      shell: pwsh
+      run: |
+        az login --service-principal --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+        az group delete --name ${{ steps.deploy.outputs.rg_name }} --yes --no-wait
+      env:
+        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
 
 
       # - name: Install Bicep CLI
