@@ -125,7 +125,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
         setTextAreaValue("");
         setDisableSources(true);
         setIsLoading(true);
-        
+        console.log("Entered in APi req-------------")
         // A simple function to check if the text contains Markdown
         const isMarkdown = (text: string) => {
             const markdownPattern = /(^|\s)(#{1,6}|\*\*|__|[-*]|\d+\.\s|\[.*\]\(.*\)|```|`[^`]*`)/;
@@ -225,7 +225,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
             
 
             setIsLoading(false);
-
+            console.log(response, "Answer----------------------")
             const answerTimestamp = new Date();
 
             try {
@@ -244,9 +244,11 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                         return newAnswers;
                     });
                 }
+                
             } catch (error) {
                 console.error("Error parsing response body:", error);
             }
+        // eslint-disable-next-line no-empty
         } catch (error) {
         } finally {
             setIsLoading(false);
@@ -416,10 +418,10 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
             )}
             <div ref={optionsBottom}></div>
                 <CopilotProvider className={styles.chatMessagesContainer}>
-                    <CopilotChat>
+                    <CopilotChat data-testid = "copilot-message">
                         {conversationAnswers.map(([prompt, response], index) => (
                             <Fragment key={index}>
-                                <UserMessage className="my-3 ml-auto" /* key={`${index}-user`} */>
+                                <UserMessage data-testid="user-message"className="my-3 ml-auto" /* key={`${index}-user`} */>
                                     <div dangerouslySetInnerHTML={{ __html: prompt.replace(/\n/g, "<br />") }} />
                                 </UserMessage>
                                 <CopilotMessage
@@ -557,6 +559,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
             <div className={`${styles.questionContainer} mb-6 mt-6 flex w-full justify-center`}>
                 <Button
                     className={styles["new-topic"]}
+                    data-testid="new-topic-button" 
                     shape="circular"
                     appearance="primary"
                     icon={<ChatAdd24Regular />}
