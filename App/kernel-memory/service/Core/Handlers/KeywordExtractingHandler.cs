@@ -11,6 +11,7 @@ using Microsoft.KernelMemory.Pipeline;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using static Microsoft.KernelMemory.Pipeline.DataPipeline;
+using Microsoft.KernelMemory.Prompts;
 
 namespace Microsoft.KernelMemory.Handlers;
 
@@ -21,11 +22,13 @@ public sealed class KeywordExtractingHandler : IPipelineStepHandler
     private readonly IPipelineOrchestrator _orchestrator;
     private readonly Kernel _kernel;
     private readonly KernelMemoryConfig? _config = null;
+    private readonly string _extractKeywordPrompt;
 
     public KeywordExtractingHandler(
         string stepName,
         IPipelineOrchestrator orchestrator,
         KernelMemoryConfig config = null,
+        IPromptProvider? promptProvider = null,
         ILoggerFactory? loggerFactory = null
         )
     {
@@ -33,6 +36,10 @@ public sealed class KeywordExtractingHandler : IPipelineStepHandler
         this._log = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<KeywordExtractingHandler>();
         this._orchestrator = orchestrator;
         this._config = config;
+
+        promptProvider ??= new EmbeddedPromptProvider();
+
+        this._extractKeywordPrompt = promptProvider.ReadPrompt(Constants.PromptNamesExtractKeywords);
 
         //init Semantic Kernel
         this._kernel = Kernel.CreateBuilder()
@@ -79,30 +86,7 @@ public sealed class KeywordExtractingHandler : IPipelineStepHandler
                     var chat = this._kernel.GetRequiredService<IChatCompletionService>();
                     var chatHistory = new ChatHistory();
 
-                    var systemMessage = """
-                        You are an assistant to analyze Content and Extract Tags by Content.
-                        [EXTRACT TAGS RULES]
-                        IT SHOULD BE A LIST OF DICTIONARIES WITH CATEGORY AND TAGS
-                        TAGS SHOULD BE CATEGORY SPECIFIC
-                        TAGS SHOULD BE A LIST OF STRINGS
-                        TAGS COUNT CAN BE UP TO 10 UNDER A CATEGORY
-                        CATEGORY COUNT CAN BE UP TO 10
-                        DON'T ADD ANY MARKDOWN EXPRESSION IN YOUR RESPONSE
-                        [END RULES]
-
-                        [EXAMPLE]
-                        [
-                            {
-                                [category1": ["tag1", "tag2", "tag3"]
-                            },
-                            {
-                                "category2": ["tag1", "tag2", "tag3"]
-                            }
-                        ]
-                        [END EXAMPLE]
-                        """;
-
-                    chatHistory.AddSystemMessage(systemMessage);
+                    chatHistory.AddSystemMessage(this._extractKeywordPrompt);
                     chatHistory.AddUserMessage($"Extract tags from this content : {extactedFileContent} \n The format should be Json but Markdown expression.");
 
                     var executionParam = new PromptExecutionSettings()

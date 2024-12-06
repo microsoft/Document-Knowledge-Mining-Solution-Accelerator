@@ -163,4 +163,5 @@ public static class Constants
     // Standard prompt names
     public const string PromptNamesSummarize = "summarize";
     public const string PromptNamesAnswerWithFacts = "answer-with-facts";
+    public const string PromptNamesExtractKeywords = "extract-keywords";
 }

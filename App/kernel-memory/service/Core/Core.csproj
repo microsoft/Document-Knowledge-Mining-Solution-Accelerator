@@ -42,6 +42,7 @@
     <ItemGroup>
         <EmbeddedResource Include="Prompts\summarize.txt" />
         <EmbeddedResource Include="Prompts\answer-with-facts.txt" />
+        <EmbeddedResource Include="Prompts\extract-keywords.txt" />
     </ItemGroup>
 
     <ItemGroup>
