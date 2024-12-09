@@ -209,7 +209,7 @@ function DisplayResult([pscustomobject]$jsonString) {
     Write-Host "* Azure Storage Account " -ForegroundColor Yellow -NoNewline; Write-Host "$storageAccountName" -ForegroundColor Green
     Write-Host "* Azure Cosmos DB " -ForegroundColor Yellow -NoNewline; Write-Host "$azcosmosDBName" -ForegroundColor Green
     Write-Host "* Azure App Configuration Endpoint " -ForegroundColor Yellow -NoNewline; Write-Host "$azappConfigEndpoint" -ForegroundColor Green
-    Write-Host "rg_name=$resourcegroupName" >> $Env:GITHUB_ENV
+    Write-Output "rg_name=$resourcegroupName" >> $Env:GITHUB_ENV
 
 }
 
