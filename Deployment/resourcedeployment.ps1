@@ -209,24 +209,7 @@ function DisplayResult([pscustomobject]$jsonString) {
     Write-Host "* Azure Storage Account " -ForegroundColor Yellow -NoNewline; Write-Host "$storageAccountName" -ForegroundColor Green
     Write-Host "* Azure Cosmos DB " -ForegroundColor Yellow -NoNewline; Write-Host "$azcosmosDBName" -ForegroundColor Green
     Write-Host "* Azure App Configuration Endpoint " -ForegroundColor Yellow -NoNewline; Write-Host "$azappConfigEndpoint" -ForegroundColor Green
-    #Write-Host "rg_name=$resourcegroupName" >> $env:GITHUB_ENV
-
-    try {
-
-    # Validate the value
-    if (-Not $resourcegroupName) {
-        throw "The resource group name is missing or invalid in the JSON object."
-    }
-
-    # Write the value to the GITHUB_ENV file
-    "$env:rg_name=$resourcegroupName" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-
-    Write-Host "Successfully set the resource group name as an environment variable."
-    } catch {
-    # Handle errors
-    Write-Error "An error occurred while setting the resource group name: $_"
-    exit 1 # Exit the script with a failure code
-    }
+    Write-Host "rg_name=$resourcegroupName" >> $Env:GITHUB_ENV
 
 }
 
