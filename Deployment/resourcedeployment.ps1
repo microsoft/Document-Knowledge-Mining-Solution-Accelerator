@@ -579,6 +579,7 @@ try {
         Write-Host "Getting the Kubernetes resource group..." -ForegroundColor Cyan
         $aksResourceGroupName = $(az aks show --resource-group $deploymentResult.ResourceGroupName --name $deploymentResult.AksName --query nodeResourceGroup --output tsv)
         Write-Host "Kubernetes resource group: $aksResourceGroupName" -ForegroundColor Green
+        Write-Output "krg_name=$aksResourceGroupName" >> $Env:GITHUB_ENV
     }
     catch {
         Write-Host "Failed to get the Kubernetes resource group." -ForegroundColor Red
@@ -645,6 +646,7 @@ try {
 
     #  6-2. Generate Unique backend API fqdn Name - esgdocanalysis-3 digit random number with padding 0
     $dnsName = "kmgs$($(Get-Random -Minimum 0 -Maximum 9999).ToString("D4"))"
+    Write-Output "SOLUTION_PREFIX =$dnsName" >> $Env:GITHUB_ENV
 
     #  6-3. Assign DNS Name to the public IP address
     az network public-ip update --resource-group $aksResourceGroupName --name $publicIpName --dns-name $dnsName
