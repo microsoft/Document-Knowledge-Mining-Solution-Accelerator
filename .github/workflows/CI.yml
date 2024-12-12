@@ -55,7 +55,7 @@ jobs:
       run: |
             retries=0
             max_retries=3
-            sleep_intervals=(30 60 120)
+            sleep_intervals=(30,60,120)
   
             while [[ $retries -lt $max_retries ]]; do
               rg_status=$(az group exists --name ${{ env.rg_name }})
