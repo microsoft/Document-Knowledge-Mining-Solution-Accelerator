@@ -52,30 +52,31 @@ jobs:
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
 
     - name: Wait for Resource Deletion to Complete
+      shell: pwsh
       run: |
-            retries=0
-            max_retries=3
-            sleep_intervals=(30,60,120)
-  
-            while [[ $retries -lt $max_retries ]]; do
-              rg_status=$(az group exists --name ${{ env.rg_name }})
-              krg_status=$(az group exists --name ${{ env.krg_name }})
-  
-              if [[ $rg_status == false && $krg_status == false ]]; then
-                echo "Both resource groups deleted successfully."
+            $retries = 0
+            $maxRetries = 3
+            $sleepIntervals = @(30, 60, 120)
+    
+            while ($retries -lt $maxRetries) {
+              $rgStatus = az group exists --name ${{ env.rg_name }}
+              $krgStatus = az group exists --name ${{ env.krg_name }}
+    
+              if (-not $rgStatus -and -not $krgStatus) {
+                Write-Host "Both resource groups deleted successfully."
                 break
-              fi
-  
-              retries=$((retries + 1))
-              if [[ $retries -eq $max_retries ]]; then
-                echo "Resource groups deletion not confirmed after $max_retries attempts. Exiting."
+              }
+    
+              $retries++
+              if ($retries -eq $maxRetries) {
+                Write-Host "Resource groups deletion not confirmed after $maxRetries attempts. Exiting."
                 exit 1
-              fi
-  
-              echo "Resource groups still exist. Retrying in ${sleep_intervals[retries-1]} seconds..."
-              sleep ${sleep_intervals[retries-1]}
-            done
-  
+              }
+    
+              Write-Host "Resource groups still exist. Retrying in $($sleepIntervals[$retries - 1]) seconds..."
+              Start-Sleep -Seconds $sleepIntervals[$retries - 1]
+            }
+    
     - name: Purging the Resources
       if: success()
       run: |
