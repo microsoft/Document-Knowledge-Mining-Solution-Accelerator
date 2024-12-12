@@ -53,97 +53,55 @@ jobs:
 
     - name: Wait for Resource Deletion to Complete
       run: |
-
-
-        # Get the list of resources in YAML format
-        resource_list=$(az resource list --resource-group ${{ env.rg_name }} --output yaml)
-
-        # Maximum number of retries
-        max_retries=3
-
-        # Retry intervals in seconds (30, 60, 120)
-        retry_intervals=(30 60 120)
-
-        # Retry mechanism to check resources
-        retries=0
-        while true; do
-          resource_found=false
-
-          # Iterate through the resources to check
-          for resource in "${resources_to_check[@]}"; do
-            echo "Checking resource: $resource"
-            if echo "$resource_list" | grep -q "name: $resource"; then
-              echo "Resource '$resource' exists in the resource group."
-              resource_found=true
-            else
-              echo "Resource '$resource' does not exist in the resource group."
-            fi
-          done
-
-          # If any resource exists, retry
-          if [ "$resource_found" = true ]; then
-            retries=$((retries + 1))
-            if [ "$retries" -ge "$max_retries" ]; then
-              echo "Maximum retry attempts reached. Exiting."
-              break
-            else
-              # Wait for the appropriate interval for the current retry
-              echo "Waiting for ${retry_intervals[$retries-1]} seconds before retrying..."
-              sleep ${retry_intervals[$retries-1]}
-            fi
-          else
-            echo "No resources found. Exiting."
-            break
-          fi
-        done
-
+            retries=0
+            max_retries=3
+            sleep_intervals=(30 60 120)
+  
+            while [[ $retries -lt $max_retries ]]; do
+              rg_status=$(az group exists --name ${{ env.rg_name }})
+              krg_status=$(az group exists --name ${{ env.krg_name }})
+  
+              if [[ $rg_status == false && $krg_status == false ]]; then
+                echo "Both resource groups deleted successfully."
+                break
+              fi
+  
+              retries=$((retries + 1))
+              if [[ $retries -eq $max_retries ]]; then
+                echo "Resource groups deletion not confirmed after $max_retries attempts. Exiting."
+                exit 1
+              fi
+  
+              echo "Resource groups still exist. Retrying in ${sleep_intervals[retries-1]} seconds..."
+              sleep ${sleep_intervals[retries-1]}
+            done
+  
     - name: Purging the Resources
       if: success()
       run: |
-        set -e
-        # Define variables
-        OPENAI_COMMON_PART="-openai"
-        openai_name="${{ env.SOLUTION_PREFIX }}${OPENAI_COMMON_PART}"
-        echo "Azure OpenAI: $openai_name"
-
-        MULTISERVICE_COMMON_PART="-cogser"
-        multiservice_account_name="${{ env.SOLUTION_PREFIX }}${MULTISERVICE_COMMON_PART}"
-        echo "Azure MultiService Account: $multiservice_account_name"
-
-        # Purge OpenAI Resource
-        echo "Purging the OpenAI Resource..."
-        if ! az resource delete --ids /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/locations/eastus/resourceGroups/${{ env.RESOURCE_GROUP_NAME }}/deletedAccounts/$openai_name --verbose; then
-          echo "Failed to purge openai resource: $openai_name"
-        else
-          echo "Purged the openai resource: $openai_name"
-        fi
-
-        # Purge MultiService Account Resource
-        echo "Purging the MultiService Account Resource..."
-        if ! az resource delete --ids /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/locations/eastus/resourceGroups/${{ env.RESOURCE_GROUP_NAME }}/deletedAccounts/$multiservice_account_name --verbose; then
-          echo "Failed to purge multiService account resource: $multiservice_account_name"
-        else
-          echo "Purged the multiService account resource: $multiservice_account_name"
-        fi
-
-       
-
-        echo "Resource purging completed successfully"
-
+            openai_name="${{ env.SOLUTION_PREFIX }}-openai"
+            multiservice_account_name="${{ env.SOLUTION_PREFIX }}-cogser"
+  
+            # Purge OpenAI Resource
+            echo "Purging OpenAI resource: $openai_name"
+            az resource delete --ids /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/locations/eastus/resourceGroups/${{ env.RESOURCE_GROUP_NAME }}/deletedAccounts/$openai_name || echo "Failed to purge OpenAI resource."
+  
+            # Purge MultiService Account
+            echo "Purging MultiService Account: $multiservice_account_name"
+            az resource delete --ids /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/locations/eastus/resourceGroups/${{ env.RESOURCE_GROUP_NAME }}/deletedAccounts/$multiservice_account_name || echo "Failed to purge MultiService Account."
+  
     - name: Send Notification on Failure
       if: failure()
       run: |
-        RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-        # Construct the email body
-        EMAIL_BODY=$(cat <<EOF
-        {
-          "body": "<p>Dear Team,</p><p>We would like to inform you that the CKMv2 Automation process has encountered an issue and has failed to complete successfully.</p><p><strong>Build URL:</strong> ${RUN_URL}<br> ${OUTPUT}</p><p>Please investigate the matter at your earliest convenience.</p><p>Best regards,<br>Your Automation Team</p>"
-        }
-        EOF
-        )
-
-        # Send the notification
-        curl -X POST "${{ secrets.LOGIC_APP_URL }}" \
-          -H "Content-Type: application/json" \
-          -d "$EMAIL_BODY" || echo "Failed to send notification"
+            RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+  
+            EMAIL_BODY=$(cat <<EOF
+            {
+              "body": "<p>Dear Team,</p><p>The CKMv2 Automation process encountered an issue.</p><p><strong>Build URL:</strong> <a href='${RUN_URL}'>${RUN_URL}</a></p><p>Please investigate promptly.</p><p>Best regards,<br>Your Automation Team</p>"
+            }
+            EOF
+            )
+  
+            curl -X POST "${{ secrets.LOGIC_APP_URL }}" \
+              -H "Content-Type: application/json" \
+              -d "$EMAIL_BODY" || echo "Failed to send notification."
