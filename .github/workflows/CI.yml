@@ -86,14 +86,16 @@ jobs:
   
             # Purge OpenAI Resource
             echo "Purging OpenAI resource: $openai_name"
-            az resource delete --ids /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.rg_name }}/providers/Microsoft.CognitiveServices/accounts/$openai_name --force-deletion-types purge || echo "Failed to purge OpenAI resource."
-
+            if ! az resource delete --ids /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/locations/westus3/resourceGroups/${{ env.rg_name }}/deletedAccounts/$openai_name --verbose; then
+              echo "Failed to purge OpenAI resource."
+            fi
 
   
             # Purge cognitiveservice Account
             echo "Purging cognitiveservice Account: $cognitiveservice_name"
-            az resource delete --ids /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.rg_name }}/providers/Microsoft.CognitiveServices/accounts/$cognitiveservice_name --force-deletion-types purge || echo "Failed to purge cognitiveservice Account:"
-  
+            if ! az resource delete --ids /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/locations/westus3/resourceGroups/${{ env.rg_name }}/deletedAccounts/$cognitiveservice_name" --verbose; then
+            echo "Failed to purge OpenAI resource."
+            fi  
     - name: Send Notification on Failure
       if: failure()
       run: |
@@ -101,7 +103,7 @@ jobs:
   
             EMAIL_BODY=$(cat <<EOF
             {
-              "body": "<p>Dear Team,</p><p>The CKMv2 Automation process encountered an issue.</p><p><strong>Build URL:</strong> <a href='${RUN_URL}'>${RUN_URL}</a></p><p>Please investigate promptly.</p><p>Best regards,<br>Your Automation Team</p>"
+              "body": "<p>Dear Team,</p><p>The Document Knowledge Mining  Automation process encountered an issue.</p><p><strong>Build URL:</strong> <a href='${RUN_URL}'>${RUN_URL}</a></p><p>Please investigate promptly.</p><p>Best regards,<br>Your Automation Team</p>"
             }
             EOF
             )
