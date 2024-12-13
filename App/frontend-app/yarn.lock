@@ -541,12 +541,12 @@
   resolved "https://registry.npmjs.org/@floating-ui/utils/-/utils-0.2.1.tgz"
   integrity sha512-9TANp6GPoMtYzQdt54kfAyMmz1+osLlXdg2ENroU7zzrtflTLrrC/lgrIfaSe+Wu0b89GKccT7vxXA0MoAIO+Q==
 
-"@fluentai/attachments@^0.7.0":
-  version "0.7.0"
-  resolved "https://registry.npmjs.org/@fluentai/attachments/-/attachments-0.7.0.tgz"
-  integrity sha512-n1M9hqyz0ogkTSg5zgfgJZ35GlVguMR7+sgTM+q0iUxZ5S99veaKP1xfc/NFU6euN85x448AixjqBTn5KWSDaw==
+"@fluentai/attachments@^0.7.0", "@fluentai/attachments@^0.7.1":
+  version "0.7.1"
+  resolved "https://registry.yarnpkg.com/@fluentai/attachments/-/attachments-0.7.1.tgz#81d027f6fdc4327f8c4a007868eef1a0deb0fd02"
+  integrity sha512-54XT+46p0fjXH2TWyK2nEyjoDc3XAzT9nrK1y/I+CWIxeV396OvmEtJf0IyPheR9Iuz3WGgOEB2zQ2QdzGCeGA==
   dependencies:
-    "@fluentai/provider" "^0.7.0"
+    "@fluentai/provider" "^0.7.1"
     "@swc/helpers" "^0.5.1"
 
 "@fluentai/feedback-buttons@^0.6.0":
@@ -598,10 +598,10 @@
     "@fluentai/provider" "^0.7.0"
     "@swc/helpers" "^0.5.1"
 
-"@fluentai/provider@^0.7.0":
-  version "0.7.0"
-  resolved "https://registry.npmjs.org/@fluentai/provider/-/provider-0.7.0.tgz"
-  integrity sha512-+ZJ04E0pWbGBJuWQdauDKDgSZaVH/qqUIUBjYxHRN7SroS72PCb+zK2ZBaMtYXvdy2Q340SL1v/4563nbOz/2Q==
+"@fluentai/provider@^0.7.0", "@fluentai/provider@^0.7.1":
+  version "0.7.1"
+  resolved "https://registry.yarnpkg.com/@fluentai/provider/-/provider-0.7.1.tgz#8d8cfb2ff7951ccdc5b6a3d0e03a57d9ec0032dc"
+  integrity sha512-7f2dGnEhz2ONTogVn+iC8qhk46AbOl71x8rBOx/mceek2WXAFMBv1tfXW0PbYQt89KeyZ9/vms1QKHKGkSs2/A==
   dependencies:
     "@fluentai/react-announce" "^0.4.0"
     "@fluentai/tokens" "^0.2.0"
@@ -6005,7 +6005,7 @@ kleur@^3.0.3:
   dependencies:
     "@azure/msal-browser" "^2.37.1"
     "@azure/msal-react" "^1.5.8"
-    "@fluentai/attachments" "^0.7.0"
+    "@fluentai/attachments" "^0.7.1"
     "@fluentai/react-copilot" "^0.11.0"
     "@fluentai/react-copilot-chat" "^0.5.0"
     "@fluentai/reference" "^0.8.0"
