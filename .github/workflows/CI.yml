@@ -56,14 +56,14 @@ jobs:
       run: |
             $retries = 0
             $maxRetries = 3
-            $sleepIntervals = @(600, 1200, 1800)
+            $sleepIntervals = @(300, 600, 1200)
     
             while ($retries -lt $maxRetries) {
               $rgStatus = az group exists --name ${{ env.rg_name }}
               $krgStatus = az group exists --name ${{ env.krg_name }}
               
     
-              if (-not $rg_name -and -not $krg_name) {
+              if (-not $rgStatus -and -not $krgStatus) {
                 Write-Host "Both resource groups deleted successfully."
                 break
               }
@@ -83,19 +83,21 @@ jobs:
       run: |
             $openai_name="openaiservice-${{ env.SOLUTION_PREFIX }}"
             $cognitiveservice_name="cognitiveservice-${{ env.SOLUTION_PREFIX }}"
-  
-            # Purge OpenAI Resource
-            echo "Purging OpenAI resource: $openai_name"
-            if ! az resource delete --ids /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/locations/westus3/resourceGroups/${{ env.rg_name }}/deletedAccounts/$openai_name --verbose; then
-              echo "Failed to purge OpenAI resource."
-            fi
 
+
+            # Purge OpenAI Resource
+            Write-Host "Purging OpenAI resource: $openai_name"
+            if (-not (az resource delete --ids "/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/locations/westus3/resourceGroups/${{ env.rg_name }}/deletedAccounts/$openai_name" --verbose)) {
+            Write-Host "Failed to purge OpenAI resource."
+            }
+
+            # Purge CognitiveService Account
+              Write-Host "Purging CognitiveService Account: $cognitiveservice_name"
+              if (-not (az resource delete --ids /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/locations/westus3/resourceGroups/${{ env.rg_name }}/deletedAccounts/$cognitiveservice_name" --verbose)) {
+                Write-Host "Failed to purge CognitiveService Account."
+              }
   
-            # Purge cognitiveservice Account
-            echo "Purging cognitiveservice Account: $cognitiveservice_name"
-            if ! az resource delete --ids /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/locations/westus3/resourceGroups/${{ env.rg_name }}/deletedAccounts/$cognitiveservice_name" --verbose; then
-            echo "Failed to purge OpenAI resource."
-            fi  
+        
     - name: Send Notification on Failure
       if: failure()
       run: |
