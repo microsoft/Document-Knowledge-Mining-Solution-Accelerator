@@ -572,6 +572,15 @@
     "@fluentai/tokens" "^0.2.0"
     "@swc/helpers" "^0.5.1"
 
+"@fluentai/flair@^0.3.2":
+  version "0.3.2"
+  resolved "https://registry.yarnpkg.com/@fluentai/flair/-/flair-0.3.2.tgz#0694742270fbf66accc7bbc7bff7225899f71658"
+  integrity sha512-hPbI/LOlEnXRQ6efCdzweoYk4c5EgHUApSSKs6nzx8JMNLcHxFMHcnjOM1A9inoD5mgTDsBCGsVhQiXEQWUlvQ==
+  dependencies:
+    "@fluentai/tokens" "^0.2.0"
+    "@fluentui-contrib/houdini-utils" "^0.3.1"
+    "@swc/helpers" "^0.5.1"
+
 "@fluentai/latency@^0.5.0":
   version "0.5.0"
   resolved "https://registry.npmjs.org/@fluentai/latency/-/latency-0.5.0.tgz"
@@ -580,13 +589,13 @@
     "@fluentai/provider" "^0.7.0"
     "@swc/helpers" "^0.5.1"
 
-"@fluentai/output-card@^0.6.0":
-  version "0.6.0"
-  resolved "https://registry.npmjs.org/@fluentai/output-card/-/output-card-0.6.0.tgz"
-  integrity sha512-RKD6PhiOxWBnToHEgMQohnIp26j3xT24A+esfNZJerFrKJAxjEWvkVivjT1OFr86j9U7hD0/ZC2rYbT4vy48+A==
+"@fluentai/output-card@^0.6.0", "@fluentai/output-card@^0.6.2":
+  version "0.6.2"
+  resolved "https://registry.yarnpkg.com/@fluentai/output-card/-/output-card-0.6.2.tgz#2bfc1681da7f6fae3bd7310cf19d89f3616ba2fc"
+  integrity sha512-yE9JPQsq5I5QwpYKeXrxwZ1iQi/PtYTyKM+0l4na4cIebKXUKYtMtYLDbVq6hhFUvJpep8ZEvGy4Gd3feRxRKg==
   dependencies:
-    "@fluentai/provider" "^0.7.0"
-    "@fluentai/react-flair" "^0.4.0"
+    "@fluentai/provider" "^0.7.1"
+    "@fluentai/react-flair" "^0.4.2"
     "@fluentai/tokens" "^0.2.0"
     "@swc/helpers" "^0.5.1"
 
@@ -598,10 +607,10 @@
     "@fluentai/provider" "^0.7.0"
     "@swc/helpers" "^0.5.1"
 
-"@fluentai/provider@^0.7.0":
-  version "0.7.0"
-  resolved "https://registry.npmjs.org/@fluentai/provider/-/provider-0.7.0.tgz"
-  integrity sha512-+ZJ04E0pWbGBJuWQdauDKDgSZaVH/qqUIUBjYxHRN7SroS72PCb+zK2ZBaMtYXvdy2Q340SL1v/4563nbOz/2Q==
+"@fluentai/provider@^0.7.0", "@fluentai/provider@^0.7.1":
+  version "0.7.1"
+  resolved "https://registry.yarnpkg.com/@fluentai/provider/-/provider-0.7.1.tgz#8d8cfb2ff7951ccdc5b6a3d0e03a57d9ec0032dc"
+  integrity sha512-7f2dGnEhz2ONTogVn+iC8qhk46AbOl71x8rBOx/mceek2WXAFMBv1tfXW0PbYQt89KeyZ9/vms1QKHKGkSs2/A==
   dependencies:
     "@fluentai/react-announce" "^0.4.0"
     "@fluentai/tokens" "^0.2.0"
@@ -614,13 +623,13 @@
   dependencies:
     "@swc/helpers" "^0.5.1"
 
-"@fluentai/react-copilot-chat@^0.5.0":
-  version "0.5.0"
-  resolved "https://registry.npmjs.org/@fluentai/react-copilot-chat/-/react-copilot-chat-0.5.0.tgz"
-  integrity sha512-5fh/j/1Inb7p6dHPPMnhinwoGfOObLBqQrRqFlW3yKonfeUI0NV/Ms/yJ4RmYKPxTN+upfEfGrkFNWi90+Zy3Q==
+"@fluentai/react-copilot-chat@^0.5.0", "@fluentai/react-copilot-chat@^0.5.2":
+  version "0.5.2"
+  resolved "https://registry.yarnpkg.com/@fluentai/react-copilot-chat/-/react-copilot-chat-0.5.2.tgz#16924903d0bb980b3a729a494b57e36d78ea46c8"
+  integrity sha512-ekHxyhg+yt2YBSq5lpzprL4k0A9dvKtqtPsWqaCxWSrMRgGHSAtqDNzh6UMkPzYL0EWzLV1+V+Xdq7TcrrXp6A==
   dependencies:
-    "@fluentai/output-card" "^0.6.0"
-    "@fluentai/provider" "^0.7.0"
+    "@fluentai/output-card" "^0.6.2"
+    "@fluentai/provider" "^0.7.1"
     "@swc/helpers" "^0.5.1"
 
 "@fluentai/react-copilot@^0.11.0":
@@ -653,6 +662,15 @@
   integrity sha512-nTM1eSVJkSEehXGbpKsZSnEcxmpjukaSr4LW2f/hoN2e09+LBU4vkN9ZdDYUebxMbfpg6TNnVW50tazBGZwUJg==
   dependencies:
     "@fluentai/flair" "^0.3.0"
+    "@swc/helpers" "^0.5.1"
+
+"@fluentai/react-flair@^0.4.2":
+  version "0.4.2"
+  resolved "https://registry.yarnpkg.com/@fluentai/react-flair/-/react-flair-0.4.2.tgz#602a5fb3fce6b4eb25f0d1498f2b990fcd576dee"
+  integrity sha512-iyjfuZsdB9Suc8itAGj6WY0pk8yRLjdjGjnsquxLgSov8GiSeeyZLD4iEQA3UQiQtNROlW3iKlWg5lSx3BkUfg==
+  dependencies:
+    "@fluentai/flair" "^0.3.2"
+    "@fluentui-contrib/houdini-utils" "^0.3.1"
     "@swc/helpers" "^0.5.1"
 
 "@fluentai/react-preview@^0.2.0":
@@ -718,6 +736,13 @@
     "@fluentui/react-theme" "^9.1.16"
     "@fluentui/tokens" "^1.0.0-alpha.13"
     "@swc/helpers" "^0.5.1"
+
+"@fluentui-contrib/houdini-utils@^0.3.1":
+  version "0.3.2"
+  resolved "https://registry.yarnpkg.com/@fluentui-contrib/houdini-utils/-/houdini-utils-0.3.2.tgz#33cbf716ceb0ca8dfb37c3af75ab800086264113"
+  integrity sha512-W+x3P6/4/pC7hFfgoyudcex39fUaFMtPenbousdfVDv6HFZmDm999A6zH94T2T5UTDd3lI0Bg5pccSz5HW/87w==
+  dependencies:
+    "@swc/helpers" "~0.5.2"
 
 "@fluentui/date-time-utilities@^8.6.9":
   version "8.6.9"
@@ -2529,12 +2554,12 @@
   resolved "https://registry.npmjs.org/@swc/helpers/-/helpers-0.2.14.tgz"
   integrity sha512-wpCQMhf5p5GhNg2MmGKXzUNwxe7zRiCsmqYsamez2beP7mKPCSiu+BjZcdN95yYSzO857kr0VfQewmGpS77nqA==
 
-"@swc/helpers@^0.5.1":
-  version "0.5.6"
-  resolved "https://registry.npmjs.org/@swc/helpers/-/helpers-0.5.6.tgz"
-  integrity sha512-aYX01Ke9hunpoCexYAgQucEpARGQ5w/cqHFrIR+e9gdKb1QWTsVJuTJ2ozQzIAxLyRQe/m+2RqzkyOOGiMKRQA==
+"@swc/helpers@^0.5.1", "@swc/helpers@~0.5.2":
+  version "0.5.15"
+  resolved "https://registry.yarnpkg.com/@swc/helpers/-/helpers-0.5.15.tgz#79efab344c5819ecf83a43f3f9f811fc84b516d7"
+  integrity sha512-JQ5TuMi45Owi4/BIMAJBoSQoOJu12oOk/gADqlcUL9JEdHB8vyjUSsxqeNXnmXHjYKMi2WcYtezGEEhqUI/E2g==
   dependencies:
-    tslib "^2.4.0"
+    tslib "^2.8.0"
 
 "@testing-library/dom@^9.0.0":
   version "9.3.4"
@@ -6007,7 +6032,7 @@ kleur@^3.0.3:
     "@azure/msal-react" "^1.5.8"
     "@fluentai/attachments" "^0.7.0"
     "@fluentai/react-copilot" "^0.11.0"
-    "@fluentai/react-copilot-chat" "^0.5.0"
+    "@fluentai/react-copilot-chat" "^0.5.2"
     "@fluentai/reference" "^0.8.0"
     "@fluentai/textarea" "^0.5.0"
     "@fluentui/react" "^8.120.9"
@@ -8169,6 +8194,11 @@ tslib@^2.1.0, tslib@^2.3.1, tslib@^2.4.0, tslib@^2.6.2:
   version "2.6.2"
   resolved "https://registry.npmjs.org/tslib/-/tslib-2.6.2.tgz"
   integrity sha512-AEYxH93jGFPn/a2iVAwW87VuUIkR1FVUKB77NwMF7nBTDkDrrT/Hpt/IrCJ0QXhW27jTBDcf5ZY7w6RiqTMw2Q==
+
+tslib@^2.8.0:
+  version "2.8.1"
+  resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.8.1.tgz#612efe4ed235d567e8aba5f2a5fab70280ade83f"
+  integrity sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==
 
 type-check@^0.4.0, type-check@~0.4.0:
   version "0.4.0"
