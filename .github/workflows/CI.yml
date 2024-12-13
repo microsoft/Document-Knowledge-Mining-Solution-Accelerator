@@ -86,11 +86,13 @@ jobs:
   
             # Purge OpenAI Resource
             echo "Purging OpenAI resource: $openai_name"
-            az resource delete --ids /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/locations/eastus/resourceGroups/${{ env.RESOURCE_GROUP_NAME }}/deletedAccounts/$openai_name || echo "Failed to purge OpenAI resource."
+            az resource delete --ids /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.rg_name }}/providers/Microsoft.CognitiveServices/accounts/$openai_name --force-deletion-types purge || echo "Failed to purge OpenAI resource."
+
+
   
             # Purge cognitiveservice Account
             echo "Purging cognitiveservice Account: $cognitiveservice_name"
-            az resource delete --ids /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/locations/eastus/resourceGroups/${{ env.RESOURCE_GROUP_NAME }}/deletedAccounts/$cognitiveservice_name || echo "Failed to purge MultiService Account."
+            az resource delete --ids /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.rg_name }}/providers/Microsoft.CognitiveServices/accounts/$cognitiveservice_name --force-deletion-types purge || echo "Failed to purge cognitiveservice Account:"
   
     - name: Send Notification on Failure
       if: failure()
