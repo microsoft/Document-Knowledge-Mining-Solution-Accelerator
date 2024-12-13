@@ -56,7 +56,7 @@ jobs:
       run: |
             $retries = 0
             $maxRetries = 3
-            $sleepIntervals = @(30, 60, 120)
+            $sleepIntervals = @(120, 240, 480)
     
             while ($retries -lt $maxRetries) {
               $rgStatus = az group exists --name ${{ env.rg_name }}
@@ -80,16 +80,16 @@ jobs:
     - name: Purging the Resources
       if: success()
       run: |
-            openai_name="${{ env.SOLUTION_PREFIX }}-openai"
-            multiservice_account_name="${{ env.SOLUTION_PREFIX }}-cogser"
+            openai_name="openaiservice-${{ env.SOLUTION_PREFIX }}"
+            cognitiveservice_name="cognitiveservice-${{ env.SOLUTION_PREFIX }}"
   
             # Purge OpenAI Resource
             echo "Purging OpenAI resource: $openai_name"
             az resource delete --ids /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/locations/eastus/resourceGroups/${{ env.RESOURCE_GROUP_NAME }}/deletedAccounts/$openai_name || echo "Failed to purge OpenAI resource."
   
-            # Purge MultiService Account
-            echo "Purging MultiService Account: $multiservice_account_name"
-            az resource delete --ids /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/locations/eastus/resourceGroups/${{ env.RESOURCE_GROUP_NAME }}/deletedAccounts/$multiservice_account_name || echo "Failed to purge MultiService Account."
+            # Purge cognitiveservice Account
+            echo "Purging cognitiveservice Account: $cognitiveservice_name"
+            az resource delete --ids /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/locations/eastus/resourceGroups/${{ env.RESOURCE_GROUP_NAME }}/deletedAccounts/$cognitiveservice_name || echo "Failed to purge MultiService Account."
   
     - name: Send Notification on Failure
       if: failure()
