@@ -15,7 +15,7 @@
     <PackageReference Include="Microsoft.Maui.Graphics" Version="8.0.90" />
     <PackageReference Include="Microsoft.Maui.Graphics.Skia" Version="8.0.90" />
     <PackageReference Include="MongoDB.Driver" Version="2.28.0" />
-    <PackageReference Include="MongoDB.Driver.Core" Version="2.28.0" />
+    <PackageReference Include="MongoDB.Driver.Core" Version="2.30.0" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="2.88.8" />
   </ItemGroup>
 
