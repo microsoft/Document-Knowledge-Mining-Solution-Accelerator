@@ -42,7 +42,7 @@
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
         "react-dropzone": "^14.2.3",
-        "react-i18next": "^13.0.1",
+        "react-i18next": "^15.2.0",
         "react-markdown": "^9.0.1",
         "react-router-dom": "^6.14.2",
         "react-tiff": "^0.0.11",
