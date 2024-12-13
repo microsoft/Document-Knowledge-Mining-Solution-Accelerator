@@ -81,8 +81,8 @@ jobs:
     - name: Purging the Resources
       if: success()
       run: |
-            openai_name="openaiservice-${{ env.SOLUTION_PREFIX }}"
-            cognitiveservice_name="cognitiveservice-${{ env.SOLUTION_PREFIX }}"
+            $openai_name="openaiservice-${{ env.SOLUTION_PREFIX }}"
+            $cognitiveservice_name="cognitiveservice-${{ env.SOLUTION_PREFIX }}"
   
             # Purge OpenAI Resource
             echo "Purging OpenAI resource: $openai_name"
