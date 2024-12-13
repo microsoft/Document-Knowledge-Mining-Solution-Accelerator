@@ -44,7 +44,7 @@
         "react-dropzone": "^14.2.3",
         "react-i18next": "^13.0.1",
         "react-markdown": "^9.0.1",
-        "react-router-dom": "^6.14.2",
+        "react-router-dom": "^7.0.2",
         "react-tiff": "^0.0.11",
         "react-uploader": "^3.43.0",
         "use-debounce": "^9.0.4"
