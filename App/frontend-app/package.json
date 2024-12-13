@@ -62,7 +62,7 @@
         "@typescript-eslint/parser": "^6.15.0",
         "@vitejs/plugin-basic-ssl": "^1.0.1",
         "@vitejs/plugin-react": "^4.0.1",
-        "autoprefixer": "^10.4.14",
+        "autoprefixer": "^10.4.20",
         "body-parser": "^1.20.2",
         "concurrently": "^8.2.0",
         "cors": "^2.8.5",
