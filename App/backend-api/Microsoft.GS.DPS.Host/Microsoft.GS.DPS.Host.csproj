@@ -26,8 +26,8 @@
     <PackageReference Include="MongoDB.Bson" Version="2.29.0" />
     <PackageReference Include="MongoDB.Driver" Version="2.29.0" />
     <PackageReference Include="MongoDB.Driver.Core" Version="2.29.0" />
-    <PackageReference Include="NSwag.AspNetCore" Version="14.1.0" />
-    <PackageReference Include="NSwag.Core" Version="14.1.0" />
+    <PackageReference Include="NSwag.AspNetCore" Version="14.2.0" />
+    <PackageReference Include="NSwag.Core" Version="14.2.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
   </ItemGroup>
 
