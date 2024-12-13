@@ -186,6 +186,7 @@ function DeployAzureResources([string]$location, [string]$modelLocation) {
 
 function DisplayResult([pscustomobject]$jsonString) {
     $resourcegroupName = $jsonString.properties.outputs.gs_resourcegroup_name.value
+    $solutionPrefix = $jsonString.properties.outputs.gs_solution_prefix.value
     $storageAccountName = $jsonString.properties.outputs.gs_storageaccount_name.value
     $azsearchServiceName = $jsonString.properties.outputs.gs_azsearch_name.value
     $aksName = $jsonString.properties.outputs.gs_aks_name.value
@@ -210,6 +211,7 @@ function DisplayResult([pscustomobject]$jsonString) {
     Write-Host "* Azure Cosmos DB " -ForegroundColor Yellow -NoNewline; Write-Host "$azcosmosDBName" -ForegroundColor Green
     Write-Host "* Azure App Configuration Endpoint " -ForegroundColor Yellow -NoNewline; Write-Host "$azappConfigEndpoint" -ForegroundColor Green
     Write-Output "rg_name=$resourcegroupName" >> $Env:GITHUB_ENV
+    Write-Output "SOLUTION_PREFIX=$solutionPrefix" >> $Env:GITHUB_ENV
 
 }
 
@@ -646,7 +648,7 @@ try {
 
     #  6-2. Generate Unique backend API fqdn Name - esgdocanalysis-3 digit random number with padding 0
     $dnsName = "kmgs$($(Get-Random -Minimum 0 -Maximum 9999).ToString("D4"))"
-    Write-Output "SOLUTION_PREFIX =$dnsName" >> $Env:GITHUB_ENV
+    
 
     #  6-3. Assign DNS Name to the public IP address
     az network public-ip update --resource-group $aksResourceGroupName --name $publicIpName --dns-name $dnsName
