@@ -19,7 +19,7 @@
         "@fluentai/react-copilot": "^0.11.0",
         "@fluentai/react-copilot-chat": "^0.5.0",
         "@fluentai/reference": "^0.8.0",
-        "@fluentai/textarea": "^0.5.0",
+        "@fluentai/textarea": "^0.5.1",
         "@fluentui/react": "^8.120.9",
         "@fluentui/react-components": "^9.46.4",
         "@fluentui/react-datepicker-compat": "^0.4.51",
