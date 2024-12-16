@@ -56,7 +56,7 @@ jobs:
       run: |
             $retries = 0
             $maxRetries = 3
-            $sleepIntervals = @(300, 600, 1200)
+            $sleepIntervals = @(700, 200, 200)
     
             while ($retries -lt $maxRetries) {
               $rgStatus = az group exists --name ${{ env.rg_name }}
@@ -69,6 +69,7 @@ jobs:
               # }
               if ($rgStatus -eq "false" -and $krgStatus -eq "false") {
                 Write-Host "Both resource groups deleted successfully."
+                break
               }
     
               $retries++
