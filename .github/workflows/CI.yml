@@ -97,7 +97,7 @@ jobs:
 
             # Purge CognitiveService Account
               Write-Host "Purging CognitiveService Account: $cognitiveservice_name"
-              if (-not (az resource delete --ids /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/locations/westus3/resourceGroups/${{ env.rg_name }}/deletedAccounts/$cognitiveservice_name" --verbose)) {
+              if (-not (az resource delete --ids "/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/locations/westus3/resourceGroups/${{ env.rg_name }}/deletedAccounts/$cognitiveservice_name" --verbose)) {
                 Write-Host "Failed to purge CognitiveService Account."
               }
   
