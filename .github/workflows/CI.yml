@@ -106,20 +106,18 @@ jobs:
                   Write-Host "Command to purge OpenAI resource: az resource delete --ids `"$openaiResourceId`" --verbose"
                   Write-Host "Command to purge CognitiveService Account: az resource delete --ids `"$cognitiveResourceId`" --verbose"
                     # Purge OpenAI Resource
-                        try {
-                          az resource delete --ids $openaiResourceId --verbose -o none -ErrorAction Stop
-                          Write-Host "Successfully purged OpenAI resource."
-                        } catch {
-                          Write-Host "Failed to purge OpenAI resource."
-                        }
+                       az resource delete --ids $openaiResourceId --verbose
+                      if (-not $?) {
+                          Write-Host "Failed to purge OpenAI resource: $openaiResourceId"
+                      }
 
                         # Purge CognitiveService Account
-                        try {
-                          az resource delete --ids $cognitiveResourceId --verbose -o none -ErrorAction Stop
-                          Write-Host "Successfully purged CognitiveService Account."
-                        } catch {
+    
+
+                      az resource delete --ids $cognitiveResourceId --verbose
+                      if (-not $?) {
                           Write-Host "Failed to purge CognitiveService Account."
-                        }
+                      }
                           
         
     - name: Send Notification on Failure
