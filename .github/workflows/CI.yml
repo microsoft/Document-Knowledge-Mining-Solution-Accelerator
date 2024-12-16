@@ -63,9 +63,12 @@ jobs:
               $krgStatus = az group exists --name ${{ env.krg_name }}
               
     
-              if (-not $rgStatus -and -not $krgStatus) {
+              # if (-not $rgStatus -and -not $krgStatus) {
+              #   Write-Host "Both resource groups deleted successfully."
+              #   break
+              # }
+              if ($rgStatus -eq "false" -and $krgStatus -eq "false") {
                 Write-Host "Both resource groups deleted successfully."
-                break
               }
     
               $retries++
