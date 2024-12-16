@@ -91,7 +91,8 @@ jobs:
 
             # Purge OpenAI Resource
             Write-Host "Purging OpenAI resource: $openai_name"
-            if (-not (az resource delete --ids /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/locations/westus3/resourceGroups/${{ env.rg_name }}/deletedAccounts/${openai_name}" --verbose)) {
+            Write-Host "Command: az resource delete --ids \"/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/locations/westus3/resourceGroups/${{ env.rg_name }}/deletedAccounts/$openai_name\" --verbose"
+            if (-not (az resource delete --ids "/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/locations/westus3/resourceGroups/${{ env.rg_name }}/deletedAccounts/$openai_name" --verbose)) {
             Write-Host "Failed to purge OpenAI resource."
             }
 
