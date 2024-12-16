@@ -84,23 +84,37 @@ jobs:
     
     - name: Purging the Resources
       if: success()
+      shell: pwsh
       run: |
-            $openai_name="openaiservice-${{ env.SOLUTION_PREFIX }}"
-            $cognitiveservice_name="cognitiveservice-${{ env.SOLUTION_PREFIX }}"
-
-
-            # Purge OpenAI Resource
-            Write-Host "Purging OpenAI resource: $openai_name"
-            Write-Host "Command: az resource delete --ids \"/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/locations/westus3/resourceGroups/${{ env.rg_name }}/deletedAccounts/$openai_name\" --verbose"
-            if (-not (az resource delete --ids "/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/locations/westus3/resourceGroups/${{ env.rg_name }}/deletedAccounts/$openai_name" --verbose)) {
-            Write-Host "Failed to purge OpenAI resource."
-            }
-
-            # Purge CognitiveService Account
-              Write-Host "Purging CognitiveService Account: $cognitiveservice_name"
-              if (-not (az resource delete --ids "/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.CognitiveServices/locations/westus3/resourceGroups/${{ env.rg_name }}/deletedAccounts/$cognitiveservice_name" --verbose)) {
-                Write-Host "Failed to purge CognitiveService Account."
-              }
+                  # Set variables using GitHub Actions environment values
+                  $solutionPrefix = "${{ env.SOLUTION_PREFIX }}"
+                  $subscriptionId = "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+                  $resourceGroupName = "${{ env.rg_name }}"
+                  
+                  $openai_name = "openaiservice-$solutionPrefix"
+                  $cognitiveservice_name = "cognitiveservice-$solutionPrefix"
+          
+                  # Debug: Print resource names
+                  Write-Host "Purging OpenAI resource: $openai_name"
+                  Write-Host "Purging CognitiveService Account: $cognitiveservice_name"
+          
+                  # Construct resource IDs
+                  $openaiResourceId = "/subscriptions/$subscriptionId/providers/Microsoft.CognitiveServices/locations/westus3/resourceGroups/$resourceGroupName/deletedAccounts/$openai_name"
+                  $cognitiveResourceId = "/subscriptions/$subscriptionId/providers/Microsoft.CognitiveServices/locations/westus3/resourceGroups/$resourceGroupName/deletedAccounts/$cognitiveservice_name"
+          
+                  # Debug: Print constructed resource IDs
+                  Write-Host "Command to purge OpenAI resource: az resource delete --ids `"$openaiResourceId`" --verbose"
+                  Write-Host "Command to purge CognitiveService Account: az resource delete --ids `"$cognitiveResourceId`" --verbose"
+          
+                  # Purge OpenAI Resource
+                  if (-not (az resource delete --ids $openaiResourceId --verbose)) {
+                      Write-Host "Failed to purge OpenAI resource."
+                  }
+          
+                  # Purge CognitiveService Account
+                  if (-not (az resource delete --ids $cognitiveResourceId --verbose)) {
+                      Write-Host "Failed to purge CognitiveService Account."
+                  }
   
         
     - name: Send Notification on Failure
