@@ -30,7 +30,7 @@ jobs:
         v-harmanprka@MngEnvMCAP993385.onmicrosoft.com
         yes
         "@
-        $input | pwsh ./resourcedeployment.ps1
+        $input | pwsh ./resourcedeployment.ps
         echo "Resource Group Name is ${{ env.rg_name }}"
         echo "Kubernetes resource group are ${{ env.krg_name }}"
       env:
@@ -122,16 +122,24 @@ jobs:
         
     - name: Send Notification on Failure
       if: failure()
+      shell: pwsh
       run: |
-            RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-  
-            EMAIL_BODY=$(cat <<EOF
-            {
-              "body": "<p>Dear Team,</p><p>The Document Knowledge Mining  Automation process encountered an issue.</p><p><strong>Build URL:</strong> <a href='${RUN_URL}'>${RUN_URL}</a></p><p>Please investigate promptly.</p><p>Best regards,<br>Your Automation Team</p>"
-            }
-            EOF
-            )
-  
-            curl -X POST "${{ secrets.LOGIC_APP_URL }}" \
-              -H "Content-Type: application/json" \
-              -d "$EMAIL_BODY" || echo "Failed to send notification."
+                            # Define the RUN_URL variable
+                            $RUN_URL = "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    
+                            # Construct the email body using a Here-String
+                            $EMAIL_BODY = @"
+                            {
+                              "body": "<p>Dear Team,</p><p>The Document Knowledge Mining Automation process encountered an issue.</p><p><strong>Build URL:</strong> <a href='$RUN_URL'>$RUN_URL</a></p><p>Please investigate promptly.</p><p>Best regards,<br>Your Automation Team</p>"
+                            }
+                            "@
+                    
+                            # Send the notification with error handling
+                            try {
+                                curl -X POST "${{ secrets.LOGIC_APP_URL }}" `
+                                     -H "Content-Type: application/json" `
+                                     -d "$EMAIL_BODY"
+                            } catch {
+                                Write-Output "Failed to send notification."
+                            }
+                    
