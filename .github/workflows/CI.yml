@@ -30,7 +30,7 @@ jobs:
         v-harmanprka@MngEnvMCAP993385.onmicrosoft.com
         yes
         "@
-        $input | pwsh ./resourcedeployment.ps
+        $input | pwsh ./resourcedeployment.ps1
         echo "Resource Group Name is ${{ env.rg_name }}"
         echo "Kubernetes resource group are ${{ env.krg_name }}"
       env:
@@ -100,7 +100,7 @@ jobs:
           
                   # Construct resource IDs
                   $openaiResourceId = "/subscriptions/$subscriptionId/providers/Microsoft.CognitiveServices/locations/westus3/resourceGroups/$resourceGroupName/deletedAccounts/$openai_name"
-                  $cognitiveResourceId = "/subscriptions/$subscriptionId/providers/Microsoft.CognitiveServices/locations/eastus/resourceGroups/$resourceGroupName/deletedAccounts/$cognitiveservice_name"
+                  $cognitiveResourceId = "/subscriptions/$subscriptionId/providers/Microsoft.CognitiveServices/locations/eastus/resourceGroups/$resourceGroupName/deletedAccounts/$cognitiveservice_nam"
           
                   # Debug: Print constructed resource IDs
                   Write-Host "Command to purge OpenAI resource: az resource delete --ids `"$openaiResourceId`" --verbose"
