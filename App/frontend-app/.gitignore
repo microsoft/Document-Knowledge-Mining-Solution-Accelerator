@@ -25,3 +25,4 @@ dist-ssr
 
 buildandpush_dpsfronapp.ps1
 rollout.ps1
+coverage
