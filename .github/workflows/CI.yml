@@ -42,104 +42,104 @@ jobs:
       if: always()  # Ensures this step runs even if the deployment fails
       shell: pwsh
       run: |
-          az login --service-principal --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
-          az group delete --name ${{ env.rg_name }} --yes --no-wait
-          az group delete --name ${{ env.krg_name }} --yes --no-wait
-      env:
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      #     az login --service-principal --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+      #     az group delete --name ${{ env.rg_name }} --yes --no-wait
+      #     az group delete --name ${{ env.krg_name }} --yes --no-wait
+      # env:
+      #     AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      #     AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      #     AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      #     AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
 
     - name: Wait for Resource Deletion to Complete
       shell: pwsh
       run: |
-            $retries = 0
-            $maxRetries = 3
-            $sleepIntervals = @(700, 200, 200)
+            # $retries = 0
+            # $maxRetries = 3
+            # $sleepIntervals = @(700, 200, 200)
     
-            while ($retries -lt $maxRetries) {
-              $rgStatus = az group exists --name ${{ env.rg_name }}
-              $krgStatus = az group exists --name ${{ env.krg_name }}
+            # while ($retries -lt $maxRetries) {
+            #   $rgStatus = az group exists --name ${{ env.rg_name }}
+            #   $krgStatus = az group exists --name ${{ env.krg_name }}
               
     
-              # if (-not $rgStatus -and -not $krgStatus) {
-              #   Write-Host "Both resource groups deleted successfully."
-              #   break
-              # }
-              if ($rgStatus -eq "false" -and $krgStatus -eq "false") {
-                Write-Host "Both resource groups deleted successfully."
-                break
-              }
+            #   # if (-not $rgStatus -and -not $krgStatus) {
+            #   #   Write-Host "Both resource groups deleted successfully."
+            #   #   break
+            #   # }
+            #   if ($rgStatus -eq "false" -and $krgStatus -eq "false") {
+            #     Write-Host "Both resource groups deleted successfully."
+            #     break
+            #   }
     
-              $retries++
-              if ($retries -eq $maxRetries) {
-                Write-Host "Resource groups deletion not confirmed after $maxRetries attempts. Exiting."
-                exit 1
-              }
+            #   $retries++
+            #   if ($retries -eq $maxRetries) {
+            #     Write-Host "Resource groups deletion not confirmed after $maxRetries attempts. Exiting."
+            #     exit 1
+            #   }
     
-              Write-Host "Resource groups still exist. Retrying in $($sleepIntervals[$retries - 1]) seconds..."
-              Start-Sleep -Seconds $sleepIntervals[$retries - 1]
-            }
+            #   Write-Host "Resource groups still exist. Retrying in $($sleepIntervals[$retries - 1]) seconds..."
+            #   Start-Sleep -Seconds $sleepIntervals[$retries - 1]
+            # }
     
     - name: Purging the Resources
       if: success()
       shell: pwsh
       run: |
-                  # Set variables using GitHub Actions environment values
-                  $solutionPrefix = "${{ env.SOLUTION_PREFIX }}"
-                  $subscriptionId = "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
-                  $resourceGroupName = "${{ env.rg_name }}"
+                  # # Set variables using GitHub Actions environment values
+                  # $solutionPrefix = "${{ env.SOLUTION_PREFIX }}"
+                  # $subscriptionId = "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+                  # $resourceGroupName = "${{ env.rg_name }}"
                   
-                  $openai_name = "openaiservice-$solutionPrefix"
-                  $cognitiveservice_name = "cognitiveservice-$solutionPrefix"
+                  # $openai_name = "openaiservice-$solutionPrefix"
+                  # $cognitiveservice_name = "cognitiveservice-$solutionPrefix"
           
-                  # Debug: Print resource names
-                  Write-Host "Purging OpenAI resource: $openai_name"
-                  Write-Host "Purging CognitiveService Account: $cognitiveservice_name"
+                  # # Debug: Print resource names
+                  # Write-Host "Purging OpenAI resource: $openai_name"
+                  # Write-Host "Purging CognitiveService Account: $cognitiveservice_name"
           
-                  # Construct resource IDs
-                  $openaiResourceId = "/subscriptions/$subscriptionId/providers/Microsoft.CognitiveServices/locations/westus3/resourceGroups/$resourceGroupName/deletedAccounts/$openai_name"
-                  $cognitiveResourceId = "/subscriptions/$subscriptionId/providers/Microsoft.CognitiveServices/locations/eastus/resourceGroups/$resourceGroupName/deletedAccounts/$cognitiveservice_nam"
+                  # # Construct resource IDs
+                  # $openaiResourceId = "/subscriptions/$subscriptionId/providers/Microsoft.CognitiveServices/locations/westus3/resourceGroups/$resourceGroupName/deletedAccounts/$openai_name"
+                  # $cognitiveResourceId = "/subscriptions/$subscriptionId/providers/Microsoft.CognitiveServices/locations/eastus/resourceGroups/$resourceGroupName/deletedAccounts/$cognitiveservice_nam"
           
-                  # Debug: Print constructed resource IDs
-                  Write-Host "Command to purge OpenAI resource: az resource delete --ids `"$openaiResourceId`" --verbose"
-                  Write-Host "Command to purge CognitiveService Account: az resource delete --ids `"$cognitiveResourceId`" --verbose"
-                    # Purge OpenAI Resource
-                      az resource delete --ids $openaiResourceId --verbose
-                      if (-not $?) {
-                          Write-Host "Failed to purge OpenAI resource: $openaiResourceId"
-                      }
+                  # # Debug: Print constructed resource IDs
+                  # Write-Host "Command to purge OpenAI resource: az resource delete --ids `"$openaiResourceId`" --verbose"
+                  # Write-Host "Command to purge CognitiveService Account: az resource delete --ids `"$cognitiveResourceId`" --verbose"
+                  #   # Purge OpenAI Resource
+                  #     az resource delete --ids $openaiResourceId --verbose
+                  #     if (-not $?) {
+                  #         Write-Host "Failed to purge OpenAI resource: $openaiResourceId"
+                  #     }
 
-                      # Purge CognitiveService Account
+                  #     # Purge CognitiveService Account
     
 
-                      az resource delete --ids $cognitiveResourceId --verbose
-                      if (-not $?) {
-                          Write-Host "Failed to purge CognitiveService Account."
-                      }
+                  #     az resource delete --ids $cognitiveResourceId --verbose
+                  #     if (-not $?) {
+                  #         Write-Host "Failed to purge CognitiveService Account."
+                  #     }
                           
         
     - name: Send Notification on Failure
       if: failure()
       shell: pwsh
       run: |
-                            # Define the RUN_URL variable
-                            $RUN_URL = "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                            # # Define the RUN_URL variable
+                            # $RUN_URL = "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
                     
-                            # Construct the email body using a Here-String
-                            $EMAIL_BODY = @"
-                            {
-                              "body": "<p>Dear Team,</p><p>The Document Knowledge Mining Automation process encountered an issue.</p><p><strong>Build URL:</strong> <a href='$RUN_URL'>$RUN_URL</a></p><p>Please investigate promptly.</p><p>Best regards,<br>Your Automation Team</p>"
-                            }
-                            "@
+                            # # Construct the email body using a Here-String
+                            # $EMAIL_BODY = @"
+                            # {
+                            #   "body": "<p>Dear Team,</p><p>The Document Knowledge Mining Automation process encountered an issue.</p><p><strong>Build URL:</strong> <a href='$RUN_URL'>$RUN_URL</a></p><p>Please investigate promptly.</p><p>Best regards,<br>Your Automation Team</p>"
+                            # }
+                            # "@
                     
-                            # Send the notification with error handling
-                            try {
-                                curl -X POST "${{ secrets.LOGIC_APP_URL }}" `
-                                     -H "Content-Type: application/json" `
-                                     -d "$EMAIL_BODY"
-                            } catch {
-                                Write-Output "Failed to send notification."
-                            }
+                            # # Send the notification with error handling
+                            # try {
+                            #     curl -X POST "${{ secrets.LOGIC_APP_URL }}" `
+                            #          -H "Content-Type: application/json" `
+                            #          -d "$EMAIL_BODY"
+                            # } catch {
+                            #     Write-Output "Failed to send notification."
+                            # }
                     
