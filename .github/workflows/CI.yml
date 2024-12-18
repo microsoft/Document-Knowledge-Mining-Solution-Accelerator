@@ -26,7 +26,7 @@ jobs:
         $input = @"
         ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         CanadaCentral
-        WestUS3
+        eastus
         v-harmanprka@MngEnvMCAP993385.onmicrosoft.com
         yes
         "@
