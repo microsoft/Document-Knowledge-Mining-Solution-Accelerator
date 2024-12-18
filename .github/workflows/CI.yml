@@ -100,7 +100,7 @@ jobs:
           
                   # Construct resource IDs
                   $openaiResourceId = "/subscriptions/$subscriptionId/providers/Microsoft.CognitiveServices/locations/westus3/resourceGroups/$resourceGroupName/deletedAccounts/$openai_name"
-                  $cognitiveResourceId = "/subscriptions/$subscriptionId/providers/Microsoft.CognitiveServices/locations/eastus/resourceGroups/$resourceGroupName/deletedAccounts/$cognitiveservice_nam"
+                  $cognitiveResourceId = "/subscriptions/$subscriptionId/providers/Microsoft.CognitiveServices/locations/eastus/resourceGroups/$resourceGroupName/deletedAccounts/$cognitiveservice_name"
           
                   # Debug: Print constructed resource IDs
                   Write-Host "Command to purge OpenAI resource: az resource delete --ids `"$openaiResourceId`" --verbose"
