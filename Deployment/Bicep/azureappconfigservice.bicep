@@ -12,5 +12,3 @@ resource appConfig 'Microsoft.AppConfiguration/configurationStores@2023-03-01' =
 
 output appConfigId string = appConfig.id
 output appConfigEndpoint string = appConfig.properties.endpoint
-
-
