@@ -139,7 +139,7 @@ export const SearchBox = forwardRef<SearchBoxHandle, SearchBoxProps>((
                     className={`input_wrapper`}
                     contentBefore={<Search24Regular />}
                     contentAfter={
-                        <div className="flex">
+                        <div className="flex" data-testid = "upload-div">
                             {/* <KeyBoardButton />
                             <MicButton />
                             <SearchVisualButton /> */}

@@ -252,6 +252,7 @@ export function FeedbackForm({
                                             size="small"
                                             onClick={addAdditionalDocumentURLField}
                                             style={{ marginRight: "-25px", marginLeft: "-20px" }}
+                                            aria-label="Close"
                                         >
                                             <AddCircle24Regular />
                                         </Button>
@@ -261,6 +262,7 @@ export function FeedbackForm({
                                                 shape="circular"
                                                 size="small"
                                                 onClick={removeAdditionalDocumentURLField}
+                                                aria-label="Subtract Circle Icon"
                                             >
                                                 <SubtractCircle24Regular />
                                             </Button>
