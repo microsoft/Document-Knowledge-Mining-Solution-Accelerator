@@ -4,7 +4,9 @@ on:
   push:
     branches:
       - main  # Adjust this to the branch you want to trigger the deployment on
-  workflow_dispatch:  # Allows manual triggering of the workflow
+  schedule:
+    - cron: '0 6,18 * * *'  # Runs at 6:00 AM and 6:00 PM GMT
+ 
 
 jobs:
   deploy:
