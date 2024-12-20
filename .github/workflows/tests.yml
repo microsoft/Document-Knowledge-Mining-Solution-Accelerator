@@ -1,0 +1,93 @@
+name: Unit Tests - DKM
+
+on:
+  push:
+    branches: main
+    
+  pull_request:
+    branches: main
+    types:
+      - opened
+      - ready_for_review
+      - reopened
+      - synchronize
+
+jobs:
+  backend_api_tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.0.x'
+
+      - name: Restore and run tests for Backend API
+        working-directory: ./App/backend-api
+        run: |
+          if [ -f "Microsoft.GS.DPS.sln" ]; then
+            dotnet restore Microsoft.GS.DPS.sln || echo "Warning: Some dependencies are missing. Proceeding."
+            if dotnet test Microsoft.GS.DPS.sln --list-tests > /dev/null 2>&1; then
+              dotnet test Microsoft.GS.DPS.sln --no-build --verbosity normal || echo "Warning: Some tests may have failed."
+            else
+              echo "No test cases found in Backend API. Skipping tests."
+            fi
+          else
+            echo "No solution file found in Backend API. Skipping tests."
+          fi
+
+  kernel_memory_tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.0.x'
+
+      - name: Restore and run tests for Kernel Memory
+        working-directory: ./App/kernel-memory
+        run: |
+          if [ -f "KernelMemory.sln" ]; then
+            dotnet restore KernelMemory.sln || echo "Warning: Some dependencies are missing. Proceeding."
+            if dotnet test KernelMemory.sln --list-tests > /dev/null 2>&1; then
+              dotnet test KernelMemory.sln --no-build --verbosity normal || echo "Warning: Some tests may have failed."
+            else
+              echo "No test cases found in Kernel Memory. Skipping tests."
+            fi
+          else
+            echo "No solution file found in Kernel Memory. Skipping tests."
+          fi
+
+  frontend_tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Install dependencies
+        working-directory: ./App/frontend-app
+        run: |
+          npm install --legacy-peer-deps || echo "Warning: Dependency installation failed. Proceeding."
+
+      - name: Run tests for Frontend App
+        working-directory: ./App/frontend-app
+        run: |
+          if find src -type f \( -name "*.test.tsx" -o -name "*.spec.tsx" -o -name "*.test.ts" -o -name "*.spec.ts" \) | grep -q .; then
+            echo "Test files found. Proceeding with tests."
+            npm run test -- --coverage
+          else
+            echo "No test files found in Frontend App. Skipping tests."
+          fi

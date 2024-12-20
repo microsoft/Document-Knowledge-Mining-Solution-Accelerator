@@ -44,11 +44,18 @@ function successBanner(){
 # Function to prompt for parameters with kind messages
 function PromptForParameters {
     param(
-        [string]$subscriptionID,
+         [string]$subscriptionID,
         [string]$location,
         [string]$modelLocation,
         [string]$email
     )
+    
+    Write-Host "Subscription ID: $subscriptionID"
+    Write-Host "Location: $location"
+    Write-Host "Model Location: $modelLocation"
+    Write-Host "Email: $email"
+      # Check if the script is running interactively (i.e., if we can prompt for user input)
+    $isInteractive = $Host.Name -eq 'ConsoleHost'
 
     Clear-Host
 
@@ -94,6 +101,10 @@ function PromptForParameters {
         Write-Host "Please enter your email address for certificate management" -ForegroundColor Cyan
         $email = Read-Host -Prompt '> '
     }
+     # If running interactively, prompt for values
+  
+
+ 
 
     return @{
         subscriptionID = $subscriptionID
@@ -106,6 +117,10 @@ function PromptForParameters {
 # Prompt for parameters with kind messages
 $params = PromptForParameters -subscriptionID $subscriptionID -location $location -modelLocation $modelLocation -email $email
 # Assign the parameters to variables
+ Write-Host "Subscription ID: $subscriptionID"
+    Write-Host "Location: $location"
+    Write-Host "Model Location: $modelLocation"
+    Write-Host "Email: $email"
 $subscriptionID = $params.subscriptionID
 $location = $params.location
 $modelLocation = $params.modelLocation
@@ -113,7 +128,15 @@ $email = $params.email
 
 function LoginAzure([string]$subscriptionID) {
         Write-Host "Log in to Azure.....`r`n" -ForegroundColor Yellow
+        if ($env:CI -eq "false"){
         az login
+        }
+        else{
+            az login --service-principal `
+        --username $env:AZURE_CLIENT_ID `
+        --password $env:AZURE_CLIENT_SECRET `
+        --tenant $env:AZURE_TENANT_ID
+        }
         az account set --subscription $subscriptionID
         Write-Host "Switched subscription to '$subscriptionID' `r`n" -ForegroundColor Yellow
 }
@@ -163,6 +186,7 @@ function DeployAzureResources([string]$location, [string]$modelLocation) {
 
 function DisplayResult([pscustomobject]$jsonString) {
     $resourcegroupName = $jsonString.properties.outputs.gs_resourcegroup_name.value
+    $solutionPrefix = $jsonString.properties.outputs.gs_solution_prefix.value
     $storageAccountName = $jsonString.properties.outputs.gs_storageaccount_name.value
     $azsearchServiceName = $jsonString.properties.outputs.gs_azsearch_name.value
     $aksName = $jsonString.properties.outputs.gs_aks_name.value
@@ -186,6 +210,9 @@ function DisplayResult([pscustomobject]$jsonString) {
     Write-Host "* Azure Storage Account " -ForegroundColor Yellow -NoNewline; Write-Host "$storageAccountName" -ForegroundColor Green
     Write-Host "* Azure Cosmos DB " -ForegroundColor Yellow -NoNewline; Write-Host "$azcosmosDBName" -ForegroundColor Green
     Write-Host "* Azure App Configuration Endpoint " -ForegroundColor Yellow -NoNewline; Write-Host "$azappConfigEndpoint" -ForegroundColor Green
+    Write-Output "rg_name=$resourcegroupName" >> $Env:GITHUB_ENV
+    Write-Output "SOLUTION_PREFIX=$solutionPrefix" >> $Env:GITHUB_ENV
+
 }
 
 # Function to replace placeholders in a template with actual values
@@ -379,7 +406,23 @@ try {
     Show-Banner -Title "Step 1 : Deploy Azure resources"
     ###############################################################
     $deploymentResult = [DeploymentResult]::new()
-    LoginAzure($subscriptionID)
+    # if ($env:CI -eq "false"){
+      LoginAzure($subscriptionID)
+        
+
+    # }
+   if ($env:CI -eq "true") {
+    Write-Host "subscritipon $subscriptionID"
+    if (-not $location) {
+        Write-Error "Error: --location is required in CI mode."
+        exit 1
+    }
+    if (-not $modelLocation) {
+        Write-Error "Error: --modelLocation is required in CI mode."
+        exit 1
+    }
+}
+    
     # Deploy Azure Resources
     Write-Host "Deploying Azure resources in $location region.....`r`n" -ForegroundColor Yellow
 
@@ -538,6 +581,7 @@ try {
         Write-Host "Getting the Kubernetes resource group..." -ForegroundColor Cyan
         $aksResourceGroupName = $(az aks show --resource-group $deploymentResult.ResourceGroupName --name $deploymentResult.AksName --query nodeResourceGroup --output tsv)
         Write-Host "Kubernetes resource group: $aksResourceGroupName" -ForegroundColor Green
+        Write-Output "krg_name=$aksResourceGroupName" >> $Env:GITHUB_ENV
     }
     catch {
         Write-Host "Failed to get the Kubernetes resource group." -ForegroundColor Red
@@ -604,6 +648,7 @@ try {
 
     #  6-2. Generate Unique backend API fqdn Name - esgdocanalysis-3 digit random number with padding 0
     $dnsName = "kmgs$($(Get-Random -Minimum 0 -Maximum 9999).ToString("D4"))"
+    
 
     #  6-3. Assign DNS Name to the public IP address
     az network public-ip update --resource-group $aksResourceGroupName --name $publicIpName --dns-name $dnsName
@@ -640,7 +685,7 @@ try {
         foreach ($nodePool in $nodePools) {
             Write-Host "Upgrading node pool: $nodePool" -ForegroundColor Cyan
             Write-Host "Node pool $nodePool upgrade initiated." -ForegroundColor Green
-            az aks nodepool upgrade --resource-group $deploymentResult.ResourceGroupName --cluster-name $deploymentResult.AksName --name $nodePool 
+            az aks nodepool upgrade --resource-group $deploymentResult.ResourceGroupName --cluster-name $deploymentResult.AksName --name $nodePool --yes
         }
     }
     catch {
@@ -848,6 +893,9 @@ try {
     Write-Host "Don't forget to control the TPM rate for your GPT and Embedding Model in Azure Open AI Studio Deployments section." -ForegroundColor Red
     Write-Host "After controlling the TPM rate for your GPT and Embedding Model, let's start Data file import process with this command." -ForegroundColor Yellow
     Write-Host ".\uploadfiles.ps1 -EndpointUrl https://${fqdn}" -ForegroundColor Green
+
+
+
 }
 catch {
     Write-Host "An error occurred during deployment." -ForegroundColor Red
