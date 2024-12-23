@@ -54,14 +54,7 @@ function PromptForParameters {
     Write-Host "Location: $location"
     Write-Host "Model Location: $modelLocation"
     Write-Host "Email: $email"
-      # Check if the script is running interactively (i.e., if we can prompt for user input)
-    $isInteractive = $Host.Name -eq 'ConsoleHost'
-
-    
-    Write-Host "Subscription ID: $subscriptionID"
-    Write-Host "Location: $location"
-    Write-Host "Model Location: $modelLocation"
-    Write-Host "Email: $email"
+   
       # Check if the script is running interactively (i.e., if we can prompt for user input)
     $isInteractive = $Host.Name -eq 'ConsoleHost'
 
@@ -109,15 +102,7 @@ function PromptForParameters {
         Write-Host "Please enter your email address for certificate management" -ForegroundColor Cyan
         $email = Read-Host -Prompt '> '
     }
-     # If running interactively, prompt for values
-  
-
- 
-     # If running interactively, prompt for values
-  
-
- 
-
+   
     return @{
         subscriptionID = $subscriptionID
         location = $location
@@ -133,10 +118,7 @@ $params = PromptForParameters -subscriptionID $subscriptionID -location $locatio
     Write-Host "Location: $location"
     Write-Host "Model Location: $modelLocation"
     Write-Host "Email: $email"
- Write-Host "Subscription ID: $subscriptionID"
-    Write-Host "Location: $location"
-    Write-Host "Model Location: $modelLocation"
-    Write-Host "Email: $email"
+
 $subscriptionID = $params.subscriptionID
 $location = $params.location
 $modelLocation = $params.modelLocation
