@@ -45,7 +45,6 @@ function successBanner(){
 function PromptForParameters {
     param(
          [string]$subscriptionID,
-         [string]$subscriptionID,
         [string]$location,
         [string]$modelLocation,
         [string]$email
