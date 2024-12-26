@@ -31,7 +31,7 @@ jobs:
           if [ -f "Microsoft.GS.DPS.sln" ]; then
             dotnet restore Microsoft.GS.DPS.sln || echo "Warning: Some dependencies are missing. Proceeding."
             if dotnet test Microsoft.GS.DPS.sln --list-tests > /dev/null 2>&1; then
-              dotnet test Microsoft.GS.DPS.sln --no-build --verbosity normal || echo "Warning: Some tests may have failed."
+             dotnet test Microsoft.GS.DPS.sln --no-build --verbosity normal --collect:"Code Coverage" || echo "Warning: Some tests may have failed."
             else
               echo "No test cases found in Backend API. Skipping tests."
             fi
@@ -57,7 +57,7 @@ jobs:
           if [ -f "KernelMemory.sln" ]; then
             dotnet restore KernelMemory.sln || echo "Warning: Some dependencies are missing. Proceeding."
             if dotnet test KernelMemory.sln --list-tests > /dev/null 2>&1; then
-              dotnet test KernelMemory.sln --no-build --verbosity normal || echo "Warning: Some tests may have failed."
+             dotnet test KernelMemory.sln --no-build --verbosity normal --collect:"Code Coverage" || echo "Warning: Some tests may have failed."
             else
               echo "No test cases found in Kernel Memory. Skipping tests."
             fi
