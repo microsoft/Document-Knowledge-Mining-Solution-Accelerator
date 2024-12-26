@@ -38,6 +38,17 @@ jobs:
           else
             echo "No solution file found in Backend API. Skipping tests."
           fi
+      - name: Install ReportGenerator
+        run: dotnet tool install --global dotnet-reportgenerator-globaltool
+
+      - name: Generate Coverage Report
+        run: |
+          REPORT_DIR="./coverage-report"
+          mkdir -p $REPORT_DIR
+          reportgenerator -reports:**/TestResults/**/*.coverage -targetdir:$REPORT_DIR -reporttypes:TextSummary
+
+      - name: Display Coverage Summary
+        run: cat ./coverage-report/Summary.txt
 
   kernel_memory_tests:
     runs-on: ubuntu-latest
