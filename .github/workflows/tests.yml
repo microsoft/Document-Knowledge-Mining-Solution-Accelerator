@@ -23,41 +23,31 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '6.0.x'
 
-      - name: Restore and run tests for Backend API
+      - name: Install coverlet for backend API coverage
+        run: |
+          dotnet add ./App/backend-api/ package coverlet.msbuild --version 3.1.2
+
+      - name: Restore and run tests for Backend API with coverage
         working-directory: ./App/backend-api
         run: |
-          dotnet tool install --global coverlet.console
-
-                 if [ -f "Microsoft.GS.DPS.sln" ]; then
+          if [ -f "Microsoft.GS.DPS.sln" ]; then
             dotnet restore Microsoft.GS.DPS.sln || echo "Warning: Some dependencies are missing. Proceeding."
             if dotnet test Microsoft.GS.DPS.sln --list-tests > /dev/null 2>&1; then
-              dotnet test Microsoft.GS.DPS.sln --no-build --verbosity normal /p:CollectCoverage=true /p:CoverletOutput=./TestResults/ /p:CoverletOutputFormat=cobertura || echo "Warning: Some tests may have failed."
-              ls -R ./TestResults # Debugging step
+              dotnet test Microsoft.GS.DPS.sln --no-build --collect:"XPlat Code Coverage" --verbosity normal || echo "Warning: Some tests may have failed."
             else
               echo "No test cases found in Backend API. Skipping tests."
             fi
           else
             echo "No solution file found in Backend API. Skipping tests."
           fi
-          
-          # Generate report
-          dotnet tool install --global dotnet-reportgenerator-globaltool
-          reportgenerator -reports:./TestResults/coverage.cobertura.xml -targetdir:./coverage-report -reporttypes:TextSummary
 
-
-      - name: Install ReportGenerator
-        run: dotnet tool install --global dotnet-reportgenerator-globaltool
-
-      - name: Generate Coverage Report
-        run: |
-          REPORT_DIR="./coverage-report"
-          mkdir -p $REPORT_DIR
-          reportgenerator -reports:**/TestResults/**/*.cobertura.xml -targetdir:$REPORT_DIR -reporttypes:TextSummary
-
-      - name: Display Coverage Summary
-        run: cat ./coverage-report/Summary.txt
+      - name: Publish coverage results for Backend API
+        if: success() && steps.restore_and_run_tests.outputs.exit-code == '0'
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./App/backend-api/TestResults/*.xml  # Adjust path to where the coverage report is saved
 
   kernel_memory_tests:
     runs-on: ubuntu-latest
@@ -69,15 +59,19 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '6.0.x'
 
-      - name: Restore and run tests for Kernel Memory
+      - name: Install coverlet for kernel memory coverage
+        run: |
+          dotnet add ./App/kernel-memory/ package coverlet.msbuild --version 3.1.2
+
+      - name: Restore and run tests for Kernel Memory with coverage
         working-directory: ./App/kernel-memory
         run: |
           if [ -f "KernelMemory.sln" ]; then
             dotnet restore KernelMemory.sln || echo "Warning: Some dependencies are missing. Proceeding."
             if dotnet test KernelMemory.sln --list-tests > /dev/null 2>&1; then
-              dotnet test KernelMemory.sln --no-build --verbosity normal --collect:"XPlat Code Coverage" || echo "Warning: Some tests may have failed."
+              dotnet test KernelMemory.sln --no-build --collect:"XPlat Code Coverage" --verbosity normal || echo "Warning: Some tests may have failed."
             else
               echo "No test cases found in Kernel Memory. Skipping tests."
             fi
@@ -85,17 +79,11 @@ jobs:
             echo "No solution file found in Kernel Memory. Skipping tests."
           fi
 
-      - name: Install ReportGenerator
-        run: dotnet tool install --global dotnet-reportgenerator-globaltool
-
-      - name: Generate Coverage Report
-        run: |
-          REPORT_DIR="./coverage-report"
-          mkdir -p $REPORT_DIR
-          reportgenerator -reports:**/TestResults/**/*.cobertura.xml -targetdir:$REPORT_DIR -reporttypes:TextSummary
-
-      - name: Display Coverage Summary
-        run: cat ./coverage-report/Summary.txt
+      - name: Publish coverage results for Kernel Memory
+        if: success() && steps.restore_and_run_tests.outputs.exit-code == '0'
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./App/kernel-memory/TestResults/*.xml  # Adjust path to where the coverage report is saved
 
   frontend_tests:
     runs-on: ubuntu-latest
@@ -119,7 +107,7 @@ jobs:
         run: |
           if find src -type f \( -name "*.test.tsx" -o -name "*.spec.tsx" -o -name "*.test.ts" -o -name "*.spec.ts" \) | grep -q .; then
             echo "Test files found. Proceeding with tests."
-            npm run test -- --coverage
+            npx jest --coverage --detectOpenHandles
           else
             echo "No test files found in Frontend App. Skipping tests."
           fi
