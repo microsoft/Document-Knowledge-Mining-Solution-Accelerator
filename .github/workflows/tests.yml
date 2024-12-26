@@ -32,7 +32,7 @@ jobs:
           if [ -f "Microsoft.GS.DPS.sln" ]; then
             dotnet restore Microsoft.GS.DPS.sln || echo "Warning: Some dependencies are missing. Proceeding."
             if dotnet test Microsoft.GS.DPS.sln --list-tests > /dev/null 2>&1; then
-              dotnet test Microsoft.GS.DPS.sln --no-build --collect:"XPlat Code Coverage" --verbosity normal || echo "Warning: Some tests may have failed."
+              dotnet test Microsoft.GS.DPS.sln --collect:"XPlat Code Coverage" --settings ./coverlet.runsettings || echo "Warning: Some tests may have failed."
             else
               echo "No test cases found in Backend API. Skipping tests."
             fi
