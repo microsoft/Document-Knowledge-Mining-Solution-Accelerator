@@ -30,16 +30,22 @@ jobs:
         run: |
           dotnet tool install --global coverlet.console
 
-          if [ -f "Microsoft.GS.DPS.sln" ]; then
+                 if [ -f "Microsoft.GS.DPS.sln" ]; then
             dotnet restore Microsoft.GS.DPS.sln || echo "Warning: Some dependencies are missing. Proceeding."
             if dotnet test Microsoft.GS.DPS.sln --list-tests > /dev/null 2>&1; then
-              dotnet test Microsoft.GS.DPS.sln --no-build --verbosity normal --collect:"XPlat Code Coverage" || echo "Warning: Some tests may have failed."
+              dotnet test Microsoft.GS.DPS.sln --no-build --verbosity normal /p:CollectCoverage=true /p:CoverletOutput=./TestResults/ /p:CoverletOutputFormat=cobertura || echo "Warning: Some tests may have failed."
+              ls -R ./TestResults # Debugging step
             else
               echo "No test cases found in Backend API. Skipping tests."
             fi
           else
             echo "No solution file found in Backend API. Skipping tests."
           fi
+          
+          # Generate report
+          dotnet tool install --global dotnet-reportgenerator-globaltool
+          reportgenerator -reports:./TestResults/coverage.cobertura.xml -targetdir:./coverage-report -reporttypes:TextSummary
+
 
       - name: Install ReportGenerator
         run: dotnet tool install --global dotnet-reportgenerator-globaltool
