@@ -28,6 +28,8 @@ jobs:
       - name: Restore and run tests for Backend API
         working-directory: ./App/backend-api
         run: |
+          dotnet tool install --global coverlet.console
+
           if [ -f "Microsoft.GS.DPS.sln" ]; then
             dotnet restore Microsoft.GS.DPS.sln || echo "Warning: Some dependencies are missing. Proceeding."
             if dotnet test Microsoft.GS.DPS.sln --list-tests > /dev/null 2>&1; then
