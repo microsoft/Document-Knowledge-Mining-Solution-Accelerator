@@ -24,6 +24,12 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.0.x'
+      - name: Install Code Coverage Tools
+        run: |
+          dotnet tool install --global coverlet.console || echo "Warning: Could not install coverlet."
+        env:
+          DOTNET_ROOT: /usr/share/dotnet
+
 
       - name: Restore and run tests for Backend API with coverage
         working-directory: ./App/backend-api
