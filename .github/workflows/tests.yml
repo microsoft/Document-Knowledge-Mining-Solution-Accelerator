@@ -25,14 +25,13 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-
       - name: Restore and run tests for Backend API with coverage
         working-directory: ./App/backend-api
         run: |
           if [ -f "Microsoft.GS.DPS.sln" ]; then
             dotnet restore Microsoft.GS.DPS.sln || echo "Warning: Some dependencies are missing. Proceeding."
             if dotnet test Microsoft.GS.DPS.sln --list-tests > /dev/null 2>&1; then
-              dotnet test Microsoft.GS.DPS.sln --collect:"XPlat Code Coverage" --settings ./coverlet.runsettings || echo "Warning: Some tests may have failed."
+              dotnet test Microsoft.GS.DPS.sln --collect:"XPlat Code Coverage" --logger trx --results-directory TestResults || echo "Warning: Some tests may have failed."
             else
               echo "No test cases found in Backend API. Skipping tests."
             fi
@@ -41,10 +40,10 @@ jobs:
           fi
 
       - name: Publish coverage results for Backend API
-        if: success() && steps.restore_and_run_tests.outputs.exit-code == '0'
-        uses: codecov/codecov-action@v3
+        uses: actions/upload-artifact@v3
         with:
-          file: ./App/backend-api/TestResults/*.xml  # Adjust path to where the coverage report is saved
+          name: backend-api-coverage
+          path: ./App/backend-api/TestResults/CoverageReport
 
   kernel_memory_tests:
     runs-on: ubuntu-latest
@@ -58,17 +57,13 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Install coverlet for kernel memory coverage
-        run: |
-          dotnet add ./App/kernel-memory/ package coverlet.msbuild --version 3.1.2
-
       - name: Restore and run tests for Kernel Memory with coverage
         working-directory: ./App/kernel-memory
         run: |
           if [ -f "KernelMemory.sln" ]; then
             dotnet restore KernelMemory.sln || echo "Warning: Some dependencies are missing. Proceeding."
             if dotnet test KernelMemory.sln --list-tests > /dev/null 2>&1; then
-              dotnet test KernelMemory.sln --no-build --collect:"XPlat Code Coverage" --verbosity normal || echo "Warning: Some tests may have failed."
+              dotnet test KernelMemory.sln --collect:"XPlat Code Coverage" --logger trx --results-directory TestResults || echo "Warning: Some tests may have failed."
             else
               echo "No test cases found in Kernel Memory. Skipping tests."
             fi
@@ -77,10 +72,10 @@ jobs:
           fi
 
       - name: Publish coverage results for Kernel Memory
-        if: success() && steps.restore_and_run_tests.outputs.exit-code == '0'
-        uses: codecov/codecov-action@v3
+        uses: actions/upload-artifact@v3
         with:
-          file: ./App/kernel-memory/TestResults/*.xml  # Adjust path to where the coverage report is saved
+          name: kernel-memory-coverage
+          path: ./App/kernel-memory/TestResults/CoverageReport
 
   frontend_tests:
     runs-on: ubuntu-latest
@@ -99,12 +94,12 @@ jobs:
         run: |
           npm install --legacy-peer-deps || echo "Warning: Dependency installation failed. Proceeding."
 
-      - name: Run tests for Frontend App
+      - name: Run tests for Frontend App with coverage
         working-directory: ./App/frontend-app
         run: |
           if find src -type f \( -name "*.test.tsx" -o -name "*.spec.tsx" -o -name "*.test.ts" -o -name "*.spec.ts" \) | grep -q .; then
             echo "Test files found. Proceeding with tests."
-            npx jest --coverage --detectOpenHandles
+            npx jest --coverage --coverageDirectory=coverage --detectOpenHandles
           else
             echo "No test files found in Frontend App. Skipping tests."
           fi
