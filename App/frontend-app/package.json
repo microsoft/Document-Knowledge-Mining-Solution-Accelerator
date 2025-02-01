@@ -64,7 +64,7 @@
         "@vitejs/plugin-react": "^4.3.4",
         "autoprefixer": "^10.4.20",
         "body-parser": "^1.20.3",
-        "concurrently": "^9.1.1",
+        "concurrently": "^9.1.2",
         "cors": "^2.8.5",
         "eslint": "^8.53.0",
         "eslint-config-prettier": "^9.1.0",
