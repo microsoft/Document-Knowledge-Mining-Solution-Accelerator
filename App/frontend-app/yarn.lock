@@ -1774,10 +1774,10 @@
     "@fluentui/set-version" "^8.2.23"
     tslib "^2.1.0"
 
-"@fluentui/react@^8.122.2":
-  version "8.122.2"
-  resolved "https://registry.yarnpkg.com/@fluentui/react/-/react-8.122.2.tgz#75f4c34448daa3aa460b30e5ced920f8cb96e868"
-  integrity sha512-GiOjekP1TPUKTvh46NqBg4o4JOpVsBQf+bunhCY9CgmYfdDEQExDCxW3wAi3DAhpRLECdc+LBRlTZQhHRJU8VA==
+"@fluentui/react@^8.122.9":
+  version "8.122.9"
+  resolved "https://registry.yarnpkg.com/@fluentui/react/-/react-8.122.9.tgz#1de4b6f1ddd4c1462eb98f2bcf6d6198f03b4dc4"
+  integrity sha512-sjVAx/YeU/xtr9fqEEGeOeA2MVoFU3PU3lxYGtqUtoW7P/dsRjf/LCV7w9Y3ywKcDrStO4lJMsYamJSKO+T90w==
   dependencies:
     "@fluentui/date-time-utilities" "^8.6.9"
     "@fluentui/font-icons-mdl2" "^8.5.57"
@@ -6599,7 +6599,7 @@ kleur@^3.0.3:
     "@fluentai/react-copilot-chat" "^0.5.2"
     "@fluentai/reference" "^0.8.2"
     "@fluentai/textarea" "^0.5.1"
-    "@fluentui/react" "^8.122.2"
+    "@fluentui/react" "^8.122.9"
     "@fluentui/react-components" "^9.46.4"
     "@fluentui/react-datepicker-compat" "^0.4.59"
     "@fluentui/react-file-type-icons" "^8.12.7"
