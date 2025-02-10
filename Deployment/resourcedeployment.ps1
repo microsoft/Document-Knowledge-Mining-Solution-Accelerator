@@ -41,6 +41,35 @@ function successBanner(){
     Write-Host "             |_|            |___/                          "     
 }
 
+function failureBanner(){
+    Write-Host " _____             _                                  _     "
+    Write-Host "|  __ \           | |                                | |    "
+    Write-Host "| |  | | ___ _ __ | | ___  _   _ _ __ ___   ___ _ __ | |_   "
+    Write-Host "| |  | |/ _ \ '_ \| |/ _ \| | | | '_ ` _ \ / _ \ '_ \| __|  "
+    Write-Host "| |__| |  __/ |_) | | (_) | |_| | | | | | |  __/ | | | |_   "
+    Write-Host "|_____/ \___| .__/|_|\___/ \__, |_| |_| |_|\___|_| |_|\__|  "
+    Write-Host "            | |             __/ |                           "
+    Write-Host " ______    _|_|         _  |___/                            "
+    Write-Host "|  ____|  (_) |        | |                                  "
+    Write-Host "| |__ __ _ _| | ___  __| |                                  "
+    Write-Host "|  __/ _` | | |/ _ \/ _` |                                  "
+    Write-Host "| | | (_| | | |  __/ (_| |                                  "
+    Write-Host "|_|  \__,_|_|_|\___|\__,_|                                  "
+}
+
+# Common function to check if a variable is null or empty
+function ValidateVariableIsNullOrEmpty {
+    param (
+        [string]$variableValue, 
+        [string]$variableName
+    )
+ 
+    if ([string]::IsNullOrEmpty($variableValue)) {
+        Write-Host "Error: $variableName is null or empty." -ForegroundColor Red
+        failureBanner 
+        exit 1
+    }    
+}
 # Function to prompt for parameters with kind messages
 function PromptForParameters {
     param(
@@ -112,8 +141,19 @@ $modelLocation = $params.modelLocation
 $email = $params.email
 
 function LoginAzure([string]$subscriptionID) {
-        Write-Host "Log in to Azure.....`r`n" -ForegroundColor Yellow
-        az login
+          Write-Host "Log in to Azure.....`r`n" -ForegroundColor Yellow
+        if ($env:CI -eq "true"){
+      
+        az login --service-principal `
+        --username $env:AZURE_CLIENT_ID `
+        --password $env:AZURE_CLIENT_SECRET `
+        --tenant $env:AZURE_TENANT_ID
+        write-host "CI deployment mode"
+        }
+        else{
+              az login
+        write-host "manual deployment mode"
+        }
         az account set --subscription $subscriptionID
         Write-Host "Switched subscription to '$subscriptionID' `r`n" -ForegroundColor Yellow
 }
@@ -163,9 +203,12 @@ function DeployAzureResources([string]$location, [string]$modelLocation) {
 
 function DisplayResult([pscustomobject]$jsonString) {
     $resourcegroupName = $jsonString.properties.outputs.gs_resourcegroup_name.value
+    $solutionPrefix = $jsonString.properties.outputs.gs_solution_prefix.value
+
     $storageAccountName = $jsonString.properties.outputs.gs_storageaccount_name.value
     $azsearchServiceName = $jsonString.properties.outputs.gs_azsearch_name.value
     $aksName = $jsonString.properties.outputs.gs_aks_name.value
+
     $containerRegistryName = $jsonString.properties.outputs.gs_containerregistry_name.value
     $azcognitiveserviceName = $jsonString.properties.outputs.gs_azcognitiveservice_name.value
     $azopenaiServiceName = $jsonString.properties.outputs.gs_openaiservice_name.value
@@ -186,6 +229,9 @@ function DisplayResult([pscustomobject]$jsonString) {
     Write-Host "* Azure Storage Account " -ForegroundColor Yellow -NoNewline; Write-Host "$storageAccountName" -ForegroundColor Green
     Write-Host "* Azure Cosmos DB " -ForegroundColor Yellow -NoNewline; Write-Host "$azcosmosDBName" -ForegroundColor Green
     Write-Host "* Azure App Configuration Endpoint " -ForegroundColor Yellow -NoNewline; Write-Host "$azappConfigEndpoint" -ForegroundColor Green
+    Write-Output "rg_name=$resourcegroupName" >> $Env:GITHUB_ENV
+
+    Write-Output "SOLUTION_PREFIX=$solutionPrefix" >> $Env:GITHUB_ENV
 }
 
 # Function to replace placeholders in a template with actual values
@@ -395,10 +441,33 @@ try {
     ###############################################################
     # Get the storage account key
     $storageAccountKey = az storage account keys list --account-name $deploymentResult.StorageAccountName --resource-group $deploymentResult.ResourceGroupName --query "[0].value" -o tsv
+    
+    # Validate if the storage account key is empty or null
+    ValidateVariableIsNullOrEmpty -variableValue $storageAccountKey -variableName "Storage account key"  
+    
     ## Construct the connection string manually
     $storageAccountConnectionString = "DefaultEndpointsProtocol=https;AccountName=$($deploymentResult.StorageAccountName);AccountKey=$storageAccountKey;EndpointSuffix=core.windows.net"
+    # Validate if the Storage Account Connection String is empty or null
+    ValidateVariableIsNullOrEmpty -variableValue $storageAccountConnectionString -variableName "Storage Account Connection String"
+    
     ## Assign the connection string to the deployment result object
-    $deploymentResult.StorageAccountConnectionString = $storageAccountConnectionString    
+    $deploymentResult.StorageAccountConnectionString = $storageAccountConnectionString  
+
+    # Check if ResourceGroupName is valid
+    ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.ResourceGroupName -variableName "Resource group name"  
+   
+    # Check if AzCosmosDBName is valid
+    ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.AzCosmosDBName -variableName "Az Cosmos DB name"  
+    
+    # Check if AzCognitiveServiceName is valid
+    ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.AzCognitiveServiceName -variableName "Az Cognitive Service name"  
+    
+    # Check if AzSearchServiceName is valid
+    ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.AzSearchServiceName -variableName "Az Search Service name"  
+    
+    # Check if AzOpenAiServiceName is valid
+    ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.AzOpenAiServiceName -variableName "Az OpenAI Service name"  
+      
     # Get MongoDB connection string
     $deploymentResult.AzCosmosDBConnectionString = az cosmosdb keys list --name $deploymentResult.AzCosmosDBName --resource-group $deploymentResult.ResourceGroupName --type connection-strings --query "connectionStrings[0].connectionString" -o tsv
     # Get Azure Cognitive Service API Key
@@ -538,6 +607,8 @@ try {
         Write-Host "Getting the Kubernetes resource group..." -ForegroundColor Cyan
         $aksResourceGroupName = $(az aks show --resource-group $deploymentResult.ResourceGroupName --name $deploymentResult.AksName --query nodeResourceGroup --output tsv)
         Write-Host "Kubernetes resource group: $aksResourceGroupName" -ForegroundColor Green
+        Write-Output "krg_name=$aksResourceGroupName" >> $Env:GITHUB_ENV
+        
     }
     catch {
         Write-Host "Failed to get the Kubernetes resource group." -ForegroundColor Red
@@ -601,26 +672,49 @@ try {
     #  6-1. Get Az Network resource Name with the public IP address
     Write-Host "Assign DNS Name to the public IP address" -ForegroundColor Green
     $publicIpName=$(az network public-ip list --query "[?ipAddress=='$externalIP'].name" --output tsv)
-
     #  6-2. Generate Unique backend API fqdn Name - esgdocanalysis-3 digit random number with padding 0
     $dnsName = "kmgs$($(Get-Random -Minimum 0 -Maximum 9999).ToString("D4"))"
+    
+    # Validate if the AKS Resource Group Name, Public IP name and DNS Name are provided
+    ValidateVariableIsNullOrEmpty -variableValue $aksResourceGroupName -variableName "AKS Resource Group name"  
+    
+    ValidateVariableIsNullOrEmpty -variableValue $publicIpName -variableName "Public IP name" 
 
+    ValidateVariableIsNullOrEmpty -variableValue $dnsName -variableName "DNS Name" 
+    
     #  6-3. Assign DNS Name to the public IP address
     az network public-ip update --resource-group $aksResourceGroupName --name $publicIpName --dns-name $dnsName
-    #  6-4. Get FQDN for the public IP address    
-    $fqdn = az network public-ip show --resource-group $aksResourceGroupName --name $publicIpName --query "dnsSettings.fqdn" --output tsv
-    Write-Host "FQDN for the public IP address is: $fqdn" -ForegroundColor Green
 
+    #  6-4. Get FQDN for the public IP address
+    $fqdn = az network public-ip show --resource-group $aksResourceGroupName --name $publicIpName --query "dnsSettings.fqdn" --output tsv
+     
+    # Validate if the FQDN is null or empty
+    ValidateVariableIsNullOrEmpty -variableValue $fqdn -variableName "FQDN"    
+        
     # 7. Assign the role for aks system assigned managed identity to App Configuration Data Reader role with the scope of Resourcegroup
     Write-Host "Assign the role for aks system assigned managed identity to App Configuration Data Reader role" -ForegroundColor Green
+    # Ensure that the required fields are not null or empty
+    ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.ResourceGroupName -variableName "Resource group name"    
+    
+    ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.AksName -variableName "AKS cluster name"    
+        
     # Get vmss resource group name
     $vmssResourceGroupName = $(az aks show --resource-group $deploymentResult.ResourceGroupName --name $deploymentResult.AksName --query nodeResourceGroup --output tsv)
+    
+    # Validate if vmss Resource Group Name is null or empty
+    ValidateVariableIsNullOrEmpty -variableValue $vmssResourceGroupName -variableName "VMSS resource group"    
+        
     # Get vmss name
     $vmssName = $(az vmss list --resource-group $vmssResourceGroupName --query "[0].name" --output tsv)
+    
+    # Validate if vmss Name is null or empty
+    ValidateVariableIsNullOrEmpty -variableValue $vmssName -variableName "VMSS name"    
+        
     # Create System Assigned Managed Identity
     $systemAssignedIdentity = $(az vmss identity assign --resource-group $vmssResourceGroupName --name $vmssName --query systemAssignedIdentity --output tsv)
     
-    
+    # Validate if System Assigned Identity is null or empty
+    ValidateVariableIsNullOrEmpty -variableValue $systemAssignedIdentity -variableName "System-assigned managed identity"    
     
     # Assign the role for aks system assigned managed identity to App Configuration Data Reader role with the scope of Resourcegroup
     az role assignment create --assignee $systemAssignedIdentity --role "App Configuration Data Reader" --scope $deploymentResult.ResourceGroupId
@@ -641,6 +735,7 @@ try {
             Write-Host "Upgrading node pool: $nodePool" -ForegroundColor Cyan
             Write-Host "Node pool $nodePool upgrade initiated." -ForegroundColor Green
             az aks nodepool upgrade --resource-group $deploymentResult.ResourceGroupName --cluster-name $deploymentResult.AksName --name $nodePool 
+            
         }
     }
     catch {

@@ -22,18 +22,18 @@
     <PackageVersion Include="LLamaSharp.Backend.Cuda12" Version="0.12.0" />
     <PackageVersion Include="LLamaSharp.Backend.OpenCL" Version="0.12.0" />
     <PackageVersion Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0" />
-    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.0" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.2.1" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.AzureAppConfiguration" Version="7.3.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="8.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.TraceSource" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Identity.Client" Version="4.63.0" />
     <PackageVersion Include="Microsoft.ML.Tokenizers" Version="0.22.0-preview.24271.1" />
@@ -51,9 +51,9 @@
     <PackageVersion Include="ReadLine" Version="2.0.1" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="6.6.2" />
     <PackageVersion Include="System.Linq.Async" Version="6.0.1" />
-    <PackageVersion Include="System.Memory.Data" Version="8.0.0" />
-    <PackageVersion Include="System.Numerics.Tensors" Version="8.0.0" />
-    <PackageVersion Include="System.Text.Json" Version="8.0.4" />
+    <PackageVersion Include="System.Memory.Data" Version="9.0.0" />
+    <PackageVersion Include="System.Numerics.Tensors" Version="9.0.0" />
+    <PackageVersion Include="System.Text.Json" Version="9.0.0" />
     <PackageVersion Include="Tiktoken" Version="2.0.3" />
   </ItemGroup>
   <!-- OpenXml blocked, do not upgrade these -->
@@ -66,7 +66,7 @@
   <!-- Semantic Kernel -->
   <ItemGroup>
     <PackageVersion Include="Microsoft.SemanticKernel" Version="1.15.1" />
-    <PackageVersion Include="Microsoft.SemanticKernel.Abstractions" Version="1.15.1" />
+    <PackageVersion Include="Microsoft.SemanticKernel.Abstractions" Version="1.31.0" />
     <PackageVersion Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.15.1" />
   </ItemGroup>
   <!-- Documentation -->
@@ -75,21 +75,21 @@
   </ItemGroup>
   <!-- Code Analysis -->
   <ItemGroup>
-    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.CodeStyle" Version="4.10.0">
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.CodeStyle" Version="4.12.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
-    <PackageVersion Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="8.0.0" />
-    <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="17.10.48">
+    <PackageVersion Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0" />
+    <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="17.12.19">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
-    <PackageVersion Include="Roslynator.CodeAnalysis.Analyzers" Version="4.12.4">
+    <PackageVersion Include="Roslynator.CodeAnalysis.Analyzers" Version="4.12.10">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
-    <PackageVersion Include="Roslynator.Formatting.Analyzers" Version="4.12.4">
+    <PackageVersion Include="Roslynator.Formatting.Analyzers" Version="4.12.10">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>

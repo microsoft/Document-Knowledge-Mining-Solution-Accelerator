@@ -1,0 +1,63 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# For more details, refer to the documentation:
+# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+version: 2
+updates:
+  # GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "build"
+    target-branch: "dependabotchanges"
+    open-pull-requests-limit: 10
+
+  # .NET NuGet dependencies for Backend API (Multiple Projects)
+  - package-ecosystem: "nuget"
+    directory: "/App/backend-api/Microsoft.GS.DPS"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "build"
+    target-branch: "dependabotchanges"
+    open-pull-requests-limit: 30
+
+  - package-ecosystem: "nuget"
+    directory: "/App/backend-api/Microsoft.GS.DPS.Host"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "build"
+    target-branch: "dependabotchanges"
+    open-pull-requests-limit: 30
+
+  # .NET NuGet dependencies for Kernel Memory Clients
+  - package-ecosystem: "nuget"
+    directory: "/App/kernel-memory/clients/dotnet/SemanticKernelPlugin"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "build"
+    target-branch: "dependabotchanges"
+    open-pull-requests-limit: 30
+
+  - package-ecosystem: "nuget"
+    directory: "/App/kernel-memory/clients/dotnet/WebClient"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "build"
+    target-branch: "dependabotchanges"
+    open-pull-requests-limit: 30
+
+  # npm dependencies for Frontend App
+  - package-ecosystem: "npm"
+    directory: "/App/frontend-app"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "build"
+    target-branch: "dependabotchanges"
+    open-pull-requests-limit: 30

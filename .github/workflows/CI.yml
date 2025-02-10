@@ -1,0 +1,183 @@
+name: Deploy Resources
+
+on:
+  push:
+    branches:
+      - main  # Adjust this to the branch you want to trigger the deployment on
+      - dev
+      - demo
+  schedule:
+    - cron: '0 6,18 * * *'  # Runs at 6:00 AM and 6:00 PM GMT
+ 
+
+jobs:
+  deploy:
+    runs-on: windows-latest  # Use a Windows runner for PowerShell scripts
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3  # Checks out your repository
+      # Install Azure CLI
+    - name: Install Azure CLI
+      shell: pwsh
+      run: |
+          Invoke-WebRequest -Uri https://aka.ms/installazurecliwindows -OutFile AzureCLI.msi
+          Start-Process msiexec.exe -ArgumentList '/I AzureCLI.msi /quiet' -Wait
+
+    # Install kubectl (Windows method)
+    - name: Install kubectl
+      shell: pwsh
+      run: |
+        Invoke-WebRequest -Uri https://dl.k8s.io/release/v1.28.0/bin/windows/amd64/kubectl.exe -OutFile kubectl.exe
+        Move-Item -Path ./kubectl.exe -Destination "C:\kubectl.exe"
+        [Environment]::SetEnvironmentVariable('PATH', $env:PATH + ';C:\', [System.EnvironmentVariableTarget]::Machine)
+
+
+      # Install Helm (Windows method)
+    - name: Install Helm
+      shell: pwsh
+      run: |
+          Invoke-WebRequest -Uri https://get.helm.sh/helm-v3.13.0-windows-amd64.zip -OutFile helm.zip
+          Expand-Archive helm.zip -DestinationPath helm
+          Move-Item -Path ./helm/windows-amd64/helm.exe -Destination "C:\helm.exe"
+          [Environment]::SetEnvironmentVariable('PATH', $env:PATH + ';C:\', [System.EnvironmentVariableTarget]::Machine)
+
+
+    - name: Set Docker environment variables
+      run: echo "DOCKER_BUILDKIT=0" >> $GITHUB_ENV
+
+      # Set up Docker
+    - name: Set up Docker
+      uses: docker/setup-buildx-action@v2
+      with:
+       driver: docker
+
+    - name: Setup PowerShell
+      shell: pwsh
+      run: |
+        $PSVersionTable.PSVersion
+
+    - name: Run Deployment Script with Input
+      shell: pwsh
+      run: |
+        cd Deployment
+        $input = @"
+        ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        CanadaCentral
+        WestUS3
+        ${{ secrets.EMAIL }}
+        yes
+        "@
+        $input | pwsh ./resourcedeployment.ps1
+        echo "Resource Group Name is ${{ env.rg_name }}"
+        echo "Kubernetes resource group are ${{ env.krg_name }}"
+      env:
+        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+    - name: Cleanup Resource Group
+      if: always()  # Ensures this step runs even if the deployment fails
+      shell: pwsh
+      run: |
+          az login --service-principal --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+          az group delete --name ${{ env.rg_name }} --yes --no-wait
+          az group delete --name ${{ env.krg_name }} --yes --no-wait
+      env:
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+
+    - name: Wait for Resource Deletion to Complete
+      shell: pwsh
+      run: |
+            $retries = 0
+            $maxRetries = 3
+            $sleepIntervals = @(700, 200, 200)
+    
+            while ($retries -lt $maxRetries) {
+              $rgStatus = az group exists --name ${{ env.rg_name }}
+              $krgStatus = az group exists --name ${{ env.krg_name }}
+              
+    
+              # if (-not $rgStatus -and -not $krgStatus) {
+              #   Write-Host "Both resource groups deleted successfully."
+              #   break
+              # }
+              if ($rgStatus -eq "false" -and $krgStatus -eq "false") {
+                Write-Host "Both resource groups deleted successfully."
+                break
+              }
+    
+              $retries++
+              if ($retries -eq $maxRetries) {
+                Write-Host "Resource groups deletion not confirmed after $maxRetries attempts. Exiting."
+                exit 1
+              }
+    
+              Write-Host "Resource groups still exist. Retrying in $($sleepIntervals[$retries - 1]) seconds..."
+              Start-Sleep -Seconds $sleepIntervals[$retries - 1]
+            }
+    
+    - name: Purging the Resources
+      if: success()
+      shell: pwsh
+      run: |
+                  # Set variables using GitHub Actions environment values
+                  $solutionPrefix = "${{ env.SOLUTION_PREFIX }}"
+                  $subscriptionId = "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+                  $resourceGroupName = "${{ env.rg_name }}"
+                  
+                  $openai_name = "openaiservice-$solutionPrefix"
+                  $cognitiveservice_name = "cognitiveservice-$solutionPrefix"
+          
+                  # Debug: Print resource names
+                  Write-Host "Purging OpenAI resource: $openai_name"
+                  Write-Host "Purging CognitiveService Account: $cognitiveservice_name"
+          
+                  # Construct resource IDs
+                  $openaiResourceId = "/subscriptions/$subscriptionId/providers/Microsoft.CognitiveServices/locations/westus3/resourceGroups/$resourceGroupName/deletedAccounts/$openai_name"
+                  $cognitiveResourceId = "/subscriptions/$subscriptionId/providers/Microsoft.CognitiveServices/locations/eastus/resourceGroups/$resourceGroupName/deletedAccounts/$cognitiveservice_name"
+          
+                  # Debug: Print constructed resource IDs
+                  Write-Host "Command to purge OpenAI resource: az resource delete --ids `"$openaiResourceId`" --verbose"
+                  Write-Host "Command to purge CognitiveService Account: az resource delete --ids `"$cognitiveResourceId`" --verbose"
+                    # Purge OpenAI Resource
+                      az resource delete --ids $openaiResourceId --verbose
+                      if (-not $?) {
+                          Write-Host "Failed to purge OpenAI resource: $openaiResourceId"
+                      }
+
+                      # Purge CognitiveService Account
+    
+
+                      az resource delete --ids $cognitiveResourceId --verbose
+                      if (-not $?) {
+                          Write-Host "Failed to purge CognitiveService Account."
+                      }
+                          
+        
+    - name: Send Notification on Failure
+      if: failure()
+      shell: pwsh
+      run: |
+                            # Define the RUN_URL variable
+                            $RUN_URL = "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    
+                            # Construct the email body using a Here-String
+                            $EMAIL_BODY = @"
+                            {
+                              "body": "<p>Dear Team,</p><p>The Document Knowledge Mining Automation process encountered an issue.</p><p><strong>Build URL:</strong> <a href='$RUN_URL'>$RUN_URL</a></p><p>Please investigate promptly.</p><p>Best regards,<br>Your Automation Team</p>"
+                            }
+                            "@
+                    
+                            # Send the notification with error handling
+                            try {
+                                curl -X POST "${{ secrets.LOGIC_APP_URL }}" `
+                                     -H "Content-Type: application/json" `
+                                     -d "$EMAIL_BODY"
+                            } catch {
+                                Write-Output "Failed to send notification."
+                            }
+                  
