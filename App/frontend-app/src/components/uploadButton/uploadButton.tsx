@@ -24,7 +24,7 @@ import { getFileTypeIconProps } from "@fluentui/react-file-type-icons";
 const UploadDocumentsDialog = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<
-    { name: string; progress: number; status: string }[]
+    { name: string; progress: number; status: string; errorMsg:string }[]
   >([]);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -35,6 +35,7 @@ const UploadDocumentsDialog = () => {
       name: file.name,
       progress: 0,
       status: "uploading",
+      errorMsg : ""
     }));
     setUploadingFiles((prev) => [...prev, ...newFiles]);
 
@@ -52,18 +53,19 @@ const UploadDocumentsDialog = () => {
         setUploadingFiles((prev) =>
           prev.map((f, index) =>
             index === prev.length - acceptedFiles.length + i
-              ? { ...f, progress: 100, status: "success" }
+              ? { ...f, progress: 100, status: "success", errorMsg: "" }
               : f
           )
         );
-      } catch (error) {
-        console.error("Error uploading file:", error);
+      } catch (error:any) {
+        const errorMessage = error.message.replace(/^Error:\s*/, ""); // Remove "Error: " prefix
+        const parsedError = JSON.parse(errorMessage);
 
         // Update file status to error
         setUploadingFiles((prev) =>
           prev.map((f, index) =>
             index === prev.length - acceptedFiles.length + i
-              ? { ...f, progress: 100, status: "error" }
+              ? { ...f, progress: 100, status: "error", errorMsg: parsedError.summary}
               : f
           )
         );
@@ -188,13 +190,17 @@ const UploadDocumentsDialog = () => {
                   )}
                 </div>
                 <ProgressBar value={file.progress} />
-                <span>
+                <span
+                style={{
+                  color: file.status === "error" ? "red" : "inherit", // Apply red color only for error messages
+                }}>
                   {file.status === "uploading"
                     ? "Uploading..."
                     : file.status === "success"
                     ? "Upload complete"
-                    : "Upload failed"}
+                    : file.errorMsg}
                 </span>
+                <span>{}</span>
               </div>
             ))}
           </DialogContent>

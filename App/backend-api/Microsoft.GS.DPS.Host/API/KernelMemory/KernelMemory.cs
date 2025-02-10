@@ -49,6 +49,17 @@ namespace Microsoft.GS.DPSHost.API
                                                                                  Summary = $"{fileExtension} file is Unsupported file type" });
                     }
 
+                    // Checking File Size: O byte/kb file not allowed
+                    if (file == null || file.Length == 0)
+                    {
+                        return Results.BadRequest(new DocumentImportedResult()
+                        {
+                            DocumentId = string.Empty,
+                            MimeType = contentType,
+                            Summary = "The file is empty and cannot be uploaded. Please select a valid file."
+                        });
+                    }
+
                     var result = await kernelMemory.ImportDocument(fileStream, file.FileName, contentType);
 
                     //Return HTTP 202 with Location Header

@@ -289,7 +289,9 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
     };
 
     function handleSend(ev: TextareaSubmitEvents, data: TextareaValueData) {
-        makeApiRequest(data.value);
+        if (data.value.trim() !='') {               
+            makeApiRequest(data.value);
+        }
     }
 
     // const handleOpenReference = async (referenceId: string, chunkTexts: string[]) => {
