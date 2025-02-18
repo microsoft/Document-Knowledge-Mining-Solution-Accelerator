@@ -28,19 +28,19 @@ interface SearchBoxProps {
     onKeyDown?: (event: KeyboardEvent<HTMLInputElement>) => void;  // Include onKeyDown as a prop
 }
 
-const MicButton = () => {
+export const MicButton = () => {
     return <Button className="mic_button" icon={<Mic24Regular />} appearance="subtle" />;
 };
 
-const KeyBoardButton = () => {
+export const KeyBoardButton = () => {
     return <Button className="keyboard_button" icon={<Keyboard24Regular />} appearance="subtle" />;
 };
 
-const SearchVisualButton = () => {
+export const SearchVisualButton = () => {
     return <Button className="searchVisual_button" icon={<SearchVisual24Regular />} appearance="subtle" />;
 };
 
-const UploadButton = () => {
+export const UploadButton = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const uploadDocuments = async () => {
@@ -139,7 +139,7 @@ export const SearchBox = forwardRef<SearchBoxHandle, SearchBoxProps>((
                     className={`input_wrapper`}
                     contentBefore={<Search24Regular />}
                     contentAfter={
-                        <div className="flex">
+                        <div className="flex" data-testid = "upload-div">
                             {/* <KeyBoardButton />
                             <MicButton />
                             <SearchVisualButton /> */}
