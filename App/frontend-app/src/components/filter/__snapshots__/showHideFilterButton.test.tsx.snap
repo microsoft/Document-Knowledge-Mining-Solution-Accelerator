@@ -1,0 +1,30 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`FilterButton matches snapshot 1`] = `
+<DocumentFragment>
+  <button
+    class="fui-Button r1alrhcs h-full ___13arsol_wkbbhs0 fhovq9v f1p3nwhy f11589ue f1q5o8ev f1pdflbu fkfq4zb f1t94bn6 f1s2uweq fr80ssc f1ukrpxl fecsdlb fnwyq0v ft1hn21 fuxngvv fy5bs14 fsv2rcd f1h0usnq fs4ktlq f16h9ulv fx2bmrt f1omzyqd f1dfjoow f1j98vj9 fj8yq94 f4xjyn1 f1et0tmh f9ddjv3 f1wi8ngl"
+    type="button"
+  >
+    <span
+      class="fui-Button__icon rywnvv2 ___963sj20_1qpm2bl f1nizpg2"
+    >
+      <svg
+        aria-hidden="true"
+        class="___12fm75w_v8ls9a0 f1w7gpdv fez10in fg4l7m0"
+        fill="currentColor"
+        height="20"
+        viewBox="0 0 20 20"
+        width="20"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M12.25 13.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5h4.5Zm2-4.25a.75.75 0 0 1 0 1.5h-8.5a.75.75 0 0 1 0-1.5h8.5Zm2-4.25a.75.75 0 0 1 0 1.5H3.75a.75.75 0 0 1 0-1.5h12.5Z"
+          fill="currentColor"
+        />
+      </svg>
+    </span>
+    components.filter.title
+  </button>
+</DocumentFragment>
+`;
