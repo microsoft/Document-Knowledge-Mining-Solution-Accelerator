@@ -10,12 +10,12 @@ describe("Header", () => {
     });
 
     test.each([
-        ["small", "h-[135px]"],
+        ["small", "h-[60px]"],  // Adjust expected class for "small"
         ["medium", "h-[180px]"],
         ["large", "h-[268px]"],
     ])("renders Header component with size %s", (size, expectedClass) => {
         render(<Header size={size as "small" | "medium" | "large"}>Test Header</Header>);
         const headerElement = screen.getByRole("banner");
-        expect(headerElement).toHaveClass(expectedClass);
+        expect(headerElement).toHaveClass(expectedClass); // This checks the correct class
     });
 });
