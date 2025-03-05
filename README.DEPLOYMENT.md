@@ -37,6 +37,16 @@
 
 1. **Azure Access** - subscription-level `Owner` or `User Access Administrator` role required.
 
+ 1. **Microsoft.Compute** - Make sure to register the Microsoft.Compute.
+
+   Below are the steps need to follow:
+
+    * Log in to your Azure Portal.
+    * Navigate to your active Azure subscription.
+    * Go to Settings and click on "Resource  Providers".
+
+![alt text](image.png)
+
 
 ## Regional Availability
 
@@ -140,10 +150,13 @@ Don't miss this Url information. This is the application's endpoint URL and it s
 | text-embedding-3-large | 200K TPM      |
 
 
+> **⚠️ Warning:**  **Insufficient quota can cause failures during the upload process.** Please ensure you have the recommended capacity or request for additional capacity before start uploading the files.
+
+
 1. Browse to Azure OpenAI Studio and select **each of the 2 models** within the `Deployments` menu:  
 <img src="./Images/readme_deployment/Control_Model_TPM000.png" alt="Select Model" width="700">
 
-1. Increase the TPM value for **each model** for faster report generation:  
+2. Increase the TPM value for **each model** for faster report generation:  
 <img src="./Images/readme_deployment/Control_Model_TPM001.png" alt="Set Token per minute" width="700">
 
 ### 2. Data Uploading and Processing
