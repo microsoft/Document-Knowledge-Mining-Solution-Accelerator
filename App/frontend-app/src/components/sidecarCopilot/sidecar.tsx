@@ -2,6 +2,7 @@ import { CopilotChat, UserMessage, CopilotMessage } from "@fluentai/react-copilo
 import { CopilotProvider, TextareaSubmitEvents, TextareaValueData } from "@fluentai/react-copilot";
 import { Fragment, useContext, useEffect, useRef, useState } from "react";
 import { AppContext } from "../../AppContext";
+import DOMPurify from 'dompurify';
 import { OptionsPanel } from "../chat/optionsPanel";
 import { Document } from "../../api/apiTypes/documentResults";
 import { Button } from "@fluentui/react-components";
@@ -115,8 +116,7 @@ export function SidecarCopilot({
             } catch (error) {
                 console.error("Error parsing response body:", error);
             }
-        } catch (error) {
-        } finally {
+        } catch (error) { /* empty */ } finally {
             setIsLoading(false);
             setTimeout(() => {
                 inputRef.current?.focus();
@@ -164,6 +164,7 @@ export function SidecarCopilot({
                     onSourceChange={handleSourceChange}
                     disabled={disableSources}
                     selectedDocuments={selectedDocuments}
+                    isSticky={false} 
                 />
 
                 <CopilotProvider>
@@ -171,7 +172,11 @@ export function SidecarCopilot({
                         {conversationAnswers.map(([prompt, response], index) => (
                             <Fragment key={index}>
                                 <UserMessage className="mx-auto my-3 ml-5 mr-5">
-                                    <div dangerouslySetInnerHTML={{ __html: prompt.replace(/\n/g, "<br />") }} />
+                                    <div 
+                                    dangerouslySetInnerHTML={{ 
+                                        __html: DOMPurify.sanitize(prompt.replace(/\n/g, "<br />"))
+                                    }} 
+                                /> 
                                 </UserMessage>
                                 <CopilotMessage
                                     className="mx-auto ml-5 mr-5"

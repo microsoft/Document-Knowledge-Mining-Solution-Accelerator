@@ -97,6 +97,7 @@ const UploadDocumentsDialog = () => {
               appearance="subtle"
               onClick={() => setIsOpen(false)}
               style={{ position: "absolute", right: 20, top: 20 }}
+              data-testid="upload-dialog-close-btn"
             />
           </DialogTitle>
 
@@ -118,6 +119,7 @@ const UploadDocumentsDialog = () => {
                   textAlign: "center",
                   marginBottom: "20px",
                 }}
+                data-testid="file-drop-area"
               >
                 <input {...getInputProps()} />
                 <CloudArrowUp24Regular
