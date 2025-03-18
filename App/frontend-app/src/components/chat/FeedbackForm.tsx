@@ -213,6 +213,7 @@ export function FeedbackForm({
                                 <Checkbox
                                     label={t('components.feedback-form.advanced-feedback-title')}
                                     onChange={(e) => setIsPositive(e.target.checked)}
+                                    data-testid="checkbox-feedbackTitle"
                                 ></Checkbox>
                             </div>
 
@@ -234,6 +235,7 @@ export function FeedbackForm({
                                                 <Textarea
                                                     key={index}
                                                     style={{ marginTop: "10px" }}
+                                                    data-testid="textareaEle"
                                                     placeholder={t('components.feedback-form.text-area-placeholder')}
                                                     resize="vertical"
                                                     onChange={(e) => {
@@ -247,20 +249,24 @@ export function FeedbackForm({
 
                                     <div className="mt-2">
                                         <Button
+                                            data-testid="button-close"
                                             appearance="transparent"
                                             shape="circular"
                                             size="small"
                                             onClick={addAdditionalDocumentURLField}
                                             style={{ marginRight: "-25px", marginLeft: "-20px" }}
+                                            aria-label="Close"
                                         >
                                             <AddCircle24Regular />
                                         </Button>
                                         {documentURLFields > 1 && (
                                             <Button
+                                                data-testid="button-SubtractCircleIcon"
                                                 appearance="transparent"
                                                 shape="circular"
                                                 size="small"
                                                 onClick={removeAdditionalDocumentURLField}
+                                                aria-label="Subtract Circle Icon"
                                             >
                                                 <SubtractCircle24Regular />
                                             </Button>
@@ -273,6 +279,7 @@ export function FeedbackForm({
                                         {chunktextFields > 0 &&
                                             Array.from({ length: chunktextFields }, (_, i) => i).map((index) => (
                                                 <Textarea
+                                                    data-testid={"textarea-chunkTextField"}
                                                     key={index}
                                                     style={{ marginTop: "10px" }}
                                                     placeholder={t('components.feedback-form.chunk-texts-placeholder')}
@@ -284,6 +291,7 @@ export function FeedbackForm({
 
                                     <div className="mt-2">
                                         <Button
+                                            data-testid={"button-addAdditionalChunkTextField"}
                                             appearance="transparent"
                                             shape="circular"
                                             size="small"
@@ -294,6 +302,7 @@ export function FeedbackForm({
                                         </Button>
                                         {chunktextFields > 1 && (
                                             <Button
+                                                data-testid={"button-removeAdditionalChunkTextField"}
                                                 appearance="transparent"
                                                 shape="circular"
                                                 size="small"

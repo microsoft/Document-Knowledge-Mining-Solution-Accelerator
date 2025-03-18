@@ -356,7 +356,7 @@ export function Home({ isSearchResultsPage }: HomeProps) {
             startDate = dateRange.startDate;
             endDate = dateRange.endDate;
         }
-        // handleDateRange();
+         // handleDateRange();
         const payload: SearchRequest = {
             queryText: query || "*",
             searchFacets: searchFacets,
