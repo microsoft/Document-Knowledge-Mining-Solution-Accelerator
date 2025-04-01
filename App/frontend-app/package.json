@@ -23,7 +23,7 @@
         "@fluentui/react": "^8.122.11",
         "@fluentui/react-components": "^9.60.0",
         "@fluentui/react-datepicker-compat": "^0.5.0",
-        "@fluentui/react-file-type-icons": "^8.12.8",
+        "@fluentui/react-file-type-icons": "^8.12.9",
         "@fluentui/react-icons": "^2.0.274",
         "@fluentui/react-tags-preview": "^0.4.0",
         "@microsoft/applicationinsights-react-js": "^17.3.5",
