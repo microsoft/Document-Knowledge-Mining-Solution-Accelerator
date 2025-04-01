@@ -63,7 +63,7 @@
         "@vitejs/plugin-basic-ssl": "^2.0.0",
         "@vitejs/plugin-react": "^4.3.4",
         "autoprefixer": "^10.4.20",
-        "body-parser": "^1.20.3",
+        "body-parser": "^2.2.0",
         "concurrently": "^9.1.2",
         "cors": "^2.8.5",
         "eslint": "^8.53.0",
