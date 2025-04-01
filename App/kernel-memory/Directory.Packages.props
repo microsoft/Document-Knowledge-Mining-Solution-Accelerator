@@ -24,9 +24,9 @@
     <PackageVersion Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0" />
     <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.3" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.2.1" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.2" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.3" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.AzureAppConfiguration" Version="7.3.0" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="9.0.2" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="9.0.3" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.2" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.2" />
