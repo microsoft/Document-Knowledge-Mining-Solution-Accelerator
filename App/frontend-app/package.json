@@ -26,7 +26,7 @@
         "@fluentui/react-file-type-icons": "^8.12.8",
         "@fluentui/react-icons": "^2.0.274",
         "@fluentui/react-tags-preview": "^0.4.0",
-        "@microsoft/applicationinsights-react-js": "^17.3.5",
+        "@microsoft/applicationinsights-react-js": "^18.3.6",
         "@microsoft/applicationinsights-web": "^3.3.5",
         "@react-pdf-viewer/core": "^3.12.0",
         "@react-pdf-viewer/default-layout": "^3.12.0",
