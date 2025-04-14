@@ -158,6 +158,7 @@ module gs_appconfig 'bicep/azureappconfigservice.bicep' = {
 
 // return all resource names as a output
 output gs_resourcegroup_name string = 'rg-${resourceprefix_name}${resourceprefix}'
+output gs_solution_prefix string = '${resourceprefix_name}${resourceprefix}'
 output gs_storageaccount_name string = gs_storageaccount.outputs.storageAccountName
 output gs_azsearch_name string = gs_azsearch.outputs.searchServiceName
 

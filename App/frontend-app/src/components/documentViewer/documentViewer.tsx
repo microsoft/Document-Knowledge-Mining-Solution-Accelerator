@@ -74,7 +74,7 @@ export function DocDialog(
     const [pageMetadata, setPageMetadata] = useState<Document[] | null>(null);
     const [iframeKey, setIframeKey] = useState(0);
     const [isExpanded, setIsExpanded] = useState(false);
-    const [clearedChatFlag, setClearChatFlag] = useState(false);
+    const [clearedChatFlag, setClearChatFlag] = useState(clearChatFlag);
     // const [aiKnowledgeMetadata, setAIKnowledgeMetadata] = useState<Document | null>(null);
 
 

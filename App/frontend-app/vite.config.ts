@@ -13,6 +13,7 @@ export default defineConfig({
         },
         host: true,
         strictPort: true,
-        port : 5900
+        port : 5900,
+        allowedHosts: true
     }
 });

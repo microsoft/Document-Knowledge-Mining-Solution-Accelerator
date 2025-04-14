@@ -191,9 +191,41 @@ namespace Microsoft.GS.DPS.API
                                         }
             };
 
-            //Get Response from ChatCompletionService
-            ChatMessageContent returnedChatMessageContent = await _chatCompletionService.GetChatMessageContentAsync(chatHistory, executionSettings);
+            ChatMessageContent returnedChatMessageContent;
+            try
+            {
 
+                //Get Response from ChatCompletionService
+                returnedChatMessageContent = await _chatCompletionService.GetChatMessageContentAsync(chatHistory, executionSettings);
+            }
+            catch (HttpOperationException ex) when (ex.Message.Contains("content_filter", StringComparison.OrdinalIgnoreCase))
+            {
+                
+                Console.WriteLine($"Exception Message: {ex.Message}");
+                
+                //if content filter triggered providing fallback response
+                returnedChatMessageContent = new ChatMessageContent
+                {
+                    Content = "Sorry, your request couldn't be processed as it may contain sensitive or restricted content. Please rephrase your query and try again."
+                };
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"unexpected error: {ex.Message}");
+             
+                    returnedChatMessageContent = new ChatMessageContent
+                    {
+                        Content = "An error occured while processing request, try again"
+                    };
+                
+            }
+            if (returnedChatMessageContent == null)
+            {
+                returnedChatMessageContent = new ChatMessageContent
+                {
+                    Content = "No response"
+                };
+            }
             //Just in case returnedChatMessageContent.Content has ```json ``` block, Strip it first
             if (returnedChatMessageContent.Content != null && returnedChatMessageContent.Content.Contains("```json", StringComparison.OrdinalIgnoreCase))
                 returnedChatMessageContent.Content = returnedChatMessageContent.Content.Replace("```json", "").Replace("```", "");
@@ -202,13 +234,21 @@ namespace Microsoft.GS.DPS.API
 
             try
             {
-                //Adding for non English Response.
-                returnedChatMessageContent.Content = System.Text.Encoding.UTF8.GetString(System.Text.Encoding.UTF8.GetBytes(returnedChatMessageContent.Content));
-                answerObject = JsonSerializer.Deserialize<Answer>(returnedChatMessageContent.Content, options: new JsonSerializerOptions
+                if (returnedChatMessageContent != null && !string.IsNullOrWhiteSpace(returnedChatMessageContent.Content))
                 {
-                    PropertyNameCaseInsensitive = true,
-                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-                });
+
+                    //Adding for non English Response.
+                    returnedChatMessageContent.Content = System.Text.Encoding.UTF8.GetString(System.Text.Encoding.UTF8.GetBytes(returnedChatMessageContent.Content));
+                    answerObject = JsonSerializer.Deserialize<Answer>(returnedChatMessageContent.Content, options: new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true,
+                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                    });
+                }
+                else
+                {
+                    throw new NullReferenceException("returnedChatMessageContent or its Content is null.");
+                }
             }
             catch
             {

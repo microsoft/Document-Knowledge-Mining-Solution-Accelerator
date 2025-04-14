@@ -45,18 +45,20 @@ export function DialogTitleBar({
 }: IDialogTitleBarProps) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(selectedTab);
+  const [isChatTabOpened, setIsChatTabOpened] = useState(false);
 
   useEffect(() => {
     setActiveTab(selectedTab);
-  }, [selectedTab]);
+  }, [selectedTab,clearChatFlag]);
+
+  useEffect(()=>{
+    if(activeTab == "Chat Room")
+      setIsChatTabOpened(true)
+  },[activeTab])
 
   const handleTabSelect = (event: SelectTabEvent, data: SelectTabData) => {
-    setActiveTab(data.value as string);
     onTabSelect(event, data);
     
-    if (data.value === "Chat Room") {
-      setClearChatFlag(false);
-    }
   };
 
   return (
@@ -152,7 +154,7 @@ export function DialogTitleBar({
                   searchResultDocuments={[]}
                   selectedDocuments={[metadata]}
                   chatWithDocument={[metadata]}
-                  clearChatFlag={clearChatFlag}
+                  clearChatFlag={isChatTabOpened ? !isChatTabOpened : clearChatFlag}
                 />
               </div>
             </div>
