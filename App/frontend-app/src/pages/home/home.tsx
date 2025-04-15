@@ -54,7 +54,7 @@ export function Home({ isSearchResultsPage }: HomeProps) {
     const navigate = useNavigate();
     const location = useLocation();
     const [reset, setReset] = useState(false);  // State to trigger reset
-
+    const [clearSearchBox, setClearSearchBox] = useState(false);
     const [clearAllTriggered, setClearAllTriggered] = useState(false);
     const [clearFilters, setClearFilters] = useState(false);
     const [resetSearchBox, setResetSearchBox] = useState(false);
@@ -141,15 +141,16 @@ export function Home({ isSearchResultsPage }: HomeProps) {
 
     useEffect(() => {
         if (searchBoxRef.current) {
-            if (resetSearchBox) {
-                
+            if (resetSearchBox && clearSearchBox) {
                 searchBoxRef.current.reset();
                 setResetSearchBox(false); // Reset the trigger
             } else {
-                const urlQuery = searchParams.get("q");
-                if (urlQuery) {
-                    const decodedQuery = decodeURIComponent(urlQuery);
-                    searchBoxRef.current.setValue(decodedQuery);
+                if(!clearSearchBox){
+                    const urlQuery = searchParams.get("q");
+                    if (urlQuery) {
+                        const decodedQuery = decodeURIComponent(urlQuery);
+                        searchBoxRef.current.setValue(decodedQuery);
+                    }
                 }
             }
         }
@@ -165,15 +166,24 @@ export function Home({ isSearchResultsPage }: HomeProps) {
                 setSearchParams({}); // Clear all search params when there's no query
             }
         } else {
-            const q = searchParams.get("q");
-            if (q) {
-                setQuery(decodeURIComponent(q)); 
+            if(!clearSearchBox){
+                const q = searchParams.get("q");
+                if (q) {
+                    setQuery(decodeURIComponent(q)); 
+                }
             }
         }
     }, [isSearchResultsPage, query, searchParams, setSearchParams]);
 
+    useEffect(() => {
+        const q = searchParams.get("q");
+        if(!q){
+            setClearSearchBox(false)
+        }
+    },[searchParams])
+    
     function onSearchChanged(searchValue: string): void {
-        if (searchValue) {
+       if (searchValue) {
             setTextValue(searchValue);
         }
         if (searchValue) {
@@ -189,7 +199,7 @@ export function Home({ isSearchResultsPage }: HomeProps) {
             }
         } else {
             setSearchResultDocuments([]);
-            setSearchParams("");
+            setSearchParams({});
             setQuery(searchValue);
         }
     }
@@ -462,6 +472,7 @@ export function Home({ isSearchResultsPage }: HomeProps) {
         setSelectedDocuments([]);
         setClearAllTriggered(true); // Set this flag to true
         setClearFilters(true);
+        setClearSearchBox(true);
         // Call loadDataAsync after clearing
         loadDataAsync();
     }, [/* dependencies */]);
