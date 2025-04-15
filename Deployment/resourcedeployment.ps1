@@ -899,7 +899,7 @@ try {
     Connect-AzAccount
 
     # Prompt for App Name
-    $appName = Read-Host -Prompt "Enter the name for the Azure AD App Registration"
+    $appName = "$($deploymentResult.aksName)-app"
 
     # Variables
     $tenantId = (Get-AzContext).Tenant.Id
@@ -916,12 +916,6 @@ try {
     $updatedApp = Set-AzADApplication -ObjectId $app.Id -SPARedirectUri $redirectUri
     Write-Host "Platform set to 'Single-page application' with redirect URI '$redirectUri'."
 
-
-    # Step 3: Generate a Client Secret
-    Write-Host "Generating Client Secret for '$appName'..."
-
-    Write-Host "Client Secret generated successfully for '$appName'!"
-
     # Output the required configuration values
     $clientId = $app.AppId
     $authority = "https://login.microsoftonline.com/$tenantId"
@@ -930,7 +924,6 @@ try {
     Write-Host "Client ID:  $($clientId)"
     Write-Host "Authority: $authority"
     Write-Host "Redirect URI: $redirectUri"
-    #Write-Host "Client Secret: $clientSecretValue"  # Store this securely
     Write-Host "==========================================================="
 
     $frontAppConfigServicePlaceholders = @{
