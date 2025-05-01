@@ -67,7 +67,7 @@
         "concurrently": "^9.1.2",
         "cors": "^2.8.5",
         "eslint": "^8.53.0",
-        "eslint-config-prettier": "^10.0.2",
+        "eslint-config-prettier": "^10.1.2",
         "eslint-import-resolver-typescript": "^3.8.3",
         "eslint-plugin-import": "^2.29.1",
         "eslint-plugin-jsx-a11y": "^6.10.2",
