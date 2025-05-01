@@ -6294,14 +6294,14 @@ kleur@^3.0.3:
     i18next "^24.2.2"
     i18next-browser-languagedetector "^8.0.4"
     i18next-http-backend "^3.0.2"
-    km-app "file:../../../../../AppData/Local/Yarn/Cache/v6/npm-km-app-1.0.0-c9d5c8dd-3ecd-4bf7-95cb-bf6dd5cb098c-1741348829239/node_modules/km-app"
+    km-app "file:."
     marked "^15.0.7"
     notistack "^3.0.2"
     pdfjs-dist "^4.7.76"
     react "^18.2.0"
     react-dom "^18.2.0"
     react-dropzone "^14.3.5"
-    react-i18next "^15.4.1"
+    react-i18next "^15.5.1"
     react-markdown "^10.0.1"
     react-router-dom "^7.2.0"
     react-tiff "^0.0.14"
@@ -7423,10 +7423,10 @@ react-i18next@^12.0.0:
     "@babel/runtime" "^7.20.6"
     html-parse-stringify "^3.0.1"
 
-react-i18next@^15.4.1:
-  version "15.4.1"
-  resolved "https://registry.yarnpkg.com/react-i18next/-/react-i18next-15.4.1.tgz#33f3e89c2f6c68e2bfcbf9aa59986ad42fe78758"
-  integrity sha512-ahGab+IaSgZmNPYXdV1n+OYky95TGpFwnKRflX/16dY04DsYYKHtVLjeny7sBSCREEcoMbAgSkFiGLF5g5Oofw==
+react-i18next@^15.5.1:
+  version "15.5.1"
+  resolved "https://registry.yarnpkg.com/react-i18next/-/react-i18next-15.5.1.tgz#ceada755a0b6691432b6b6dc5dad454fd3d158e3"
+  integrity sha512-C8RZ7N7H0L+flitiX6ASjq9p5puVJU1Z8VyL3OgM/QOMRf40BMZX+5TkpxzZVcTmOLPX5zlti4InEX5pFyiVeA==
   dependencies:
     "@babel/runtime" "^7.25.0"
     html-parse-stringify "^3.0.1"
