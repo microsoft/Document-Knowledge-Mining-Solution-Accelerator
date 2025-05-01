@@ -1120,13 +1120,13 @@
     "@griffel/react" "^1.5.22"
     "@swc/helpers" "^0.5.1"
 
-"@fluentui/react-file-type-icons@^8.12.8":
-  version "8.12.8"
-  resolved "https://registry.yarnpkg.com/@fluentui/react-file-type-icons/-/react-file-type-icons-8.12.8.tgz#1567ab9bc8e6418fd84f55e7cbe871356e71e9ff"
-  integrity sha512-G/EbSk4bqrZBSmHVToF9TgfKhRigLMcPyMngSTL+11n3tc+UQb2iAiONvgjiTSuZDVqjJ+3nRhPBv+jbuuOKEQ==
+"@fluentui/react-file-type-icons@^8.13.0":
+  version "8.13.0"
+  resolved "https://registry.yarnpkg.com/@fluentui/react-file-type-icons/-/react-file-type-icons-8.13.0.tgz#be23c3c1ec8cedd325f80f5699cb7132c52798ef"
+  integrity sha512-Sl9HPzsgeaJdKjiVj1TvzBIuYBVwvYB1aqH4pUq15EPDgnSx5je+D/CE7bsrQD0PmKyvwdMn3ey6xpx0BNC7Mg==
   dependencies:
     "@fluentui/set-version" "^8.2.24"
-    "@fluentui/style-utilities" "^8.11.7"
+    "@fluentui/style-utilities" "^8.12.0"
     tslib "^2.1.0"
 
 "@fluentui/react-focus@^8.9.21":
@@ -1858,10 +1858,10 @@
   dependencies:
     tslib "^2.1.0"
 
-"@fluentui/style-utilities@^8.11.7":
-  version "8.11.7"
-  resolved "https://registry.yarnpkg.com/@fluentui/style-utilities/-/style-utilities-8.11.7.tgz#b1d795f3ab4c8a7bd3024a16d454058c12baba52"
-  integrity sha512-Pyz4EViQs1zbTvkserpBSWLNiS9HFKVZ3clGuj2A0j6Wj1WUpZ2JYHCeV4Ekifx3fX54ezEC/cOCGsOr9iWHwQ==
+"@fluentui/style-utilities@^8.11.7", "@fluentui/style-utilities@^8.12.0":
+  version "8.12.0"
+  resolved "https://registry.yarnpkg.com/@fluentui/style-utilities/-/style-utilities-8.12.0.tgz#51e13feeb6aa2f503678e089b9ad13617b5b9572"
+  integrity sha512-uBHPzZ1waIOj/lQG6Z8jjAilKnePqvFWJi2UHYAfezQM6HXoGpE0sUZWECYNPU+fL0/LTNF8FmfvYPFD0frVGw==
   dependencies:
     "@fluentui/merge-styles" "^8.6.14"
     "@fluentui/set-version" "^8.2.24"
@@ -6282,7 +6282,7 @@ kleur@^3.0.3:
     "@fluentui/react" "^8.122.11"
     "@fluentui/react-components" "^9.60.0"
     "@fluentui/react-datepicker-compat" "^0.5.0"
-    "@fluentui/react-file-type-icons" "^8.12.8"
+    "@fluentui/react-file-type-icons" "^8.13.0"
     "@fluentui/react-icons" "^2.0.274"
     "@fluentui/react-tags-preview" "^0.4.0"
     "@microsoft/applicationinsights-react-js" "^17.3.5"
@@ -6294,7 +6294,7 @@ kleur@^3.0.3:
     i18next "^24.2.2"
     i18next-browser-languagedetector "^8.0.4"
     i18next-http-backend "^3.0.2"
-    km-app "file:../../../../../AppData/Local/Yarn/Cache/v6/npm-km-app-1.0.0-c9d5c8dd-3ecd-4bf7-95cb-bf6dd5cb098c-1741348829239/node_modules/km-app"
+    km-app "file:."
     marked "^15.0.7"
     notistack "^3.0.2"
     pdfjs-dist "^4.7.76"
