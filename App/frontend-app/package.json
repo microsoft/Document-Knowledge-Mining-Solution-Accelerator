@@ -36,7 +36,7 @@
         "i18next-browser-languagedetector": "^8.0.4",
         "i18next-http-backend": "^3.0.2",
         "km-app": "file:",
-        "marked": "^15.0.7",
+        "marked": "^15.0.11",
         "notistack": "^3.0.2",
         "pdfjs-dist": "^4.7.76",
         "react": "^18.2.0",
