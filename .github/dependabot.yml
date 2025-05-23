@@ -2,9 +2,10 @@
 # package ecosystems to update and where the package manifests are located.
 # For more details, refer to the documentation:
 # https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+
 version: 2
 updates:
-  # GitHub Actions dependencies
+  # GitHub Actions dependencies (grouped)
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -12,9 +13,13 @@ updates:
     commit-message:
       prefix: "build"
     target-branch: "dependabotchanges"
-    open-pull-requests-limit: 100
+    open-pull-requests-limit: 10
+    groups:
+      all-actions:
+        patterns:
+          - "*"
 
-  # .NET NuGet dependencies for Backend API (Multiple Projects)
+  # .NET NuGet dependencies (grouped)
   - package-ecosystem: "nuget"
     directory: "/App/backend-api/Microsoft.GS.DPS"
     schedule:
@@ -22,7 +27,11 @@ updates:
     commit-message:
       prefix: "build"
     target-branch: "dependabotchanges"
-    open-pull-requests-limit: 100
+    open-pull-requests-limit: 10
+    groups:
+      nuget-deps:
+        patterns:
+          - "*"
 
   - package-ecosystem: "nuget"
     directory: "/App/backend-api/Microsoft.GS.DPS.Host"
@@ -31,9 +40,12 @@ updates:
     commit-message:
       prefix: "build"
     target-branch: "dependabotchanges"
-    open-pull-requests-limit: 100
+    open-pull-requests-limit: 10
+    groups:
+      nuget-deps:
+        patterns:
+          - "*"
 
-  # .NET NuGet dependencies for Kernel Memory Clients
   - package-ecosystem: "nuget"
     directory: "/App/kernel-memory/clients/dotnet/SemanticKernelPlugin"
     schedule:
@@ -41,7 +53,11 @@ updates:
     commit-message:
       prefix: "build"
     target-branch: "dependabotchanges"
-    open-pull-requests-limit: 100
+    open-pull-requests-limit: 10
+    groups:
+      nuget-deps:
+        patterns:
+          - "*"
 
   - package-ecosystem: "nuget"
     directory: "/App/kernel-memory/clients/dotnet/WebClient"
@@ -50,9 +66,13 @@ updates:
     commit-message:
       prefix: "build"
     target-branch: "dependabotchanges"
-    open-pull-requests-limit: 100
+    open-pull-requests-limit: 10
+    groups:
+      nuget-deps:
+        patterns:
+          - "*"
 
-  # npm dependencies for Frontend App
+  # npm dependencies for Frontend App (grouped)
   - package-ecosystem: "npm"
     directory: "/App/frontend-app"
     schedule:
@@ -60,4 +80,8 @@ updates:
     commit-message:
       prefix: "build"
     target-branch: "dependabotchanges"
-    open-pull-requests-limit: 100
+    open-pull-requests-limit: 10
+    groups:
+      frontend-deps:
+        patterns:
+          - "*"
