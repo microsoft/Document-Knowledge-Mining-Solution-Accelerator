@@ -7,6 +7,7 @@ on:
       - demo
   schedule:
     - cron: '0 10,22 * * *'  # Runs at 10:00 AM and 10:00 PM GMT
+  workflow_dispatch:
  
 
 jobs:
@@ -118,12 +119,24 @@ jobs:
       if: env.QUOTA_FAILED == 'true'
       run: exit 1
 
+    - name: Generate Environment Name
+      id: generate_environment_name
+      run: |
+        set -e
+        TIMESTAMP_SHORT=$(date +%s | tail -c 5)    # Last 4-5 digits of epoch seconds
+        RANDOM_SUFFIX=$(head /dev/urandom | tr -dc 'a-z0-9' | head -c 8)  # 8 random alphanum chars
+        UNIQUE_ENV_NAME="${TIMESTAMP_SHORT}${RANDOM_SUFFIX}"    # Usually ~12-13 chars
+        echo "ENVIRONMENT_NAME=${UNIQUE_ENV_NAME}" >> $GITHUB_ENV
+        echo "Generated ENVIRONMENT_NAME: ${UNIQUE_ENV_NAME}"
+
     - name: Run Deployment Script with Input
       shell: pwsh
       run: |
         cd Deployment
         $input = @"
         ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        ${{ env.ENVIRONMENT_NAME }}
+        
         CanadaCentral
         ${{ env.VALID_REGION }}
         ${{ secrets.EMAIL }}
