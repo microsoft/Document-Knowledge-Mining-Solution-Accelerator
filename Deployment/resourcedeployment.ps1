@@ -73,6 +73,7 @@ function ValidateVariableIsNullOrEmpty {
 # Function to prompt for parameters with kind messages
 function PromptForParameters {
     param(
+        [string]$tenantId,
         [string]$subscriptionID,
         [string]$environmentName,
         [string]$resourceGroupName,
@@ -102,6 +103,10 @@ function PromptForParameters {
         'EastUS', 'EastUS2', 'SwedenCentral', 'WestUS3'
     )
 
+    if (-not $tenantId) {
+        Write-Host "Please enter your Azure tenant ID" -ForegroundColor Cyan
+        $tenantId = Read-Host -Prompt '> '
+    }
     if (-not $subscriptionID) {
         Write-Host "Please enter your Azure subscription ID to deploy your resources" -ForegroundColor Cyan
         $subscriptionID = Read-Host -Prompt '> '
@@ -137,6 +142,7 @@ function PromptForParameters {
     }
 
     return @{
+        tenantId          = $tenantId
         subscriptionID    = $subscriptionID
         environmentName   = $environmentName
         resourceGroupName = $resourceGroupName
@@ -147,8 +153,9 @@ function PromptForParameters {
 }
 
 # Prompt for parameters with kind messages
-$params = PromptForParameters -subscriptionID $subscriptionID -environmentName $environmentName -resourceGroupName $resourceGroupName -location $location -modelLocation $modelLocation -email $email
+$params = PromptForParameters -tenantId $tenantId -subscriptionID $subscriptionID -environmentName $environmentName -resourceGroupName $resourceGroupName -location $location -modelLocation $modelLocation -email $email
 # Assign the parameters to variables
+$tenantId = $params.tenantId
 $subscriptionID = $params.subscriptionID
 $environmentName = $params.environmentName
 $resourceGroupName = $params.resourceGroupName
@@ -158,17 +165,24 @@ $email = $params.email
 
 function LoginAzure([string]$subscriptionID) {
     Write-Host "Log in to Azure.....`r`n" -ForegroundColor Yellow
-        if ($env:CI -eq "true"){
-      
+    if ($env:CI -eq "true"){
         az login --service-principal `
             --username $env:AZURE_CLIENT_ID `
             --password $env:AZURE_CLIENT_SECRET `
             --tenant $env:AZURE_TENANT_ID
-        write-host "CI deployment mode"
+        Write-Host "CI deployment mode"
     }
+    else{
+        az login --tenant $tenantId
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Failed to log in to Azure with tenant ID '$tenantId'. Please check your credentials." -ForegroundColor Red
+            failureBanner
+            exit 1
+        }
         else{
-        az login
-        write-host "manual deployment mode"
+            Write-Host "Logged in to Azure with tenant ID '$tenantId' successfully." -ForegroundColor Green
+        }
+        Write-Host "manual deployment mode"
     }
     az account set --subscription $subscriptionID
     Write-Host "Switched subscription to '$subscriptionID' `r`n" -ForegroundColor Yellow
@@ -284,6 +298,7 @@ function DisplayResult([pscustomobject]$jsonString) {
     Write-Host "********************************************************************************" -ForegroundColor Blue
     Write-Host "*                 Deployed Azure Resources Information                         *" -ForegroundColor Blue
     Write-Host "********************************************************************************" -ForegroundColor Blue
+    Write-Host "* Tenant Id: " -ForegroundColor Yellow -NoNewline; Write-Host "$tenantId" -ForegroundColor Green
     Write-Host "* Subscription Id: " -ForegroundColor Yellow -NoNewline; Write-Host "$subscriptionID" -ForegroundColor Green
     Write-Host "* Knowledge Mining Digital Asset resource group: " -ForegroundColor Yellow -NoNewline; Write-Host "$resourcegroupName" -ForegroundColor Green
     Write-Host "* Azure Kubernetes Account " -ForegroundColor Yellow -NoNewline; Write-Host "$aksName" -ForegroundColor Green

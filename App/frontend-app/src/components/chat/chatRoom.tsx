@@ -124,6 +124,8 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
 
     const makeApiRequest = async (question: string) => {
         setTextAreaValue("");
+        //Force Textarea re-render to reset internal showCount
+        setTextareaKey(prev => prev + 1);
         setDisableSources(true);
         setIsLoading(true);
         
@@ -249,6 +251,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                 console.error("Error parsing response body:", error);
             }
         } catch (error) {
+            console.error("Error in makeApiRequest:", error);
         } finally {
             setIsLoading(false);
             setTimeout(() => {
