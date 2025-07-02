@@ -217,7 +217,7 @@ jobs:
         shell: pwsh
         run: |
           cd Deployment
-          .\uploadfiles.ps1 -EndpointUrl "${{ steps.get_webapp_url.outputs.WEBAPP_URL }}"
+          .\uploadfiles.ps1 -EndpointUrl ${{ steps.get_webapp_url.outputs.WEBAPP_URL }}
           if ($LASTEXITCODE -ne 0) {
             Write-Host "❌ Post deployment script failed."
             exit 1
@@ -319,7 +319,7 @@ jobs:
           fi
 
       - name: Send Notification on Failure
-        if: failure()
+        if: failure() || needs.deploy.result == 'failure'
         shell: pwsh
         run: |
           # Define the RUN_URL variable
