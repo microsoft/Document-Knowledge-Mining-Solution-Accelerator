@@ -41,8 +41,8 @@ jobs:
           echo "Opening URL: ${{ env.url }}"
           python -m webbrowser "${{ env.url }}"
 
-      - name: Sleep for 20 seconds
-        run: sleep 20s
+      - name: Sleep for 30 seconds
+        run: sleep 30s
         shell: bash
 
       - name: Run tests(1)
