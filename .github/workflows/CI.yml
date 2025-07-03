@@ -213,11 +213,55 @@ jobs:
             echo "Successfully increased TPM for Text Embedding deployment."
           fi
 
-      - name: Open Web App URL using chrome
+      - name: Validate Azure Web App Deployment
         shell: bash
         run: |
-          google-chrome --new-window "${{ steps.get_webapp_url.outputs.WEBAPP_URL }}"
-          sleep 120
+          webapp_url="${{ steps.get_webapp_url.outputs.WEBAPP_URL }}"
+          echo "Validating Azure web app at: $webapp_url"
+
+          # Enhanced health check with retry logic
+          max_attempts=5
+          attempt=1
+          success=false
+
+          while [ $attempt -le $max_attempts ] && [ "$success" = false ]; do
+            echo "Attempt $attempt/$max_attempts: Checking web app health..."
+
+            # Check if web app responds
+            http_code=$(curl -s -o /dev/null -w "%{http_code}" "$webapp_url" || echo "000")
+
+            if [ "$http_code" -eq 200 ]; then
+              echo "✅ Web app is healthy (HTTP $http_code)"
+              success=true
+
+              # Additional validation: check if it's actually the correct app
+              response_body=$(curl -s "$webapp_url" | head -c 1000)
+              if echo "$response_body" | grep -q "Document Knowledge Mining\|DKM\|Knowledge Mining"; then
+                echo "✅ Web app content validated - Document Knowledge Mining solution detected"
+              else
+                echo "⚠️ Web app responding but content validation inconclusive"
+              fi
+
+            elif [ "$http_code" -eq 404 ]; then
+              echo "❌ Web app not found (HTTP 404)"
+              break
+            elif [ "$http_code" -eq 503 ] || [ "$http_code" -eq 502 ]; then
+              echo "⚠️ Web app temporarily unavailable (HTTP $http_code), retrying..."
+              sleep 15
+            else
+              echo "⚠️ Web app returned HTTP $http_code, retrying..."
+              sleep 10
+            fi
+
+            attempt=$((attempt + 1))
+          done
+
+          if [ "$success" = false ]; then
+            echo "❌ Web app validation failed after $max_attempts attempts"
+            exit 1
+          fi
+
+          echo "🎉 Azure web app deployment validated successfully!"
 
       - name: Run Post Deployment Script
         shell: pwsh
@@ -280,7 +324,7 @@ jobs:
         if: env.RESOURCE_GROUP_NAME != ''
         shell: bash
         run: |
-          sleep 120
+          sleep 500
           az group delete --name ${{ env.RESOURCE_GROUP_NAME }} --yes --no-wait
           az group delete --name ${{ env.KUBERNETES_RESOURCE_GROUP_NAME }} --yes --no-wait
 
