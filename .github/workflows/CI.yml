@@ -10,7 +10,7 @@ on:
     - cron: "0 10,22 * * *" # Runs at 10:00 AM and 10:00 PM GMT
 
 env:
-  GPT_CAPACITY: 250
+  GPT_CAPACITY: 300
   TEXT_EMBEDDING_CAPACITY: 200
 
 jobs:
@@ -220,7 +220,7 @@ jobs:
           echo "Validating web app at: $webapp_url"
 
           # Enhanced health check with retry logic
-          max_attempts=5
+          max_attempts=7
           attempt=1
           success=false
 
