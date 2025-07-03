@@ -213,11 +213,11 @@ jobs:
             echo "Successfully increased TPM for Text Embedding deployment."
           fi
 
-      - name: Validate Azure Web App Deployment
+      - name: Validate Deployment
         shell: bash
         run: |
           webapp_url="${{ steps.get_webapp_url.outputs.WEBAPP_URL }}"
-          echo "Validating Azure web app at: $webapp_url"
+          echo "Validating web app at: $webapp_url"
 
           # Enhanced health check with retry logic
           max_attempts=5
@@ -233,24 +233,15 @@ jobs:
             if [ "$http_code" -eq 200 ]; then
               echo "✅ Web app is healthy (HTTP $http_code)"
               success=true
-
-              # Additional validation: check if it's actually the correct app
-              response_body=$(curl -s "$webapp_url" | head -c 1000)
-              if echo "$response_body" | grep -q "Document Knowledge Mining\|DKM\|Knowledge Mining"; then
-                echo "✅ Web app content validated - Document Knowledge Mining solution detected"
-              else
-                echo "⚠️ Web app responding but content validation inconclusive"
-              fi
-
             elif [ "$http_code" -eq 404 ]; then
               echo "❌ Web app not found (HTTP 404)"
               break
             elif [ "$http_code" -eq 503 ] || [ "$http_code" -eq 502 ]; then
               echo "⚠️ Web app temporarily unavailable (HTTP $http_code), retrying..."
-              sleep 15
+              sleep 20
             else
               echo "⚠️ Web app returned HTTP $http_code, retrying..."
-              sleep 10
+              sleep 20
             fi
 
             attempt=$((attempt + 1))
@@ -261,18 +252,24 @@ jobs:
             exit 1
           fi
 
-          echo "🎉 Azure web app deployment validated successfully!"
-
       - name: Run Post Deployment Script
         shell: pwsh
         run: |
+          Write-Host "Running post deployment script to upload files..."
           cd Deployment
-          .\uploadfiles.ps1 -EndpointUrl ${{ steps.get_webapp_url.outputs.WEBAPP_URL }}
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "❌ Post deployment script failed."
+          try {
+            .\uploadfiles.ps1 -EndpointUrl ${{ steps.get_webapp_url.outputs.WEBAPP_URL }}
+            Write-Host "ExitCode: $LASTEXITCODE"
+            if ($LASTEXITCODE -eq $null -or $LASTEXITCODE -eq 0) {
+              Write-Host "✅ Post deployment script completed successfully."
+            } else {
+              Write-Host "❌ Post deployment script failed with exit code: $LASTEXITCODE"
+              exit 1
+            }
+          }
+          catch {
+            Write-Host "❌ Post deployment script failed with error: $($_.Exception.Message)"
             exit 1
-          } else {
-            Write-Host "✅ Post deployment script completed successfully."
           }
 
       - name: Logout from Azure
@@ -324,7 +321,6 @@ jobs:
         if: env.RESOURCE_GROUP_NAME != ''
         shell: bash
         run: |
-          sleep 500
           az group delete --name ${{ env.RESOURCE_GROUP_NAME }} --yes --no-wait
           az group delete --name ${{ env.KUBERNETES_RESOURCE_GROUP_NAME }} --yes --no-wait
 
