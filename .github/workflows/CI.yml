@@ -213,6 +213,22 @@ jobs:
             echo "Successfully increased TPM for Text Embedding deployment."
           fi
 
+      - name: Open Web App URL
+        shell: bash
+        run: |
+          echo "Opening Web App URL in the browser..."
+          echo "Web App URL: ${{ steps.get_webapp_url.outputs.WEBAPP_URL }}"
+          if command -v xdg-open &> /dev/null; then
+            xdg-open "${{ steps.get_webapp_url.outputs.WEBAPP_URL }}"
+            sleep 60
+          elif command -v open &> /dev/null; then
+            open "${{ steps.get_webapp_url.outputs.WEBAPP_URL }}"
+            sleep
+          else
+            echo "No suitable command found to open the URL."
+          fi
+          sleep 120
+
       - name: Run Post Deployment Script
         shell: pwsh
         run: |
