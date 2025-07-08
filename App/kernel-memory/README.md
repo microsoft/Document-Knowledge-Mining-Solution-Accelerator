@@ -336,24 +336,24 @@ running the service locally with OpenAPI enabled.
 - **Microsoft.KernelMemory.WebClient:** .NET web client to call a running instance of Kernel Memory web service.
 
   [![Nuget package](https://img.shields.io/nuget/vpre/Microsoft.KernelMemory.WebClient)](https://www.nuget.org/packages/Microsoft.KernelMemory.WebClient/)
-  [![Example code](https://img.shields.io/badge/example-code-blue)](examples/001-dotnet-WebClient)
+  [![Example code](https://img.shields.io/badge/example-code-blue)](https://github.com/microsoft/kernel-memory/tree/main/examples/001-dotnet-WebClient)
 
 - **Microsoft.KernelMemory.Core:** Kernel Memory core library including all extensions, can be used to build custom pipelines and handlers, contains
   also the serverless client to use memory in a synchronous way without the web service.
 
   [![Nuget package](https://img.shields.io/nuget/vpre/Microsoft.KernelMemory.Core)](https://www.nuget.org/packages/Microsoft.KernelMemory.Core/)
-  [![Example code](https://img.shields.io/badge/example-code-blue)](examples/002-dotnet-Serverless)
+  [![Example code](https://img.shields.io/badge/example-code-blue)](https://github.com/microsoft/kernel-memory/tree/main/examples/002-dotnet-Serverless)
 
 - **Microsoft.KernelMemory.Service.AspNetCore:** an extension to load Kernel Memory into your ASP.NET apps.
 
   [![Nuget package](https://img.shields.io/nuget/vpre/Microsoft.KernelMemory.Service.AspNetCore)](https://www.nuget.org/packages/Microsoft.KernelMemory.Service.AspNetCore/)
-  [![Example code](https://img.shields.io/badge/example-code-blue)](examples/204-dotnet-ASP.NET-MVC-integration)
+  [![Example code](https://img.shields.io/badge/example-code-blue)](https://github.com/microsoft/kernel-memory/tree/main/examples/204-dotnet-ASP.NET-MVC-integration)
 
 - **Microsoft.KernelMemory.SemanticKernelPlugin:** a Memory plugin for Semantic Kernel,
   replacing the original Semantic Memory available in SK.
 
   [![Nuget package](https://img.shields.io/nuget/vpre/Microsoft.KernelMemory.SemanticKernelPlugin)](https://www.nuget.org/packages/Microsoft.KernelMemory.SemanticKernelPlugin/)
-  [![Example code](https://img.shields.io/badge/example-code-blue)](examples/003-dotnet-SemanticKernel-plugin)
+  [![Example code](https://img.shields.io/badge/example-code-blue)](https://github.com/microsoft/kernel-memory/tree/main/examples/003-dotnet-SemanticKernel-plugin)
 
 ### Packages for Python, Java and other languages
 
