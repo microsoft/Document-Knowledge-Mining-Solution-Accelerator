@@ -59,5 +59,5 @@ var memory = new MemoryWebClient(
     apiKey: "...your WebServiceAuthorizationKey1...");
 ```
 
-We recommend reviewing the [examples](../examples/) included in the repository, e.g. starting from
-[001-dotnet-WebClient](../examples/001-dotnet-WebClient).
+We recommend reviewing the [examples](https://github.com/microsoft/kernel-memory/tree/main/examples) included in the repository, e.g. starting from
+[001-dotnet-WebClient](https://github.com/microsoft/kernel-memory/tree/main/examples/001-dotnet-WebClient).

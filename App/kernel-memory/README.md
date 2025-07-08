@@ -41,7 +41,7 @@ class instance in .NET backend/console/desktop apps in synchronous mode. This ap
 works as well as in ASP.NET Web APIs and Azure Functions. Each request is processed
 immediately, although calling clients are responsible for handling transient errors.
 
-![image](docs/infra-sync.png)
+![image](https://github.com/microsoft/kernel-memory/blob/main/docs/infra-sync.png?raw=true)
 
 > ### Importing documents into your Kernel Memory can be as simple as this:
 >
@@ -114,7 +114,7 @@ search and retrieval through faceted navigation.
 Depending on your scenarios, you might want to run all the code **locally
 inside your process, or remotely through an asynchronous and scalable service.**
 
-![image](docs/infra-async.png)
+![image](https://github.com/microsoft/kernel-memory/blob/main/docs/infra-async.png?raw=true)
 
 If you're importing small files, and need only C# and can block
 the process during the import, local-in-process execution can be fine, using
@@ -252,7 +252,7 @@ on macOS/Linux:
 > }
 > ```
 
-You can find a [full example here](examples/001-dotnet-WebClient/README.md).
+You can find a [full example here](https://github.com/microsoft/kernel-memory/blob/main/examples/001-dotnet-WebClient/README.md).
 
 # Custom memory ingestion pipelines
 
@@ -289,34 +289,34 @@ running the service locally with OpenAPI enabled.
 
 ## Examples
 
-1. [Collection of Jupyter notebooks with various scenarios](examples/000-notebooks)
-2. [Using Kernel Memory web service to upload documents and answer questions](examples/001-dotnet-WebClient)
-3. [Importing files and asking question without running the service (serverless mode)](examples/002-dotnet-Serverless)
-4. [Using KM Plugin for Semantic Kernel](examples/003-dotnet-SemanticKernel-plugin)
-5. [Processing files with custom logic (custom handlers) in serverless mode](examples/004-dotnet-serverless-custom-pipeline)
-6. [Processing files with custom logic (custom handlers) in asynchronous mode](examples/005-dotnet-AsyncMemoryCustomPipeline)
-7. [Upload files and ask questions from command line using curl](examples/006-curl-calling-webservice)
-8. [Customizing RAG and summarization prompts](examples/101-dotnet-custom-Prompts)
-9. [Custom partitioning/text chunking options](examples/102-dotnet-custom-partitioning-options)
-10. [Using a custom embedding/vector generator](examples/103-dotnet-custom-EmbeddingGenerator)
-11. [Using custom LLMs](examples/104-dotnet-custom-LLM)
-12. [Using LLama](examples/105-dotnet-serverless-llamasharp)
-13. [Summarizing documents, using synthetic memories](examples/106-dotnet-retrieve-synthetics)
-14. [Using Semantic Kernel LLM connectors](examples/107-dotnet-SemanticKernel-TextCompletion)
-15. [Using custom content decoders](examples/108-dotnet-custom-content-decoders)
-16. [Using a custom web scraper to fetch web pages](examples/109-dotnet-custom-webscraper)
-17. [Generating answers with Anthropic LLMs](examples/110-dotnet-anthropic)
-18. [Hybrid Search with Azure AI Search](examples/111-dotnet-azure-ai-hybrid-search)
-19. [Writing and using a custom ingestion handler](examples/201-dotnet-serverless-custom-handler)
-20. [Running a single asynchronous pipeline handler as a standalone service](examples/202-dotnet-custom-handler-as-a-service)
-21. [Test project using KM package from nuget.org](examples/203-dotnet-using-core-nuget)
-22. [Integrating Memory with ASP.NET applications and controllers](examples/204-dotnet-ASP.NET-MVC-integration)
-23. [Sample code showing how to extract text from files](examples/205-dotnet-extract-text-from-docs)
-24. [.NET configuration and logging](examples/206-dotnet-configuration-and-logging)
-25. [Expanding chunks retrieving adjacent partitions](examples/207-dotnet-expanding-chunks-on-retrieval)
-26. [Using local models via LM Studio](examples/208-dotnet-lmstudio)
-27. [Using Context Parameters to customize RAG prompt during a request](examples/209-dotnet-using-context-overrides)
-28. [Creating a Memory instance without KernelMemoryBuilder](examples/210-KM-without-builder)
+1. [Collection of Jupyter notebooks with various scenarios](https://github.com/microsoft/kernel-memory/tree/main/examples/000-notebooks)
+2. [Using Kernel Memory web service to upload documents and answer questions](https://github.com/microsoft/kernel-memory/tree/main/examples/001-dotnet-WebClient)
+3. [Importing files and asking question without running the service (serverless mode)](https://github.com/microsoft/kernel-memory/tree/main/examples/002-dotnet-Serverless)
+4. [Using KM Plugin for Semantic Kernel](https://github.com/microsoft/kernel-memory/tree/main/examples/003-dotnet-SemanticKernel-plugin)
+5. [Processing files with custom logic (custom handlers) in serverless mode](https://github.com/microsoft/kernel-memory/tree/main/examples/004-dotnet-serverless-custom-pipeline)
+6. [Processing files with custom logic (custom handlers) in asynchronous mode](https://github.com/microsoft/kernel-memory/tree/main/examples/005-dotnet-async-memory-custom-pipeline)
+7. [Upload files and ask questions from command line using curl](https://github.com/microsoft/kernel-memory/tree/main/examples/006-curl-calling-webservice)
+8. [Customizing RAG and summarization prompts](https://github.com/microsoft/kernel-memory/tree/main/examples/101-dotnet-custom-Prompts)
+9. [Custom partitioning/text chunking options](https://github.com/microsoft/kernel-memory/tree/main/examples/102-dotnet-custom-partitioning-options)
+10. [Using a custom embedding/vector generator](https://github.com/microsoft/kernel-memory/tree/main/examples/103-dotnet-custom-EmbeddingGenerator)
+11. [Using custom LLMs](https://github.com/microsoft/kernel-memory/tree/main/examples/104-dotnet-custom-LLM)
+12. [Using LLama](https://github.com/microsoft/kernel-memory/tree/main/examples/105-dotnet-serverless-llamasharp)
+13. [Summarizing documents, using synthetic memories](https://github.com/microsoft/kernel-memory/tree/main/examples/106-dotnet-retrieve-synthetics)
+14. [Using Semantic Kernel LLM connectors](https://github.com/microsoft/kernel-memory/tree/main/examples/107-dotnet-SemanticKernel-TextCompletion)
+15. [Using custom content decoders](https://github.com/microsoft/kernel-memory/tree/main/examples/108-dotnet-custom-content-decoders)
+16. [Using a custom web scraper to fetch web pages](https://github.com/microsoft/kernel-memory/tree/main/examples/109-dotnet-custom-webscraper)
+17. [Generating answers with Anthropic LLMs](https://github.com/microsoft/kernel-memory/tree/main/examples/110-dotnet-anthropic)
+18. [Hybrid Search with Azure AI Search](https://github.com/microsoft/kernel-memory/tree/main/examples/111-dotnet-azure-ai-hybrid-search)
+19. [Writing and using a custom ingestion handler](https://github.com/microsoft/kernel-memory/tree/main/examples/201-dotnet-serverless-custom-handler)
+20. [Running a single asynchronous pipeline handler as a standalone service](https://github.com/microsoft/kernel-memory/tree/main/examples/202-dotnet-custom-handler-as-a-service)
+21. [Test project using KM package from nuget.org](https://github.com/microsoft/kernel-memory/tree/main/examples/203-dotnet-using-KM-nuget)
+22. [Integrating Memory with ASP.NET applications and controllers](https://github.com/microsoft/kernel-memory/tree/main/examples/204-dotnet-ASP.NET-MVC-integration)
+23. [Sample code showing how to extract text from files](https://github.com/microsoft/kernel-memory/tree/main/examples/205-dotnet-extract-text-from-docs)
+24. [.NET configuration and logging](https://github.com/microsoft/kernel-memory/tree/main/examples/206-dotnet-configuration-and-logging)
+25. [Expanding chunks retrieving adjacent partitions](https://github.com/microsoft/kernel-memory/tree/main/examples/207-dotnet-expanding-chunks-on-retrieval)
+26. [Using local models via LM Studio](https://github.com/microsoft/kernel-memory/tree/main/examples/208-dotnet-lmstudio)
+27. [Using Context Parameters to customize RAG prompt during a request](https://github.com/microsoft/kernel-memory/tree/main/examples/209-dotnet-using-context-overrides)
+28. [Creating a Memory instance without KernelMemoryBuilder](https://github.com/microsoft/kernel-memory/tree/main/examples/210-KM-without-builder)
 
 ## Tools
 
