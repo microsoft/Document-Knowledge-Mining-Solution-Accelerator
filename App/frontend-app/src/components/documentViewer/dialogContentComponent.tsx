@@ -52,7 +52,7 @@ export function DialogContentComponent({
                 </div>
             )}
 
-            <div className="mb-4 h-96 overflow-y-auto" style={{height:'auto'}}>
+            <div className="mb-4 h-96 overflow-y-auto autoHeight">
                 {allChunkTexts.map(
                     (item, index) =>
                         item && (
