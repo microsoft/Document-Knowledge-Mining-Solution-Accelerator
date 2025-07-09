@@ -93,9 +93,22 @@ const UploadDocumentsDialog = () => {
     noKeyboard: true,
   });
 
+  // Add this function to handle dialog close
+  const handleDialogClose = () => {
+    setIsOpen(false);
+    setUploadingFiles([]); // Clear the uploaded files
+    setIsUploading(false); // Reset uploading state
+  };
+
   return (<>
     {isUploadBtnVisible == true ?
-      <Dialog open={isOpen} onOpenChange={(event, data) => setIsOpen(data.open)}>
+      <Dialog open={isOpen} onOpenChange={(event, data) => {
+        if (!data.open) {
+          handleDialogClose();
+        } else {
+          setIsOpen(data.open);
+        }
+      }}>
         <DialogTrigger>
           <Button icon={<ArrowUpload24Regular />} onClick={() => setIsOpen(true)}>
             Upload documents
@@ -108,7 +121,7 @@ const UploadDocumentsDialog = () => {
               <Button
                 icon={<DismissRegular />}
                 appearance="subtle"
-                onClick={() => setIsOpen(false)}
+                onClick={handleDialogClose}
                 style={{ position: "absolute", right: 20, top: 20 }}
               />
             </DialogTitle>
