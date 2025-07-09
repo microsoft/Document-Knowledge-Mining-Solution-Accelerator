@@ -7,8 +7,8 @@
 ## Contents
 * [Prerequisites](#prerequisites)
 * [Regional Availability](#regional-availability)
-* [Deployment](#deployment)
-* [Next Steps](#next-steps)
+* [Deploy to Azure](#deploy-to-azure)
+* [Post-Deploy Configuration](#post-deploy-configuration)
 
 ## Prerequisites
 
