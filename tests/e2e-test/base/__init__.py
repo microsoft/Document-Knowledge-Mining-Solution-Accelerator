@@ -1,1 +1,1 @@
-from . import base
+"""Initiate base package"""

@@ -1,2 +1,1 @@
-from. import loginPage
-from. import dkmPage
+"""Initiate pages package"""
