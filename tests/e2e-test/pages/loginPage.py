@@ -13,12 +13,12 @@ class LoginPage(BasePage):
     def __init__(self, page):
         self.page = page
 
-    def authenticate(self, username,password):
+    def authenticate(self, username, password):
         # login with username and password in web url
         self.page.locator(self.EMAIL_TEXT_BOX).fill(username)
         self.page.locator(self.NEXT_BUTTON).click()
         # Wait for the password input field to be available and fill it
-        self.page.wait_for_load_state('networkidle')
+        self.page.wait_for_load_state("networkidle")
         # Enter password
         self.page.locator(self.PASSWORD_TEXT_BOX).fill(password)
         # Click on SignIn button
@@ -33,4 +33,4 @@ class LoginPage(BasePage):
             self.page.locator(self.YES_BUTTON).click()
             self.page.wait_for_timeout(10000)
         # Wait for the "Articles" button to be available and click it
-        self.page.wait_for_load_state('networkidle')
+        self.page.wait_for_load_state("networkidle")
