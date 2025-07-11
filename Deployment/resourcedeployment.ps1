@@ -230,15 +230,16 @@ function DeployAzureResources([string]$location, [string]$modelLocation) {
             Write-Host "Generated Resource Group Name: $resourceGroupName"
 
             Write-Host "No RG provided. Creating new RG: $resourceGroupName" -ForegroundColor Yellow
-            az group create --name $resourceGroupName --location $location --tags EnvironmentName=$environmentName | Out-Null
+            az group create --name $resourceGroupName --location $location --tags EnvironmentName=$environmentName TemplateName="DKM" | Out-Null
         }
         else {
             $exists = az group exists --name $resourceGroupName | ConvertFrom-Json
             if (-not $exists) {
                 Write-Host "Specified RG does not exist. Creating RG: $resourceGroupName" -ForegroundColor Yellow
-                az group create --name $resourceGroupName --location $location --tags EnvironmentName=$environmentName | Out-Null
+                az group create --name $resourceGroupName --location $location --tags EnvironmentName=$environmentName TemplateName="DKM" | Out-Null
             }
             else {
+                az group update --name $resourceGroupName --set tags.EnvironmentName=$environmentName tags.TemplateName="DKM" | Out-Null
                 Write-Host "Using existing RG: $resourceGroupName" -ForegroundColor Green
             }
         }
