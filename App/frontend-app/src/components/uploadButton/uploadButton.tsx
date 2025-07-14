@@ -59,6 +59,7 @@ const UploadDocumentsDialog = () => {
 
       try {
         // Simulate upload delay
+        //File upload is significantly slower than expected, so commented out the line below.
         // await new Promise((resolve) => setTimeout(resolve, 2000));
         await importDocuments(formData); // Replace with actual upload API
 
