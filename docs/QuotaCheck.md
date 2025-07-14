@@ -79,7 +79,7 @@ The final table lists regions with available quota. You can select any of these 
    ![git_bash](images/readme/git_bash.png)
 3. Navigate to the `scripts` folder where the script files are located and make the script as executable:
    ```sh
-    cd infra/scripts
+    cd Deployment
     chmod +x quota_check_params.sh
     ```
 4. Run the appropriate script based on your requirement:  
