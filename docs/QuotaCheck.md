@@ -77,7 +77,7 @@ The final table lists regions with available quota. You can select any of these 
 1. Open the terminal in VS Code or Codespaces.
 2. If you're using VS Code, click the dropdown on the right side of the terminal window, and select `Git Bash`.
    ![git_bash](images/readme/git_bash.png)
-3. Navigate to the `scripts` folder where the script files are located and make the script as executable:
+3. Navigate to the `deployment` folder where the script files are located and make the script as executable:
    ```sh
     cd Deployment
     chmod +x quota_check_params.sh
