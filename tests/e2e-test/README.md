@@ -20,6 +20,7 @@ This will create a virtual environment directory named microsoft inside your cur
 Installing Playwright Pytest from Virtual Environment
 
 - To install libraries run "pip install -r requirements.txt"
+- To install Playwright run "playwright install"
 
 Run test cases
 
