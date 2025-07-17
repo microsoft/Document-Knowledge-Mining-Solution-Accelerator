@@ -165,11 +165,7 @@ for REGION in "${REGIONS[@]}"; do
         FOUND=false
         INSUFFICIENT_QUOTA=false
 
-        if [ "$MODEL_NAME" = "text-embedding-ada-002" ]; then
-            MODEL_TYPES=("openai.standard.$MODEL_NAME")
-        else
-            MODEL_TYPES=("openai.standard.$MODEL_NAME" "openai.globalstandard.$MODEL_NAME")
-        fi
+        MODEL_TYPES=("openai.standard.$MODEL_NAME" "openai.globalstandard.$MODEL_NAME")
 
         for MODEL_TYPE in "${MODEL_TYPES[@]}"; do
             FOUND=false
@@ -203,11 +199,11 @@ for REGION in "${REGIONS[@]}"; do
 
                 if [ "$AVAILABLE" -ge "$REQUIRED_CAPACITY" ]; then
                     FOUND=true
-                    if [ "$MODEL_NAME" = "text-embedding-ada-002" ]; then
+                    if [ "$MODEL_NAME" = "text-embedding-3-large" ]; then
                         TEXT_EMBEDDING_AVAILABLE=true
                     fi
                     AT_LEAST_ONE_MODEL_AVAILABLE=true
-                    TEMP_TABLE_ROWS+=("$(printf "| %-4s | %-20s | %-43s | %-10s | %-10s | %-10s |" "$INDEX" "$REGION" "$MODEL_TYPE" "$LIMIT" "$CURRENT_VALUE" "$AVAILABLE")")
+                    TEMP_TABLE_ROWS+=("$(printf "| %-4s | %-20s | %-45s | %-10s | %-10s | %-10s |" "$INDEX" "$REGION" "$MODEL_TYPE" "$LIMIT" "$CURRENT_VALUE" "$AVAILABLE")")
                 else
                     INSUFFICIENT_QUOTA=true
                 fi
@@ -238,7 +234,7 @@ if [ ${#TABLE_ROWS[@]} -eq 0 ]; then
     echo "❌ No regions have sufficient quota for all required models. Please request a quota increase: https://aka.ms/oai/stuquotarequest"
 else
     echo "---------------------------------------------------------------------------------------------------------------------"
-    printf "| %-4s | %-20s | %-43s | %-10s | %-10s | %-10s |\n" "No." "Region" "Model Name" "Limit" "Used" "Available"
+    printf "| %-4s | %-20s | %-45s | %-10s | %-10s | %-10s |\n" "No." "Region" "Model Name" "Limit" "Used" "Available"
     echo "---------------------------------------------------------------------------------------------------------------------"
     for ROW in "${TABLE_ROWS[@]}"; do
         echo "$ROW"
