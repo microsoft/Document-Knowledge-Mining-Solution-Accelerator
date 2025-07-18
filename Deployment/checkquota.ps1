@@ -45,8 +45,8 @@ Write-Host "✅ Azure subscription set successfully."
 
 # Define models and their minimum required capacities
 $MIN_CAPACITY = @{
-    "OpenAI.Standard.gpt-4o-mini" = $GPT_MIN_CAPACITY
-    "OpenAI.Standard.text-embedding-3-large" = $TEXT_EMBEDDING_MIN_CAPACITY
+    "OpenAI.GlobalStandard.gpt-4o-mini" = $GPT_MIN_CAPACITY
+    "OpenAI.GlobalStandard.text-embedding-3-large" = $TEXT_EMBEDDING_MIN_CAPACITY
 }
 
 $VALID_REGION = ""

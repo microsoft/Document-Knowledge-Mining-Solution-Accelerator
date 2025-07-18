@@ -10,7 +10,7 @@ resource gpt4Deployment 'Microsoft.CognitiveServices/accounts/deployments@2023-0
   parent: openAIService
   name: name
   sku: {
-    name: 'Standard'
+    name: 'GlobalStandard'
     capacity: model.capacity
   }
   properties: {
