@@ -119,7 +119,7 @@ module gs_openaiservicemodels_gpt4o 'bicep/azureopenaiservicemodel.bicep' = {
         version: '2024-07-18'
         raiPolicyName: ''
         capacity: 1
-        scaleType: 'Standard'
+        scaleType: 'GlobalStandard'
       }
     
   }
@@ -139,7 +139,7 @@ module gs_openaiservicemodels_text_embedding 'bicep/azureopenaiservicemodel.bice
         version: '1'
         raiPolicyName: ''
         capacity: 1
-        scaleType: 'Standard'
+        scaleType: 'GlobalStandard'
       }
     }
     dependsOn: [
