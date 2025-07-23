@@ -41,6 +41,11 @@ const useStyles = makeStyles({
         ...shorthands.padding("0px", "0px"),
         rowGap: "20px",
     },
+
+    aiKnowledgeTab:{
+        height:"calc(100vh - 150px) !important",
+        overflow:"auto"
+    }
 });
 
 interface DocDialogProps {
@@ -75,6 +80,7 @@ export function DocDialog(
     const [iframeKey, setIframeKey] = useState(0);
     const [isExpanded, setIsExpanded] = useState(false);
     const [clearedChatFlag, setClearChatFlag] = useState(clearChatFlag);
+    const [iframeSrc, setIframeSrc] = useState<string | undefined>(undefined);
     // const [aiKnowledgeMetadata, setAIKnowledgeMetadata] = useState<Document | null>(null);
 
 
@@ -90,6 +96,24 @@ export function DocDialog(
             setUrlWithSasToken(undefined);
         }
     }, [metadata]); // Only run when metadata changes
+
+    useEffect(() => {
+        if (metadata && metadata.fileName.endsWith(".txt")) {
+            fetch(metadata.document_url)
+                .then((response) => response.text())
+                .then((textContent) => {
+                    const blob = new Blob([textContent], { type: "text/plain" });
+                    const objectURL = URL.createObjectURL(blob);
+                    setIframeSrc(objectURL);
+
+                    // Cleanup the object URL when component unmounts or metadata changes
+                    return () => URL.revokeObjectURL(objectURL);
+                })
+                .catch((error) => console.error("Error fetching text file:", error));
+        } else {
+            setIframeSrc(metadata?.document_url);
+        }
+    }, [metadata]);
     
 
     const downloadFile = () => {
@@ -236,7 +260,7 @@ export function DocDialog(
                                 <IFrameComponent
                                     className="h-[100%]"
                                     metadata={metadata}
-                                    urlWithSasToken={urlWithSasToken}
+                                    urlWithSasToken={iframeSrc}
                                     iframeKey={iframeKey}
                                 />
                             </div>
@@ -265,6 +289,7 @@ export function DocDialog(
                     )}
 
 {selectedTab === "AI Knowledge" && (
+    <div className={`flex h-[150%] w-[200%] justify-between ${styles.aiKnowledgeTab}`}>
     <AIKnowledgeTab 
         metadata={metadata?.keywords ? Object.fromEntries(
             Object.entries(metadata.keywords).map(([key, value]) => [
@@ -272,7 +297,9 @@ export function DocDialog(
                 Array.isArray(value) ? value : [value]  // Ensure all values are arrays
             ])
         ) : {}}
+        
     />
+    </div>
 )}
 
 

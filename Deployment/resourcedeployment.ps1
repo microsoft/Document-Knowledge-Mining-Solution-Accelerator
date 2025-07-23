@@ -73,7 +73,10 @@ function ValidateVariableIsNullOrEmpty {
 # Function to prompt for parameters with kind messages
 function PromptForParameters {
     param(
+        [string]$tenantId,
         [string]$subscriptionID,
+        [string]$environmentName,
+        [string]$resourceGroupName,
         [string]$location,
         [string]$modelLocation,
         [string]$email
@@ -100,9 +103,23 @@ function PromptForParameters {
         'EastUS', 'EastUS2', 'SwedenCentral', 'WestUS3'
     )
 
+    if (-not $tenantId) {
+        Write-Host "Please enter your Azure tenant ID" -ForegroundColor Cyan
+        $tenantId = Read-Host -Prompt '> '
+    }
     if (-not $subscriptionID) {
         Write-Host "Please enter your Azure subscription ID to deploy your resources" -ForegroundColor Cyan
         $subscriptionID = Read-Host -Prompt '> '
+    }
+
+    if (-not $environmentName) {
+        Write-Host "Please enter Environment name" -ForegroundColor Cyan
+        $environmentName = Read-Host -Prompt '> '
+    }
+
+    if (-not $resourceGroupName) {
+        Write-Host "Please enter your Azure Resource Group Name to deploy your resources (leave blank to auto-generate one)" -ForegroundColor Cyan
+        $resourceGroupName = Read-Host -Prompt '> '
     }
 
     if (-not $location) {
@@ -125,37 +142,50 @@ function PromptForParameters {
     }
 
     return @{
-        subscriptionID = $subscriptionID
-        location = $location
-        modelLocation = $modelLocation
-        email = $email
+        tenantId          = $tenantId
+        subscriptionID    = $subscriptionID
+        environmentName   = $environmentName
+        resourceGroupName = $resourceGroupName
+        location          = $location
+        modelLocation     = $modelLocation
+        email             = $email
     }
 }
 
 # Prompt for parameters with kind messages
-$params = PromptForParameters -subscriptionID $subscriptionID -location $location -modelLocation $modelLocation -email $email
+$params = PromptForParameters -tenantId $tenantId -subscriptionID $subscriptionID -environmentName $environmentName -resourceGroupName $resourceGroupName -location $location -modelLocation $modelLocation -email $email
 # Assign the parameters to variables
+$tenantId = $params.tenantId
 $subscriptionID = $params.subscriptionID
+$environmentName = $params.environmentName
+$resourceGroupName = $params.resourceGroupName
 $location = $params.location
 $modelLocation = $params.modelLocation
 $email = $params.email
 
 function LoginAzure([string]$subscriptionID) {
-          Write-Host "Log in to Azure.....`r`n" -ForegroundColor Yellow
-        if ($env:CI -eq "true"){
-      
+    Write-Host "Log in to Azure.....`r`n" -ForegroundColor Yellow
+    if ($env:CI -eq "true"){
         az login --service-principal `
-        --username $env:AZURE_CLIENT_ID `
-        --password $env:AZURE_CLIENT_SECRET `
-        --tenant $env:AZURE_TENANT_ID
-        write-host "CI deployment mode"
+            --username $env:AZURE_CLIENT_ID `
+            --password $env:AZURE_CLIENT_SECRET `
+            --tenant $env:AZURE_TENANT_ID
+        Write-Host "CI deployment mode"
+    }
+    else{
+        az login --tenant $tenantId
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Failed to log in to Azure with tenant ID '$tenantId'. Please check your credentials." -ForegroundColor Red
+            failureBanner
+            exit 1
         }
         else{
-              az login
-        write-host "manual deployment mode"
+            Write-Host "Logged in to Azure with tenant ID '$tenantId' successfully." -ForegroundColor Green
         }
-        az account set --subscription $subscriptionID
-        Write-Host "Switched subscription to '$subscriptionID' `r`n" -ForegroundColor Yellow
+        Write-Host "manual deployment mode"
+    }
+    az account set --subscription $subscriptionID
+    Write-Host "Switched subscription to '$subscriptionID' `r`n" -ForegroundColor Yellow
 }
 
 function DeployAzureResources([string]$location, [string]$modelLocation) {
@@ -169,9 +199,54 @@ function DeployAzureResources([string]$location, [string]$modelLocation) {
         # Make deployment name unique by appending random number
         $deploymentName = "KM_SA_Deployment$randomNumberPadded"
 
+
+        if (-not $resourceGroupName) {
+            # Generate a new RG name using your existing logic
+
+            # Load abbreviation from abbreviations.json (optional)
+            $abbrs = Get-Content -Raw -Path "./abbreviations.json" | ConvertFrom-Json
+            if (-not $abbrs -or -not $abbrs.managementGovernance.resourceGroup) {
+                Write-Host "abbreviations.json is missing or malformed."
+                failureBanner
+                exit 1
+            }
+            $rgPrefix = $abbrs.managementGovernance.resourceGroup  # e.g., "rg-"
+
+            # Constants
+            $resourceprefix_name = "kmgs"
+
+            # Call Bicep to generate resourcePrefix
+            $resourcePrefix = az deployment sub create `
+                --location $location `
+                --name $deploymentName `
+                --template-file ./resourcePrefix.bicep `
+                --parameters environmentName=$environmentName location=$location `
+                --query "properties.outputs.resourcePrefix.value" `
+                -o tsv
+
+            # Final Resource Group Name
+            $resourceGroupName = "$rgPrefix$resourceprefix_name$resourcePrefix"
+
+            Write-Host "Generated Resource Group Name: $resourceGroupName"
+
+            Write-Host "No RG provided. Creating new RG: $resourceGroupName" -ForegroundColor Yellow
+            az group create --name $resourceGroupName --location $location --tags EnvironmentName=$environmentName TemplateName="DKM" | Out-Null
+        }
+        else {
+            $exists = az group exists --name $resourceGroupName | ConvertFrom-Json
+            if (-not $exists) {
+                Write-Host "Specified RG does not exist. Creating RG: $resourceGroupName" -ForegroundColor Yellow
+                az group create --name $resourceGroupName --location $location --tags EnvironmentName=$environmentName TemplateName="DKM" | Out-Null
+            }
+            else {
+                az group update --name $resourceGroupName --set tags.EnvironmentName=$environmentName tags.TemplateName="DKM" | Out-Null
+                Write-Host "Using existing RG: $resourceGroupName" -ForegroundColor Green
+            }
+        }
+
         # Perform a what-if deployment to preview changes
         Write-Host "Evaluating Deployment resource availabilities to preview changes..." -ForegroundColor Yellow
-        $whatIfResult = az deployment sub what-if --template-file .\main.bicep --location $location --name $deploymentName --parameters modeldatacenter=$modelLocation
+        $whatIfResult = az deployment group what-if --resource-group $resourceGroupName --template-file .\main.bicep --name $deploymentName --parameters modeldatacenter=$modelLocation location=$location environmentName=$environmentName
 
         if ($LASTEXITCODE -ne 0) {
             Write-Host "There might be something wrong with your deployment." -ForegroundColor Red
@@ -181,7 +256,8 @@ function DeployAzureResources([string]$location, [string]$modelLocation) {
         }
         # Proceed with the actual deployment
         Write-Host "Proceeding with Deployment..." -ForegroundColor Yellow
-        $deploymentResult = az deployment sub create --template-file .\main.bicep --location $location --name $deploymentName --parameters modeldatacenter=$modelLocation
+        Write-Host "Resource Group Name: $resourceGroupName" -ForegroundColor Yellow
+        $deploymentResult = az deployment group create --resource-group $resourceGroupName --template-file .\main.bicep --name $deploymentName --parameters modeldatacenter=$modelLocation location=$location environmentName=$environmentName
         # Check if deploymentResult is valid        
         ValidateVariableIsNullOrEmpty -variableValue $deploymentResult -variableName "Deployment Result"  
         if ($LASTEXITCODE -ne 0) {
@@ -223,6 +299,7 @@ function DisplayResult([pscustomobject]$jsonString) {
     Write-Host "********************************************************************************" -ForegroundColor Blue
     Write-Host "*                 Deployed Azure Resources Information                         *" -ForegroundColor Blue
     Write-Host "********************************************************************************" -ForegroundColor Blue
+    Write-Host "* Tenant Id: " -ForegroundColor Yellow -NoNewline; Write-Host "$tenantId" -ForegroundColor Green
     Write-Host "* Subscription Id: " -ForegroundColor Yellow -NoNewline; Write-Host "$subscriptionID" -ForegroundColor Green
     Write-Host "* Knowledge Mining Digital Asset resource group: " -ForegroundColor Yellow -NoNewline; Write-Host "$resourcegroupName" -ForegroundColor Green
     Write-Host "* Azure Kubernetes Account " -ForegroundColor Yellow -NoNewline; Write-Host "$aksName" -ForegroundColor Green
@@ -391,24 +468,27 @@ class DeploymentResult {
         # Azure App Configuration
         $this.AzAppConfigEndpoint = $jsonString.properties.outputs.gs_appconfig_endpoint.value
         # App Config Name 
-        $this.AzAppConfigName = "appconfig" + $this.ResourceGroupName
+        $this.AzAppConfigName = "appconfig-" + $jsonString.properties.outputs.gs_solution_prefix.value
 
     }
 }
 
 function Check-Docker {
     try {
-         # Try to get Docker info to check if Docker daemon is running
-         $dockerInfo = docker info 2>&1
-        if ($dockerInfo -match "ERROR: error during connect") {
+        # Try to get Docker info to check if Docker daemon is running
+        $dockerInfo = docker info 2>&1
+        if ($LASTEXITCODE -ne 0 -or $dockerInfo -match "error during connect") {
             return $false
-        } else {
+        }
+        else {
             return $true
         }
-    } catch {
+    }
+    catch {
         Write-Host "An error occurred while checking Docker status." -ForegroundColor Red
         Write-Host $_.Exception.Message -ForegroundColor Red
-        return $false    }
+        return $false    
+    }
 }
 
 # Check if Docker is running before proceeding
@@ -435,6 +515,9 @@ try {
     Write-Host "Deploying Azure resources in $location region.....`r`n" -ForegroundColor Yellow
 
     $resultJson = DeployAzureResources -location $location -modelLocation $modelLocation
+
+    # Ensure ResourceGroupName is set correctly
+    $deploymentResult.ResourceGroupName = $resourceGroupName
     # Map the deployment result to DeploymentResult object
     $deploymentResult.MapResult($resultJson)
     # Display the deployment result
@@ -527,7 +610,7 @@ try {
         '{gpt-4o-modelname}' = $deploymentResult.AzGPT4oModelName 
         '{azureopenaiembedding-deployment}' = $deploymentResult.AzGPTEmbeddingModelName 
         '{kernelmemory-endpoint}' = "http://kernelmemory-service" 
-        }
+    }
 
     ## Load and update the AI service configuration template
     $aiServiceConfigTemplate = Get-Content -Path .\appconfig\aiservice\appconfig.jsonl -Raw
@@ -547,7 +630,7 @@ try {
     $filePath = Join-Path $scriptDirectory ".\appconfig\aiservice\appsettings.dev.jsonl"
 
     ## Other variables
-    $appConfigName = $deploymentResult.AzAppConfigName -replace "rg-", "-"
+    $appConfigName = $deploymentResult.AzAppConfigName
 
     ## Output the file path for verification
     #write-host "Using file path: $filePath"
@@ -683,7 +766,7 @@ try {
     # 6. Assign DNS Name to the public IP address
     #  6-1. Get Az Network resource Name with the public IP address
     Write-Host "Assign DNS Name to the public IP address" -ForegroundColor Green
-    $publicIpName=$(az network public-ip list --query "[?ipAddress=='$externalIP'].name" --output tsv)
+    $publicIpName=$(az network public-ip list --resource-group $aksResourceGroupName --query "[?ipAddress=='$externalIP'].name" --output tsv)
     #  6-2. Generate Unique backend API fqdn Name - esgdocanalysis-3 digit random number with padding 0
     $dnsName = "kmgs$($(Get-Random -Minimum 0 -Maximum 9999).ToString("D4"))"
     
@@ -728,7 +811,7 @@ try {
     # Validate if System Assigned Identity is null or empty
     ValidateVariableIsNullOrEmpty -variableValue $systemAssignedIdentity -variableName "System-assigned managed identity"    
     
-     # Validate if ResourceGroupId is null or empty
+    # Validate if ResourceGroupId is null or empty
     ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.ResourceGroupId -variableName "ResourceGroupId"    
  
     # Assign the role for aks system assigned managed identity to App Configuration Data Reader role with the scope of Resourcegroup
@@ -845,7 +928,7 @@ try {
     Wait-ForCertManager
 
 
-#======================================================================================================================================================================
+    #======================================================================================================================================================================
     # Validate AzAppConfigEndpoint IsNull Or Empty.
     ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.AzAppConfigEndpoint -variableName "Azure App Configuration Endpoint"
     # App Deployment after finishing the AKS infrastructure setup
@@ -917,32 +1000,32 @@ try {
     # 2. Build and push the images to Azure Container Registry
     #  2-1. Build and push the AI Service container image to  Azure Container Registry
     #$acrAIServiceTag = "$($deploymentResult.AzContainerRegistryName).azurecr.io/$acrNamespace/aiservice"
-    docker build ..\App\backend-api\. --no-cache -t $acrAIServiceTag
+    docker build "../App/backend-api/." --no-cache -t $acrAIServiceTag
     docker push $acrAIServiceTag
 
     #  2-2. Build and push the Kernel Memory Service container image to Azure Container Registry
     #$acrKernelMemoryTag = "$($deploymentResult.AzContainerRegistryName).azurecr.io/$acrNamespace/kernelmemory"
-    docker build ..\App\kernel-memory\. --no-cache -t $acrKernelMemoryTag
+    docker build "../App/kernel-memory/." --no-cache -t $acrKernelMemoryTag
     docker push $acrKernelMemoryTag
 
     #  2-3. Build and push the Frontend App Service container image to Azure Container Registry
     #$acrFrontAppTag = "$($deploymentResult.AzContainerRegistryName).azurecr.io/$acrNamespace/frontapp"
-    docker build ..\App\frontend-app\. --no-cache -t $acrFrontAppTag
+    docker build "../App/frontend-app/." --no-cache -t $acrFrontAppTag
     docker push $acrFrontAppTag
 
-#======================================================================================================================================================================
+    #======================================================================================================================================================================
 
     # 7.2. Deploy ClusterIssuer in Kubernetes for SSL/TLS certificate
-    kubectl apply -f .\kubernetes\deploy.certclusterissuer.yaml
+    kubectl apply -f "./kubernetes/deploy.certclusterissuer.yaml"
 
     # 7.3. Deploy Deployment in Kubernetes
-    kubectl apply -f .\kubernetes\deploy.deployment.yaml -n $kubenamespace
+    kubectl apply -f "./kubernetes/deploy.deployment.yaml" -n $kubenamespace
 
     # 7.4. Deploy Services in Kubernetes
-    kubectl apply -f .\kubernetes\deploy.service.yaml -n $kubenamespace
+    kubectl apply -f "./kubernetes/deploy.service.yaml" -n $kubenamespace
 
     # 7.5. Deploy Ingress Controller in Kubernetes for external access
-    kubectl apply -f .\kubernetes\deploy.ingress.yaml -n $kubenamespace
+    kubectl apply -f "./kubernetes/deploy.ingress.yaml" -n $kubenamespace
 
     # #####################################################################
     # # Data file uploading
@@ -959,12 +1042,12 @@ try {
     successBanner
 
     $messageString = "Please find the deployment details below: `r`n" +
-                    "1. Check Front Web Application with this URL - https://${fqdn} `n`r" +
-                    "2. Check GPT Model's TPM rate in your resource group - $($deploymentResult.ResourceGroupName) `n`r" +
-                    "Please set each value high as much as you can set`n`r" +
-                    "`t- Open AI Resource Name - $($deploymentResult.AzOpenAiServiceName) `n`r" +
-                    "`t- GPT4o Model - $($deploymentResult.AzGPT4oModelName) `n`r" +
-                    "`t- GPT Embedding Model - $($deploymentResult.AzGPTEmbeddingModelName) `n`r"
+    "1. Check Front Web Application with this URL - https://${fqdn} `n`r" +
+    "2. Check GPT Model's TPM rate in your resource group - $($deploymentResult.ResourceGroupName) `n`r" +
+    "Please set each value high as much as you can set`n`r" +
+    "`t- Open AI Resource Name - $($deploymentResult.AzOpenAiServiceName) `n`r" +
+    "`t- GPT4o Model - $($deploymentResult.AzGPT4oModelName) `n`r" +
+    "`t- GPT Embedding Model - $($deploymentResult.AzGPTEmbeddingModelName) `n`r"
     Write-Host $messageString -ForegroundColor Yellow
     Write-Host "Don't forget to control the TPM rate for your GPT and Embedding Model in Azure Open AI Studio Deployments section." -ForegroundColor Red
     Write-Host "After controlling the TPM rate for your GPT and Embedding Model, let's start Data file import process with this command." -ForegroundColor Yellow

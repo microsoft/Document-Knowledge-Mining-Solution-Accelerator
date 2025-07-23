@@ -164,6 +164,7 @@ export function SidecarCopilot({
                     onSourceChange={handleSourceChange}
                     disabled={disableSources}
                     selectedDocuments={selectedDocuments}
+                    isSticky={false}
                 />
 
                 <CopilotProvider>

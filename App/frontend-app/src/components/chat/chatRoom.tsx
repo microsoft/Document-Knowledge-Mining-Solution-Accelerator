@@ -50,7 +50,7 @@ interface ChatRoomProps {
 export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDocument, disableOptionsPanel, clearChatFlag }: ChatRoomProps) {
     const customStyles = useStyles();
     const { t } = useTranslation();
-    const [chatSessionId, setChatSessionId] = useState<string | null>(null); 
+    const [chatSessionId, setChatSessionId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [disableSources, setDisableSources] = useState<boolean>(false);
     const [error, setError] = useState<unknown>();
@@ -73,6 +73,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
     });
     const [referencesForFeedbackForm, setReferencesForFeedbackForm] = useState<Reference[]>([]);
     const [textAreaValue, setTextAreaValue] = useState("");
+    const [textareaKey, setTextareaKey] = useState(0);
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const [allChunkTexts, setAllChunkTexts] = useState<string[]>([]);
 
@@ -98,8 +99,8 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
     useEffect(() => {
         handleModelChange(DefaultChatModel)
     }, []);
-    
-        // Effect to clear chat when clearChat prop changes
+
+    // Effect to clear chat when clearChat prop changes
     useEffect(() => {
         if (clearChatFlag) {
             clearChat();
@@ -107,7 +108,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
     }, [clearChatFlag]); // Runs whenever clearChat changes
 
 
-    
+
     const chatContainerRef = useRef<HTMLDivElement>(null);
     function scrollToBottom() {
         if (chatContainerRef.current) {
@@ -123,25 +124,27 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
 
     const makeApiRequest = async (question: string) => {
         setTextAreaValue("");
+        //Force Textarea re-render to reset internal showCount
+        setTextareaKey(prev => prev + 1);
         setDisableSources(true);
         setIsLoading(true);
-        
+
         // A simple function to check if the text contains Markdown
         const isMarkdown = (text: string) => {
             const markdownPattern = /(^|\s)(#{1,6}|\*\*|__|[-*]|\d+\.\s|\[.*\]\(.*\)|```|`[^`]*`)/;
             return markdownPattern.test(text);
-        };        
+        };
 
         const userTimestamp = new Date();
         // Ensure we have a chatSessionId or create one if null/undefined
-        
-        
+
+
         let currentSessionId = chatSessionId; // Get the current value of chatSessionId
         if (!currentSessionId) {
             const newSessionId = uuidv4(); // Generate a new UUID if no session exists
             setChatSessionId(newSessionId); // Save it for future renders
             currentSessionId = newSessionId; // Immediately use the new session ID in this function
-            
+
         }
         const markdownToHtmlString = (markdown: string) => {
             return renderToStaticMarkup(<ReactMarkdown>{markdown}</ReactMarkdown>);
@@ -167,7 +170,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
 | Total NPLs sold by Enterprises through December 2023 | 168,364 | FHFA Non-Performing Loan Sales Report | Page 2 |
 | Average delinquency of NPLs sold | 2.8 years | FHFA Non-Performing Loan Sales Report | Page 2 |
 | Average current mark-to-market LTV ratio of NPLs | 83% | FHFA Non-Performing Loan Sales Report | Page 2 |`;
-        
+
         const htmlString = await marked.parse(markdown);
         const htmlString2 = markdownToHtmlString(markdown);
 
@@ -180,18 +183,18 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
             }],
         ]);
 
-        
-        
+
+
 
 
         let filterByDocumentIds: string[] = [];
-        
-        
+
+
         const transformDocuments = (documents: any[]) => {
             return documents.map(doc => doc.documentId); // Extracting documentId from each document
         };
         const formattedDocuments = transformDocuments(selectedDocuments);
-        
+
 
         if (button === "Selected Document" && selectedDocument) {
             filterByDocumentIds = [selectedDocument[0].documentId];
@@ -202,13 +205,13 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
         }
 
         try {
-            
-            
-            
+
+
+
             const request: ChatRequest = {
                 Question: question,
                 chatSessionId: currentSessionId,
-                DocumentIds: button === "All Documents" ? [] : formattedDocuments 
+                DocumentIds: button === "All Documents" ? [] : formattedDocuments
                 // cha: history,
                 // options: {
                 //     model: model,
@@ -218,11 +221,11 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                 // },
                 // filterByDocumentIds: filterByDocumentIds,
             };
-            
-            
+
+
             const response: ChatApiResponse = await Completion(request);
-            
-            
+
+
 
             setIsLoading(false);
 
@@ -230,13 +233,13 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
 
             try {
                 if (response && response.answer) {
-                
+
                     const formattedAnswer = removeNewlines(response.answer)
                     const chatResp = await marked.parse(formattedAnswer) // Convert to HTML if Markdown detected
-                    
-                    
-                    
-                    
+
+
+
+
                     // Update the conversation with the formatted answer
                     setConversationAnswers((prevAnswers) => {
                         const newAnswers = [...prevAnswers];
@@ -248,6 +251,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                 console.error("Error parsing response body:", error);
             }
         } catch (error) {
+            console.error("Error in makeApiRequest:", error);
         } finally {
             setIsLoading(false);
             setTimeout(() => {
@@ -275,7 +279,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
         setChatSessionId(null);
     };
 
-    const handleModelChange = (model: string) => {        
+    const handleModelChange = (model: string) => {
         setModel(model);
     };
 
@@ -289,7 +293,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
     };
 
     function handleSend(ev: TextareaSubmitEvents, data: TextareaValueData) {
-        if (data.value.trim() !='') {               
+        if (data.value.trim() != '') {
             makeApiRequest(data.value);
         }
     }
@@ -336,10 +340,10 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                 button === "Selected Documents"
                     ? selectedDocuments.map((document) => document.documentId)
                     : button === "Search Results"
-                    ? searchResultDocuments.map((document) => document.documentId)
-                    : button === "Selected Document"
-                    ? [selectedDocument[0]?.documentId || ""]
-                    : [],
+                        ? searchResultDocuments.map((document) => document.documentId)
+                        : button === "Selected Document"
+                            ? [selectedDocument[0]?.documentId || ""]
+                            : [],
             groundTruthAnswer: "",
             documentURLs: [],
             chunkTexts: [],
@@ -478,8 +482,12 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                                             {response.suggestingQuestions.map((followUp, index) => (
                                                 <Suggestion
                                                     key={index}
-                                                    className="!mr-2 !mt-2 !text-base"
-                                                    onClick={() => handleFollowUpQuestion(followUp)}
+                                                    className={`!mr-2 !mt-2 !text-base ${isLoading ? "pointer-events-none text-gray-400" : ""}`}
+                                                    onClick={() => {
+                                                        if (!isLoading) {
+                                                            handleFollowUpQuestion(followUp);
+                                                        }
+                                                    }}
                                                 >
                                                     {followUp}
                                                 </Suggestion>
@@ -568,12 +576,15 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                         setSelectedDocument([]);
                         setIsLoading(false);
                         setChatSessionId(null);
+                        setTextAreaValue("");
+                        setTextareaKey(prev => prev + 1);
                     }}
                 >
                     {t('components.chat.new-topic')}
                 </Button>
 
                 <Textarea
+                    key={textareaKey}
                     ref={inputRef}
                     value={textAreaValue}
                     className="!ml-4 max-h-48 w-full !max-w-none"
@@ -583,14 +594,15 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                     placeholder={t('components.chat.input-placeholder')}
                     disabled={isLoading}
                     onSubmit={handleSend}
+                    disableSend = {textAreaValue.trim().length === 0 || isLoading}
                     contentAfter={undefined}
                 />
             </div>
-        </div>
+        </div >
     );
 }
 function uuidv4() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });

@@ -38,7 +38,10 @@ public sealed class PdfMarkdownDecoder(KernelMemoryConfig config, ILoggerFactory
 
     public async Task<FileContent> DecodeAsync(BinaryData data, CancellationToken cancellationToken = default)
     {
-        var content = new AnalyzeDocumentContent() { Base64Source = data };
+        var analyzeDocumentOptions = new AnalyzeDocumentOptions("prebuilt-layout", data)
+        {
+            OutputContentFormat = DocumentContentFormat.Markdown
+        };
 
         //this invocation should be blocking during process
         DocumentIntelligenceClientOptions options = new()
@@ -49,7 +52,7 @@ public sealed class PdfMarkdownDecoder(KernelMemoryConfig config, ILoggerFactory
         this._client = new DocumentIntelligenceClient(new Uri(this._endpoint), new AzureKeyCredential(this._apiKey), options);
 
         Operation<AnalyzeResult> operation = null;
-        operation = await this._client.AnalyzeDocumentAsync(WaitUntil.Completed, "prebuilt-layout", content, outputContentFormat: ContentFormat.Markdown, cancellationToken: cancellationToken).ConfigureAwait(false);
+        operation = await this._client.AnalyzeDocumentAsync(WaitUntil.Completed, analyzeDocumentOptions, cancellationToken).ConfigureAwait(false);
 
         AnalyzeResult result = operation.Value;
 

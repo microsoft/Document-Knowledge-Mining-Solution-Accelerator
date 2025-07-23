@@ -105,3 +105,7 @@ $max-content-width: 1600px;
         max-width: $max-content-width;
     }
 }
+
+.autoHeight {
+    height :auto !important;
+}

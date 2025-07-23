@@ -1,8 +1,8 @@
-## Content Processing
+## Content and Data Processing Workflow
 Additional details about how content processing is handled in the solution. This includes the workflow steps and how to use your own data in the solution.
 
 ### Workflow
-![image](../Images/readme_deployment/DocumentProcess.png)
+![image](./images/deployment/DocumentProcess.png)
 1. <u>Document upload</u><br/>
 Documents added to blob storage. Processing is triggered based on file check-in.
 
@@ -33,6 +33,10 @@ You can upload through the user interface files that you would like processed. T
 
 2. <u>Bulk File Processing</u><br/>
 You can take buik file processing since the web app saves uploaded files here also. This would be the ideal to upload a large number of document or files that are large in size. 
+
+    > **Document Upload Limit:** <br/>
+    Please ensure that the document you upload does not exceed a maximum size of 250 MB.
+    
 
 ### Modifying Processing Prompts 
 

@@ -14,8 +14,6 @@ function Enable-AppRouting {
     # Enable application routing
     az aks approuting enable --resource-group $ResourceGroupName --name $ClusterName
 
-    # Enable HTTP application routing addon
-    az aks enable-addons --resource-group $ResourceGroupName --name $ClusterName --addons http_application_routing
 }
 
 Export-ModuleMember -Function Enable-AppRouting

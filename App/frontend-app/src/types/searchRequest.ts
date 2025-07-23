@@ -3,7 +3,7 @@ export interface SearchRequest {
     searchFacets: SearchFacet[];
     currentPage: number;
     incomingFilter: string;
-    filters?: string[];
+    filters?: { [key: string]: string };
     parameters: {
         scoringProfile: string;
         inOrderBy: string[];
