@@ -1,5 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 using System;
+using System.Reflection.PortableExecutable;
 using System.Threading.Tasks;
 using Azure.Core;
 using Azure.Identity;
@@ -7,10 +8,9 @@ namespace Helpers;
 
 public class azure_credential_utils
 {
-    public static TokenCredential GetAzureCredential(string clientId = null)
+    public static TokenCredential GetAzureCredential(string appEnv = "prod", string clientId = null)
     {
         //var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
-        var appEnv = AppGlobals.Configuration["KernelMemory:Services:APP_ENV"] ?? "prod";
 
         if (string.Equals(appEnv, "dev", StringComparison.OrdinalIgnoreCase))
         {
@@ -24,8 +24,8 @@ public class azure_credential_utils
         }
     }
 
-    public static Task<TokenCredential> GetAzureCredentialAsync(string clientId = null)
+    public static Task<TokenCredential> GetAzureCredentialAsync(string appEnv = "prod", string clientId = null)
     {
-        return Task.FromResult(GetAzureCredential(clientId));
+        return Task.FromResult(GetAzureCredential(appEnv, clientId));
     }
 }
