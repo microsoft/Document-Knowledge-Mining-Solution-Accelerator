@@ -95,6 +95,7 @@ internal static class Program
         KernelMemoryConfig config = appBuilder.Configuration.GetSection("KernelMemory").Get<KernelMemoryConfig>()
                                     ?? throw new ConfigurationException("Unable to load configuration");
 
+        AppGlobals.Init(appBuilder.Configuration);
         // Some OpenAPI Explorer/Swagger dependencies
         appBuilder.ConfigureSwagger(config);
 
