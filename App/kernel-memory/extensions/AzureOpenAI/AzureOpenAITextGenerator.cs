@@ -11,6 +11,7 @@ using Azure;
 using Azure.AI.OpenAI;
 using Azure.Core.Pipeline;
 using Azure.Identity;
+using Helpers;
 using Microsoft.Extensions.Logging;
 using Microsoft.KernelMemory.AI.AzureOpenAI.Internals;
 using Microsoft.KernelMemory.AI.OpenAI;
@@ -77,7 +78,7 @@ public sealed class AzureOpenAITextGenerator : ITextGenerator
         switch (config.Auth)
         {
             case AzureOpenAIConfig.AuthTypes.AzureIdentity:
-                this._client = new OpenAIClient(new Uri(config.Endpoint), new DefaultAzureCredential(), options);
+                this._client = new OpenAIClient(new Uri(config.Endpoint), azure_credential_utils.GetAzureCredential(), options);
                 break;
 
             case AzureOpenAIConfig.AuthTypes.ManualTokenCredential:

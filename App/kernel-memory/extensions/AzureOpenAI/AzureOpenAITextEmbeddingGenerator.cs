@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Identity;
+using Helpers;
 using Microsoft.Extensions.Logging;
 using Microsoft.KernelMemory.AI.OpenAI;
 using Microsoft.KernelMemory.Diagnostics;
@@ -52,7 +53,7 @@ public sealed class AzureOpenAITextEmbeddingGenerator : ITextEmbeddingGenerator,
                 this._client = new AzureOpenAITextEmbeddingGenerationService(
                     deploymentName: config.Deployment,
                     endpoint: config.Endpoint,
-                    credential: new DefaultAzureCredential(),
+                    credential: azure_credential_utils.GetAzureCredential(),
                     modelId: config.Deployment,
                     httpClient: httpClient,
                     dimensions: config.EmbeddingDimensions,

@@ -14,6 +14,7 @@ using Azure.Search.Documents;
 using Azure.Search.Documents.Indexes;
 using Azure.Search.Documents.Indexes.Models;
 using Azure.Search.Documents.Models;
+using Helpers;
 using Microsoft.Extensions.Logging;
 using Microsoft.KernelMemory.AI;
 using Microsoft.KernelMemory.Diagnostics;
@@ -66,7 +67,7 @@ public class AzureAISearchMemory : IMemoryDb, IMemoryDbUpsertBatch
             case AzureAISearchConfig.AuthTypes.AzureIdentity:
                 this._adminClient = new SearchIndexClient(
                     new Uri(config.Endpoint),
-                    new DefaultAzureCredential(),
+                    azure_credential_utils.GetAzureCredential(),
                     GetClientOptions());
                 break;
 

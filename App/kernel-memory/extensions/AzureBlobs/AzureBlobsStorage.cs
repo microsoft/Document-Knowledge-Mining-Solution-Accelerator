@@ -11,6 +11,7 @@ using Azure.Storage;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Azure.Storage.Blobs.Specialized;
+using Helpers;
 using Microsoft.Extensions.Logging;
 using Microsoft.KernelMemory.Diagnostics;
 using Microsoft.KernelMemory.Pipeline;
@@ -61,7 +62,7 @@ public sealed class AzureBlobsStorage : IDocumentStorage
             {
                 this.ValidateAccountName(config.Account);
                 var suffix = this.ValidateEndpointSuffix(config.EndpointSuffix);
-                client = new BlobServiceClient(new Uri($"https://{config.Account}.blob.{suffix}"), new DefaultAzureCredential());
+                client = new BlobServiceClient(new Uri($"https://{config.Account}.blob.{suffix}"), azure_credential_utils.GetAzureCredential());
                 break;
             }
 
