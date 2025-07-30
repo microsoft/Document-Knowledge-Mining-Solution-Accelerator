@@ -12,12 +12,13 @@ namespace Microsoft.GS.DPSHost.AppConfiguration
             //Read ServiceConfiguration files - appsettings.json / appsettings.Development.json
             //builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
             //builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
-
+            var servicesConfig = builder.Configuration.GetSection("Application:Services").Get<Services>();
+            string appEnv = servicesConfig?.APP_ENV;
 
             //Read AppConfiguration with managed Identity
             builder.Configuration.AddAzureAppConfiguration(options =>
             {
-                options.Connect(new Uri(builder.Configuration["ConnectionStrings:AppConfig"]), AzureCredentialHelper.GetAzureCredential());
+                options.Connect(new Uri(builder.Configuration["ConnectionStrings:AppConfig"]), AzureCredentialHelper.GetAzureCredential(appEnv));
             });
 
             //Read ServiceConfiguration

@@ -6,6 +6,7 @@
         public KernelMemoryConfig KernelMemory { get; set; }
         public PersistentStorageConfig PersistentStorage { get; set; }
         public AzureAISearchConfig AzureAISearch { get; set; }
+        public string APP_ENV { get; set; }
 
         public class AzureAISearchConfig
         {

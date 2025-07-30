@@ -7,11 +7,12 @@ namespace Microsoft.GS.DPSHost.Helpers
 {
     public static class AzureCredentialHelper
     {
-        public static TokenCredential GetAzureCredential(string clientId = null)
+        public static TokenCredential GetAzureCredential(string appEnv = "prod", string clientId = null)
         {
-            var env = Environment.GetEnvironmentVariable("APP_ENV") ?? "prod";
+            //var env = Environment.GetEnvironmentVariable("APP_ENV") ?? "prod";
+            Console.WriteLine($"Current APP_ENV: {appEnv}");
 
-            if (string.Equals(env, "dev", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(appEnv, "dev", StringComparison.OrdinalIgnoreCase))
             {
                 return new DefaultAzureCredential(); // For local development
             }
@@ -23,9 +24,9 @@ namespace Microsoft.GS.DPSHost.Helpers
             }
         }
 
-        public static Task<TokenCredential> GetAzureCredentialAsync(string clientId = null)
+        public static Task<TokenCredential> GetAzureCredentialAsync(string appEnv = "prod", string clientId = null)
         {
-            return Task.FromResult(GetAzureCredential(clientId));
+            return Task.FromResult(GetAzureCredential(appEnv, clientId));
         }
     }
 }

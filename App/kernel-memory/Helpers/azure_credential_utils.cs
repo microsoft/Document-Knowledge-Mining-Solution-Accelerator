@@ -1,16 +1,17 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+using System;
 using System.Threading.Tasks;
 using Azure.Core;
 using Azure.Identity;
 namespace Helpers;
 
-public static class azure_credential_utils
+public class azure_credential_utils
 {
     public static TokenCredential GetAzureCredential(string clientId = null)
     {
-        var env = Environment.GetEnvironmentVariable("APP_ENV") ?? "prod";
+        var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
 
-        if (string.Equals(env, "dev", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(env, "Development", StringComparison.OrdinalIgnoreCase))
         {
             return new DefaultAzureCredential(); // For local development
         }
