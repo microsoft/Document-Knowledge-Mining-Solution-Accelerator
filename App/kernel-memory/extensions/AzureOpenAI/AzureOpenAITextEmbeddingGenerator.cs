@@ -53,7 +53,7 @@ public sealed class AzureOpenAITextEmbeddingGenerator : ITextEmbeddingGenerator,
                 this._client = new AzureOpenAITextEmbeddingGenerationService(
                     deploymentName: config.Deployment,
                     endpoint: config.Endpoint,
-                    credential: azure_credential_utils.GetAzureCredential(),
+                    credential: azure_credential_utils.GetAzureCredential(config.APP_ENV),
                     modelId: config.Deployment,
                     httpClient: httpClient,
                     dimensions: config.EmbeddingDimensions,

@@ -162,6 +162,8 @@ public class KernelMemoryConfig
     /// </summary>
     public string DefaultIndexName { get; set; } = "default";
 
+    public string APP_ENV { get; set; } = "prod";
+
     /// <summary>
     /// HTTP service authorization settings.
     /// </summary>

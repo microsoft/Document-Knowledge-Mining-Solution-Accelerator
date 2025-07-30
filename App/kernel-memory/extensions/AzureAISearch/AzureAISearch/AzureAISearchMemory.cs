@@ -67,7 +67,7 @@ public class AzureAISearchMemory : IMemoryDb, IMemoryDbUpsertBatch
             case AzureAISearchConfig.AuthTypes.AzureIdentity:
                 this._adminClient = new SearchIndexClient(
                     new Uri(config.Endpoint),
-                    azure_credential_utils.GetAzureCredential(),
+                    azure_credential_utils.GetAzureCredential(config.APP_ENV),
                     GetClientOptions());
                 break;
 

@@ -95,7 +95,7 @@ public sealed class AzureQueuesPipeline : IQueue
             {
                 this.ValidateAccountName(config.Account);
                 var suffix = this.ValidateEndpointSuffix(config.EndpointSuffix);
-                this._clientBuilder = queueName => new QueueClient(new($"https://{config.Account}.queue.{suffix}/{queueName}"), azure_credential_utils.GetAzureCredential());
+                this._clientBuilder = queueName => new QueueClient(new($"https://{config.Account}.queue.{suffix}/{queueName}"), azure_credential_utils.GetAzureCredential(config.APP_ENV));
                 break;
             }
 

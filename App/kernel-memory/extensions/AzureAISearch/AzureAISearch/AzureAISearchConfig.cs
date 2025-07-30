@@ -25,6 +25,8 @@ public class AzureAISearchConfig
     public string Endpoint { get; set; } = string.Empty;
     public string APIKey { get; set; } = string.Empty;
 
+    public string APP_ENV { get; set; } = "prod";
+
     /// <summary>
     /// Important: when using hybrid search, relevance scores
     /// are very different (e.g. lower) from when using just vector search.

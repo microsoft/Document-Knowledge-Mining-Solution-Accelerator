@@ -35,6 +35,8 @@ public class AzureBlobsConfig
     public string EndpointSuffix { get; set; } = "core.windows.net";
     public string Container { get; set; } = "";
 
+    public string APP_ENV { get; set; } = "prod";
+
     public void SetCredential(StorageSharedKeyCredential credential)
     {
         this.Auth = AuthTypes.ManualStorageSharedKeyCredential;
