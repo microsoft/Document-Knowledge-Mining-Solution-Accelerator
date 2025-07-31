@@ -84,10 +84,13 @@ internal static class Program
 
         appBuilder.Configuration.AddKMConfigurationSources();
 
+        var servicesConfig = appBuilder.Configuration.GetSection("KernelMemory").Get<KernelMemoryConfig>();
+        string appEnv = servicesConfig?.APP_ENV;
+
         // Add Configuration from App Configuration Service
         appBuilder.Configuration.AddAzureAppConfiguration(options =>
         {
-            options.Connect(new Uri(appBuilder.Configuration["ConnectionStrings:AppConfig"]), azure_credential_utils.GetAzureCredential());
+            options.Connect(new Uri(appBuilder.Configuration["ConnectionStrings:AppConfig"]), azure_credential_utils.GetAzureCredential(appEnv: appEnv));
         });
 
 
@@ -95,7 +98,6 @@ internal static class Program
         KernelMemoryConfig config = appBuilder.Configuration.GetSection("KernelMemory").Get<KernelMemoryConfig>()
                                     ?? throw new ConfigurationException("Unable to load configuration");
 
-        AppGlobals.Init(appBuilder.Configuration);
         // Some OpenAPI Explorer/Swagger dependencies
         appBuilder.ConfigureSwagger(config);
 
