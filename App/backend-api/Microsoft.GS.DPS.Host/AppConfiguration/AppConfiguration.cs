@@ -1,6 +1,7 @@
 ﻿using Azure.Identity;
 using Microsoft.Extensions.Azure;
 using Microsoft.GS.DPSHost.AppConfiguration;
+using Microsoft.GS.DPSHost.Helpers;
 
 namespace Microsoft.GS.DPSHost.AppConfiguration
 {
@@ -16,7 +17,7 @@ namespace Microsoft.GS.DPSHost.AppConfiguration
             //Read AppConfiguration with managed Identity
             builder.Configuration.AddAzureAppConfiguration(options =>
             {
-                options.Connect(new Uri(builder.Configuration["ConnectionStrings:AppConfig"]), new DefaultAzureCredential());
+                options.Connect(new Uri(builder.Configuration["ConnectionStrings:AppConfig"]), AzureCredentialHelper.GetAzureCredential());
             });
 
             //Read ServiceConfiguration
