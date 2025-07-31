@@ -600,6 +600,7 @@ try {
         '{azureaidocintel-apikey}' =  $deploymentResult.AzCognitiveServiceKey 
         '{cosmosmongo-chat-history-collection}' = "ChatHistory"
         '{cosmosmongo-chat-history-database}' = "DPS"
+        '{app-environment}' = "prod"
         '{cosmosmongo-document-manager-collection}' = "Documents"
         '{cosmosmongo-document-manager-database}' = "DPS"
         '{azureaidocintel-endpoint}' = $deploymentResult.AzCognitiveServiceEndpoint 

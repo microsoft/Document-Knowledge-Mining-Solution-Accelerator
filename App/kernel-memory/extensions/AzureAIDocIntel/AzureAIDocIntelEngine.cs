@@ -8,8 +8,11 @@ using System.Threading.Tasks;
 using Azure;
 using Azure.AI.FormRecognizer.DocumentAnalysis;
 using Azure.Identity;
+using Helpers;
 using Microsoft.Extensions.Logging;
 using Microsoft.KernelMemory.Diagnostics;
+using Microsoft.KernelMemory.Configuration;
+
 
 namespace Microsoft.KernelMemory.DataFormats.AzureAIDocIntel;
 
@@ -36,7 +39,7 @@ public sealed class AzureAIDocIntelEngine : IOcrEngine
         switch (config.Auth)
         {
             case AzureAIDocIntelConfig.AuthTypes.AzureIdentity:
-                this._recognizerClient = new DocumentAnalysisClient(new Uri(config.Endpoint), new DefaultAzureCredential());
+                this._recognizerClient = new DocumentAnalysisClient(new Uri(config.Endpoint), azure_credential_utils.GetAzureCredential(config.APP_ENV));
                 break;
 
             case AzureAIDocIntelConfig.AuthTypes.APIKey:

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Azure.Identity;
+using Helpers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
@@ -19,6 +20,7 @@ using Microsoft.KernelMemory.DocumentStorage;
 using Microsoft.KernelMemory.MemoryStorage;
 using Microsoft.KernelMemory.Pipeline;
 using Microsoft.KernelMemory.Service.AspNetCore;
+
 
 // KM Configuration:
 //
@@ -82,10 +84,13 @@ internal static class Program
 
         appBuilder.Configuration.AddKMConfigurationSources();
 
+        var servicesConfig = appBuilder.Configuration.GetSection("KernelMemory").Get<KernelMemoryConfig>();
+        string appEnv = servicesConfig?.APP_ENV;
+
         // Add Configuration from App Configuration Service
         appBuilder.Configuration.AddAzureAppConfiguration(options =>
         {
-            options.Connect(new Uri(appBuilder.Configuration["ConnectionStrings:AppConfig"]), new DefaultAzureCredential());
+            options.Connect(new Uri(appBuilder.Configuration["ConnectionStrings:AppConfig"]), azure_credential_utils.GetAzureCredential(appEnv: appEnv));
         });
 
 

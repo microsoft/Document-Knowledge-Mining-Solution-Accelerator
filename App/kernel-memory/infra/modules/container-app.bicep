@@ -172,6 +172,10 @@ resource kmService 'Microsoft.App/containerApps@2023-05-01' = {
               name: 'KernelMemory__Services__AzureAIDocIntel__Endpoint'
               value: AzureAIDocIntel_Endpoint
             }
+            {
+              name: 'APP_ENV'
+              value: 'prod'
+            }
           ]
         }
       ]

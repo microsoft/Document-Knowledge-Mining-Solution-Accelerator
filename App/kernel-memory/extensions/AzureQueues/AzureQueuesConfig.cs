@@ -37,6 +37,8 @@ public class AzureQueuesConfig
     public string AccountKey { get; set; } = "";
     public string EndpointSuffix { get; set; } = "core.windows.net";
 
+    public string APP_ENV { get; set; } = "prod";
+
     /// <summary>
     /// How often to check if there are new messages.
     /// </summary>

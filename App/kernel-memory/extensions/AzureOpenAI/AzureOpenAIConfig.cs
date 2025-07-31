@@ -52,6 +52,8 @@ public class AzureOpenAIConfig
     /// </summary>
     public string Endpoint { get; set; } = string.Empty;
 
+    public string APP_ENV { get; set; } = "prod";
+
     /// <summary>
     /// Azure OpenAI deployment name
     /// </summary>

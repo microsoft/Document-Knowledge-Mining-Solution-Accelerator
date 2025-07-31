@@ -23,6 +23,8 @@ public class AzureAIDocIntelConfig
 
     public string APIKey { get; set; } = string.Empty;
 
+    public string APP_ENV { get; set; } = "prod";
+
     /// <summary>
     /// Verify that the current state is valid.
     /// </summary>
