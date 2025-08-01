@@ -196,7 +196,7 @@ jobs:
           # Increase the TPM for the Azure OpenAI models
           echo "Increasing TPM for Azure OpenAI models..."
           openai_gpt_deployment_url="/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.rg_name }}/providers/Microsoft.CognitiveServices/accounts/$openai_resource_name/deployments/gpt-4o-mini?api-version=2023-05-01"
-          az rest -m put -u "$openai_gpt_deployment_url" -b "{'sku':{'name':'Standard','capacity':${{ env.GPT_CAPACITY }}},'properties': {'model': {'format': 'OpenAI','name': 'gpt-4o-mini','version': '2024-07-18'}}}"
+          az rest -m put -u "$openai_gpt_deployment_url" -b "{'sku':{'name':'GlobalStandard','capacity':${{ env.GPT_CAPACITY }}},'properties': {'model': {'format': 'OpenAI','name': 'gpt-4o-mini','version': '2024-07-18'}}}"
           if [ $? -ne 0 ]; then
             echo "Failed to increase TPM for GPT deployment."
             exit 1
@@ -204,7 +204,7 @@ jobs:
             echo "Successfully increased TPM for GPT deployment."
           fi
           openai_embedding_deployment_url="/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.rg_name }}/providers/Microsoft.CognitiveServices/accounts/$openai_resource_name/deployments/text-embedding-large?api-version=2023-05-01"
-          az rest -m put -u "$openai_embedding_deployment_url" -b "{'sku':{'name':'Standard','capacity': ${{ env.TEXT_EMBEDDING_CAPACITY }}},'properties': {'model': {'format': 'OpenAI','name': 'text-embedding-3-large','version': '1'}}}"
+          az rest -m put -u "$openai_embedding_deployment_url" -b "{'sku':{'name':'GlobalStandard','capacity': ${{ env.TEXT_EMBEDDING_CAPACITY }}},'properties': {'model': {'format': 'OpenAI','name': 'text-embedding-3-large','version': '1'}}}"
           if [ $? -ne 0 ]; then
             echo "Failed to increase TPM for Text Embedding deployment."
             exit 1
