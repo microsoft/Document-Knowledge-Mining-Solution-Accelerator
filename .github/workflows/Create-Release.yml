@@ -1,8 +1,7 @@
 on:
     push:
      branches:
-       - ve-pipeline-changes
-       #- main
+       - main
 
 permissions:
   contents: write
