@@ -32,6 +32,8 @@ import { SidecarCopilot } from "../../components/sidecarCopilot/sidecar";
 import homeStyles from "./home.module.scss";
 import { ChatRoom } from "../../components/chat/chatRoom";
 import UploadFilesButton from "../../components/uploadButton/uploadButton";
+import { PanelResizer } from "../../components/resizer/panelResizer";
+import { ChevronLeft24Regular, ChevronRight24Regular } from "@fluentui/react-icons";
 
 const useStyles = makeStyles({
     dropdown: {
@@ -64,6 +66,9 @@ export function Home({ isSearchResultsPage }: HomeProps) {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [searchParams, setSearchParams] = useSearchParams();
     const [areFiltersVisible, setAreFiltersVisible] = useState(true);
+    const [isFilterPanelCollapsed, setIsFilterPanelCollapsed] = useState(false);
+    const [documentsWidth, setDocumentsWidth] = useState(34); // Initial width percentage
+    const [chatWidth, setChatWidth] = useState(51); // Initial width percentage
     const [showCopilot, setShowCopilot] = useState<boolean>(false);
     const [incomingFilter, setIncomingFilter] = useState(
         "(document/embedded eq false and document/translated eq false)"
@@ -235,6 +240,15 @@ export function Home({ isSearchResultsPage }: HomeProps) {
     function onFilterPress(): void {
         setAreFiltersVisible((prevAreFiltersVisible) => !prevAreFiltersVisible);
     }
+
+    function toggleFilterPanel(): void {
+        setIsFilterPanelCollapsed(!isFilterPanelCollapsed);
+    }
+
+    const handlePanelResize = (leftWidth: number, rightWidth: number) => {
+        setDocumentsWidth(leftWidth);
+        setChatWidth(rightWidth);
+    };
 
     const handleSortSelected = (sort: string) => {
         setInOrderBy(sort);
@@ -526,25 +540,50 @@ export function Home({ isSearchResultsPage }: HomeProps) {
 
 <main className="w-full h-full flex flex-col">
     <div className="flex flex-col md:flex-row flex-grow">
-        {/* Left Section: Filter */}
-        <div className={`flex flex-col w-full bg-white shadow-md p-4 ${homeStyles["no-bottom-padding"]} ${homeStyles["filters-panel"]}`}>
-            {/* Keep the FilterButton at the top */}
-            <div className="mb-4">
-                <FilterButton onFilterPress={onFilterPress} />
+        {/* Left Section: Filter Panel with Toggle */}
+        {!isFilterPanelCollapsed && (
+            <div className={`flex flex-col w-full bg-white shadow-md p-4 ${homeStyles["no-bottom-padding"]} ${homeStyles["filters-panel"]} transition-all duration-300`}>
+                {/* Filter Header with Toggle Button */}
+                <div className="mb-4 flex items-center justify-between">
+                    <FilterButton onFilterPress={onFilterPress} />
+                    <Button 
+                        appearance="subtle" 
+                        icon={<ChevronLeft24Regular />}
+                        onClick={toggleFilterPanel}
+                        title="Collapse filters"
+                        size="small"
+                    />
+                </div>
+                {areFiltersVisible && (
+                    <Filter
+                        onFilterChanged={onFilterChanged}
+                        prevSelectedFilters={persistedFilters}
+                        keywordFilterInfo={data?.keywordFilterInfo}
+                        clearFilters={clearFilters}
+                        onFilterCleared={handleFilterCleared}
+                    />
+                )}
             </div>
-            {areFiltersVisible && (
-                            <Filter
-                            onFilterChanged={onFilterChanged}
-                            prevSelectedFilters={persistedFilters}
-                            keywordFilterInfo={data?.keywordFilterInfo}
-                            clearFilters={clearFilters}
-                            onFilterCleared={handleFilterCleared}
-                        />
-                        )}
-        </div>
+        )}
 
-        {/* Right Section: Search Box and Fluent v2 Dropdown */}
-        <div className={`flex flex-col w-full bg-white shadow-md p-4 ${homeStyles["no-bottom-padding"]} ${homeStyles["documents-panel"]}`}>
+        {/* Collapsed Filter Toggle Button */}
+        {isFilterPanelCollapsed && (
+            <div className="flex flex-col bg-white shadow-md p-2 min-w-[50px] items-center">
+                <Button 
+                    appearance="subtle" 
+                    icon={<ChevronRight24Regular />}
+                    onClick={toggleFilterPanel}
+                    title="Expand filters"
+                    size="small"
+                />
+            </div>
+        )}
+
+        {/* Documents Section */}
+        <div 
+            className={`flex flex-col bg-white shadow-md p-4 ${homeStyles["no-bottom-padding"]} transition-all duration-300`}
+            style={{ width: `${documentsWidth}%`, minWidth: '300px' }}
+        >
         <div className="flex flex-row items-center space-x-2"> {/* Adjusted space between elements */}
             {/* Search Box */}
             <SearchBox
@@ -648,8 +687,19 @@ export function Home({ isSearchResultsPage }: HomeProps) {
             </div>
         </div>
 
+        {/* Panel Resizer */}
+        <PanelResizer 
+            onResize={handlePanelResize}
+            initialLeftWidth={documentsWidth}
+            minLeftWidth={300}
+            minRightWidth={300}
+        />
+
         {/* Chat Room Section */}
-        <div className={`flex flex-col w-full   bg-white shadow-md ${homeStyles["chat-panel"]}`}>
+        <div 
+            className={`flex flex-col bg-white shadow-md ${homeStyles["chat-panel"]} transition-all duration-300`}
+            style={{ width: `${chatWidth}%`, minWidth: '300px' }}
+        >
             <div className="flex flex-col h-full">
             <div className={`flex-grow overflow-y-auto ${homeStyles["no-bottom-padding"]}` } style={{ backgroundColor: '#f7f7f7', overflowX: 'hidden', overflowY: 'auto', display: 'flex', maxBlockSize: 'calc(100vh - 60px)'}}>
                         <ChatRoom

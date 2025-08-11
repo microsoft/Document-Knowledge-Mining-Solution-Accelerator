@@ -37,16 +37,64 @@
   .filters-panel {
     width: 15% !important;
     min-width: 229px;
+    transition: width 0.3s ease-in-out;
   }
   
   .documents-panel {
     width: 34% !important;
     min-width: 410px;
+    transition: width 0.3s ease-in-out;
   }
   
   .chat-panel {
     width: 51% !important;
+    min-width: 300px;
+    transition: width 0.3s ease-in-out;
   }
+
+  .filters-panel-collapsed {
+    width: 50px !important;
+    min-width: 50px;
+    transition: width 0.3s ease-in-out;
+  }
+}
+
+/* Resizable panels styling */
+.resizable-container {
+  display: flex;
+  flex-direction: row;
+  flex-grow: 1;
+  overflow: hidden;
+}
+
+.resizable-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  overflow: hidden;
+}
+
+/* Filter panel transitions */
+.filter-panel-enter {
+  opacity: 0;
+  transform: translateX(-100%);
+}
+
+.filter-panel-enter-active {
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.filter-panel-exit {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.filter-panel-exit-active {
+  opacity: 0;
+  transform: translateX(-100%);
+  transition: opacity 300ms, transform 300ms;
 }
 
 @media (max-width: 1080px) {
