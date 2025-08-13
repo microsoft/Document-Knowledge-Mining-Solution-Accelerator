@@ -21,6 +21,14 @@
     }
 }
 
+/* Ensure no white space in chat area */
+.no-white-space {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
 table {
     border-collapse: collapse;
     width: 100%;
@@ -40,19 +48,33 @@ table {
 
 .grey-background {
     background-color: #f0f0f03d;
+    width: 100%;
+    overflow-x: hidden; /* Prevent horizontal overflow */
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 
 .attachment-tag-container {
     display: flex;
     flex-wrap: wrap;
+    width: 100%;
 }
 
 .chat-container {
     max-block-size: 75vh;
+    width: 100%;
+    overflow-x: hidden; /* Prevent horizontal overflow */
+    margin: 0;
+    padding: 0;
 }
 
 .chatMessagesContainer, .questionContainer {
-    padding-right: 1rem;
-    padding-left: 1rem;
+    padding-right: 0.25rem;
+    padding-left: 0.25rem;
+    width: 100%;
+    box-sizing: border-box; /* Include padding in width calculation */
+    max-width: 100%; /* Ensure it doesn't exceed container width */
+    margin: 0;
 }

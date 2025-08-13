@@ -1,6 +1,6 @@
 import React from "react";
 
-export function AzureIcon({ className }: { className?: string }): JSX.Element {
+export function AzureIcon({ className }: { className?: string }): React.JSX.Element {
     return (
         <svg className={className} fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path

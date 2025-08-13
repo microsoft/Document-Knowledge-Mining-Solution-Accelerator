@@ -205,53 +205,58 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
         }
 
         try {
-
-
-
             const request: ChatRequest = {
                 Question: question,
                 chatSessionId: currentSessionId,
                 DocumentIds: button === "All Documents" ? [] : formattedDocuments
-                // cha: history,
-                // options: {
-                //     model: model,
-                //     source: source,
-                //     temperature: temperature,
-                //     maxTokens: maxTokens,
-                // },
-                // filterByDocumentIds: filterByDocumentIds,
             };
 
-
             const response: ChatApiResponse = await Completion(request);
-
-
 
             setIsLoading(false);
 
             const answerTimestamp = new Date();
 
-            try {
-                if (response && response.answer) {
+            if (response && response.answer) {
+                const formattedAnswer = removeNewlines(response.answer);
+                const chatResp = await marked.parse(formattedAnswer);
 
-                    const formattedAnswer = removeNewlines(response.answer)
-                    const chatResp = await marked.parse(formattedAnswer) // Convert to HTML if Markdown detected
-
-
-
-
-                    // Update the conversation with the formatted answer
-                    setConversationAnswers((prevAnswers) => {
-                        const newAnswers = [...prevAnswers];
-                        newAnswers[newAnswers.length - 1] = [question, { ...response, answer: chatResp }, userTimestamp, answerTimestamp];
-                        return newAnswers;
-                    });
-                }
-            } catch (error) {
-                console.error("Error parsing response body:", error);
+                // Update the conversation with the formatted answer
+                setConversationAnswers((prevAnswers) => {
+                    const newAnswers = [...prevAnswers];
+                    newAnswers[newAnswers.length - 1] = [question, { ...response, answer: chatResp }, userTimestamp, answerTimestamp];
+                    return newAnswers;
+                });
+            } else {
+                console.error("Invalid response received:", response);
+                // Update with error message
+                setConversationAnswers((prevAnswers) => {
+                    const newAnswers = [...prevAnswers];
+                    newAnswers[newAnswers.length - 1] = [question, { 
+                        answer: t('components.chat.error-response'), 
+                        suggestingQuestions: [],
+                        documentIds: [],
+                        keywords: []
+                    }, userTimestamp, answerTimestamp];
+                    return newAnswers;
+                });
             }
         } catch (error) {
             console.error("Error in makeApiRequest:", error);
+            setIsLoading(false);
+            
+            // Update conversation with error message
+            const answerTimestamp = new Date();
+            setConversationAnswers((prevAnswers) => {
+                const newAnswers = [...prevAnswers];
+                newAnswers[newAnswers.length - 1] = [question, { 
+                    answer: t('components.chat.error-occurred'), 
+                    suggestingQuestions: [],
+                    documentIds: [],
+                    keywords: []
+                }, userTimestamp, answerTimestamp];
+                return newAnswers;
+            });
         } finally {
             setIsLoading(false);
             setTimeout(() => {
@@ -400,7 +405,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
     }, []);
 
     return (
-        <div className="mx-2 flex w-full flex-1 flex-col items-center grey-background">
+        <div className="flex w-full flex-1 flex-col items-stretch grey-background">
             {isDialogOpen && (
                 <DocDialog
                     metadata={dialogMetadata as Document}
@@ -411,8 +416,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
             <div ref={chatContainerRef} className={`no-scrollbar flex w-full flex-1 flex-col overflow-auto ${styles["chat-container"]}`}>
             {!disableOptionsPanel && (
                 <OptionsPanel
-                    // className="px-10 mx-auto my-10 flex flex-col items-center justify-center rounded-xl bg-neutral-500 bg-opacity-10 shadow-md outline outline-1 outline-transparent" 
-                    className={`px-10 mx-auto my-10 flex flex-col items-center justify-center rounded-xl bg-neutral-500 bg-opacity-10 shadow-md outline outline-1 outline-transparent`}
+                    className={`px-4 mx-0 my-10 flex flex-col items-center justify-center rounded-xl bg-neutral-500 bg-opacity-10 shadow-md outline outline-1 outline-transparent w-full`}
                     onModelChange={handleModelChange}
                     onSourceChange={handleSourceChange}
                     disabled={disableSources}
@@ -421,7 +425,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                 />
             )}
             <div ref={optionsBottom}></div>
-                <CopilotProvider className={styles.chatMessagesContainer}>
+                <CopilotProvider className={`${styles.chatMessagesContainer} w-full`}>
                     <CopilotChat>
                         {conversationAnswers.map(([prompt, response], index) => (
                             <Fragment key={index}>
@@ -564,7 +568,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                 </CopilotProvider>
             </div>
 
-            <div className={`${styles.questionContainer} mb-6 mt-6 flex w-full justify-center`}>
+            <div className={`${styles.questionContainer} mb-6 mt-6 flex w-full justify-center px-2`}>
                 <Button
                     className={styles["new-topic"]}
                     shape="circular"
@@ -587,7 +591,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                     key={textareaKey}
                     ref={inputRef}
                     value={textAreaValue}
-                    className="!ml-4 max-h-48 w-full !max-w-none"
+                    className="!ml-2 max-h-48 w-full !max-w-none"
                     onChange={(_ev, newValue) => setTextAreaValue(newValue.value)}
                     showCount
                     aria-label="Chat input"

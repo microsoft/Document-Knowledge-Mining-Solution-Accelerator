@@ -66,8 +66,7 @@ interface Cell {
 }
 
 export function DocDialog(
-    { metadata, isOpen, allChunkTexts, clearChatFlag, onClose }: DocDialogProps,
-    props: Partial<TabListProps>
+    { metadata, isOpen, allChunkTexts, clearChatFlag, onClose, ...props }: DocDialogProps & Partial<TabListProps>
 ) {
     const {t} = useTranslation();
     const styles = useStyles();

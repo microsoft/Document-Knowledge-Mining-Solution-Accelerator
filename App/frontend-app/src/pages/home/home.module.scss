@@ -50,6 +50,7 @@
     width: 51% !important;
     min-width: 300px;
     transition: width 0.3s ease-in-out;
+    overflow: hidden; /* Prevent content from spilling out */
   }
 
   .filters-panel-collapsed {

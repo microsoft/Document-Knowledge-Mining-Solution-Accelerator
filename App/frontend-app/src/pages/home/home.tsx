@@ -700,8 +700,8 @@ export function Home({ isSearchResultsPage }: HomeProps) {
             className={`flex flex-col bg-white shadow-md ${homeStyles["chat-panel"]} transition-all duration-300`}
             style={{ width: `${chatWidth}%`, minWidth: '300px' }}
         >
-            <div className="flex flex-col h-full">
-            <div className={`flex-grow overflow-y-auto ${homeStyles["no-bottom-padding"]}` } style={{ backgroundColor: '#f7f7f7', overflowX: 'hidden', overflowY: 'auto', display: 'flex', maxBlockSize: 'calc(100vh - 60px)'}}>
+            <div className="flex flex-col h-full w-full">
+            <div className={`flex-grow overflow-hidden ${homeStyles["no-bottom-padding"]}`} style={{ backgroundColor: '#f7f7f7', display: 'flex', maxBlockSize: 'calc(100vh - 60px)', width: '100%'}}>
                         <ChatRoom
                                     searchResultDocuments={searchResultDocuments}
                                     selectedDocuments={selectedDocuments}
