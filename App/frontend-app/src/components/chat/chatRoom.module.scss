@@ -29,6 +29,15 @@
     box-sizing: border-box !important;
 }
 
+/* Force full width for all containers */
+.full-width-container {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+}
+
 table {
     border-collapse: collapse;
     width: 100%;
@@ -73,8 +82,30 @@ table {
 .chatMessagesContainer, .questionContainer {
     padding-right: 0.25rem;
     padding-left: 0.25rem;
-    width: 100%;
+    width: 100% !important;
     box-sizing: border-box; /* Include padding in width calculation */
-    max-width: 100%; /* Ensure it doesn't exceed container width */
-    margin: 0;
+    max-width: 100% !important; /* Ensure it doesn't exceed container width */
+    margin: 0 !important;
+}
+
+/* Force Copilot components to take full width */
+.chatMessagesContainer :global(fui-CopilotChat) {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.chatMessagesContainer :global([role="log"]) {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Ensure all chat message containers take full width */
+.chatMessagesContainer :global(.fui-CopilotMessage),
+.chatMessagesContainer :global(.fui-UserMessage) {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
 }

@@ -37,8 +37,8 @@ export function ChatPage() {
                     <HeaderBar location={NavLocation.Home} />
                 </div>
             </Header>
-            <main className="grid flex-1 grid-cols-5 gap-x-2 gap-y-8">
-                <div className="col-span-3 col-start-2 flex flex-1 flex-col md:col-span-3 md:col-start-2">
+            <main className="flex flex-1 flex-col w-full">
+                <div className="flex flex-1 flex-col w-full">
                     <HeaderMenuTabs
                         className=""
                         searchResultDocuments={searchResultDocuments}

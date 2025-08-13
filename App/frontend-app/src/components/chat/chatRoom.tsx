@@ -405,7 +405,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
     }, []);
 
     return (
-        <div className="flex w-full flex-1 flex-col items-stretch grey-background">
+        <div className="flex w-full flex-1 flex-col items-stretch grey-background !m-0 !p-0 !max-w-none">
             {isDialogOpen && (
                 <DocDialog
                     metadata={dialogMetadata as Document}
@@ -413,7 +413,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                     onClose={handleDialogClose}
                     allChunkTexts={allChunkTexts} clearChatFlag={false}                />
             )}
-            <div ref={chatContainerRef} className={`no-scrollbar flex w-full flex-1 flex-col overflow-auto ${styles["chat-container"]}`}>
+            <div ref={chatContainerRef} className={`no-scrollbar flex w-full flex-1 flex-col overflow-auto !max-w-none !m-0 !p-0 ${styles["chat-container"]}`}>
             {!disableOptionsPanel && (
                 <OptionsPanel
                     className={`px-4 mx-0 my-10 flex flex-col items-center justify-center rounded-xl bg-neutral-500 bg-opacity-10 shadow-md outline outline-1 outline-transparent w-full`}
@@ -425,7 +425,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                 />
             )}
             <div ref={optionsBottom}></div>
-                <CopilotProvider className={`${styles.chatMessagesContainer} w-full`}>
+                <CopilotProvider className={`${styles.chatMessagesContainer} w-full !max-w-none`}>
                     <CopilotChat>
                         {conversationAnswers.map(([prompt, response], index) => (
                             <Fragment key={index}>
