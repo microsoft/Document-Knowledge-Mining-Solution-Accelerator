@@ -21,6 +21,21 @@
     }
 }
 
+/* Global overrides to ensure full width */
+:global(html), :global(body), :global(#root) {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+}
+
+/* Override home page chat-panel constraints on chat page */
+:global(.chat-panel) {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
 /* Ensure no white space in chat area */
 .no-white-space {
     margin: 0 !important;

@@ -53,6 +53,15 @@
     overflow: hidden; /* Prevent content from spilling out */
   }
 
+  /* Full width override for chat page */
+  .chat-panel-fullwidth {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 300px;
+    transition: width 0.3s ease-in-out;
+    overflow: hidden;
+  }
+
   .filters-panel-collapsed {
     width: 50px !important;
     min-width: 50px;

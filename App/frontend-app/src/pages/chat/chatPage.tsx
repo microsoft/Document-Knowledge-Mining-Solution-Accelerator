@@ -31,14 +31,14 @@ export function ChatPage() {
     };
 
     return (
-        <div className="flex w-full flex-1 flex-col bg-neutral-100">
+        <div className="flex w-full flex-1 flex-col bg-neutral-100" style={{ width: '100vw', maxWidth: '100vw', margin: 0, padding: 0 }}>
             <Header className="flex flex-col justify-between bg-contain bg-right-bottom bg-no-repeat" size="small">
                 <div className="-ml-8">
                     <HeaderBar location={NavLocation.Home} />
                 </div>
             </Header>
-            <main className="flex flex-1 flex-col w-full">
-                <div className="flex flex-1 flex-col w-full">
+            <main className="flex flex-1 flex-col w-full" style={{ width: '100%', maxWidth: '100%' }}>
+                <div className="flex flex-1 flex-col w-full" style={{ width: '100%', maxWidth: '100%' }}>
                     <HeaderMenuTabs
                         className=""
                         searchResultDocuments={searchResultDocuments}
