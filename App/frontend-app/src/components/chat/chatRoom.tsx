@@ -9,26 +9,21 @@ import {
     DialogSurface,
     DialogTitle,
     Tag,
-    Tooltip,
     makeStyles,
 } from "@fluentui/react-components";
 import { DocDialog } from "../documentViewer/documentViewer";
 import { Textarea } from "@fluentai/textarea";
 import type { TextareaSubmitEvents, TextareaValueData } from "@fluentai/textarea";
 import { CopilotChat, UserMessage, CopilotMessage } from "@fluentai/react-copilot-chat";
-import { ChatAdd24Regular, DocumentOnePageLink20Regular } from "@fluentui/react-icons";
-import { AttachmentTag } from "@fluentai/attachments";
+import { ChatAdd24Regular } from "@fluentui/react-icons";
 import styles from "./chatRoom.module.scss";
-import { CopilotProvider, FeedbackButtons, Suggestion } from "@fluentai/react-copilot";
-import { Result, SingleDocument, Tokens } from "../../api/apiTypes/singleDocument";
-//import { getDocument } from "../../api/documentsService";
+import { CopilotProvider, Suggestion } from "@fluentai/react-copilot";
+import { Tokens } from "../../api/apiTypes/singleDocument";
 import { Completion, PostFeedback } from "../../api/chatService";
 import { FeedbackForm } from "./FeedbackForm";
 import { Document } from "../../api/apiTypes/documentResults";
 import { AppContext } from "../../AppContext";
 import { useTranslation } from "react-i18next";
-import ReactMarkdown from "react-markdown";
-import { renderToStaticMarkup } from "react-dom/server";
 import { marked } from 'marked';
 const DefaultChatModel = "chat_4o";
 
@@ -48,12 +43,10 @@ interface ChatRoomProps {
 }
 
 export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDocument, disableOptionsPanel, clearChatFlag }: ChatRoomProps) {
-    const customStyles = useStyles();
     const { t } = useTranslation();
     const [chatSessionId, setChatSessionId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [disableSources, setDisableSources] = useState<boolean>(false);
-    const [error, setError] = useState<unknown>();
     const [model, setModel] = useState<string>("chat_35");
     const [source, setSource] = useState<string>("rag");
     const [temperature, setTemperature] = useState<number>(0.8);
@@ -105,7 +98,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
         if (clearChatFlag) {
             clearChat();
         }
-    }, [clearChatFlag]); // Runs whenever clearChat changes
+    }, [clearChatFlag]);
 
 
 
@@ -124,85 +117,30 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
 
     const makeApiRequest = async (question: string) => {
         setTextAreaValue("");
-        //Force Textarea re-render to reset internal showCount
         setTextareaKey(prev => prev + 1);
         setDisableSources(true);
         setIsLoading(true);
 
-        // A simple function to check if the text contains Markdown
-        const isMarkdown = (text: string) => {
-            const markdownPattern = /(^|\s)(#{1,6}|\*\*|__|[-*]|\d+\.\s|\[.*\]\(.*\)|```|`[^`]*`)/;
-            return markdownPattern.test(text);
-        };
-
         const userTimestamp = new Date();
-        // Ensure we have a chatSessionId or create one if null/undefined
-
-
-        let currentSessionId = chatSessionId; // Get the current value of chatSessionId
+        
+        let currentSessionId = chatSessionId;
         if (!currentSessionId) {
-            const newSessionId = uuidv4(); // Generate a new UUID if no session exists
-            setChatSessionId(newSessionId); // Save it for future renders
-            currentSessionId = newSessionId; // Immediately use the new session ID in this function
-
+            const newSessionId = uuidv4();
+            setChatSessionId(newSessionId);
+            currentSessionId = newSessionId;
         }
-        const markdownToHtmlString = (markdown: string) => {
-            return renderToStaticMarkup(<ReactMarkdown>{markdown}</ReactMarkdown>);
-        };
-        const markdown = `| Data Point | Value | Document Name | Page Number |
-|----------------|-----------|-------------------|------------------|
-| Households with accessibility needs | 23.1 million | Accessibility in Housing Report | Page 1 |
-| Households with mobility-related disabilities | 19% of U.S. households | Accessibility in Housing Report | Page 1 |
-| Households without entry-level bedroom or full bathroom planning to add features | 1% | Accessibility in Housing Report | Page 3 |
-| Households planning to make homes more accessible | 5% | Accessibility in Housing Report | Page 3 |
-| Households with someone using mobility devices | 13% | Accessibility in Housing Report | Page 1 |
-| Households with serious difficulty hearing | 12% | Accessibility in Housing Report | Page 24 |
-| Households with serious difficulty seeing | 12% | Accessibility in Housing Report | Page 24 |
-| Households with difficulty walking or climbing stairs | 12% | Accessibility in Housing Report | Page 24 |
-| Households with difficulty dressing or bathing | 12% | Accessibility in Housing Report | Page 24 |
-| Households with difficulty doing errands alone | 12% | Accessibility in Housing Report | Page 24 |
-| Households with full bathrooms on entry level | 58% | Accessibility in Housing Report | Page 11 |
-| Households with bedrooms on entry level | 46% | Accessibility in Housing Report | Page 11 |
-| Total single-family loans acquired by Fannie Mae in 2021 | $2.6 trillion | Annual Housing Report 2022 | Page 36 |
-| Total single-family loans acquired by Freddie Mac in 2021 | $2.6 trillion | Annual Housing Report 2022 | Page 36 |
-| Percentage of loans with LTV > 95% | 13.5% | Annual Housing Report 2022 | Page 44 |
-| Percentage of loans with LTV <= 60% | 15.6% | Annual Housing Report 2022 | Page 44 |
-| Total NPLs sold by Enterprises through December 2023 | 168,364 | FHFA Non-Performing Loan Sales Report | Page 2 |
-| Average delinquency of NPLs sold | 2.8 years | FHFA Non-Performing Loan Sales Report | Page 2 |
-| Average current mark-to-market LTV ratio of NPLs | 83% | FHFA Non-Performing Loan Sales Report | Page 2 |`;
-
-        const htmlString = await marked.parse(markdown);
-        const htmlString2 = markdownToHtmlString(markdown);
 
         setConversationAnswers((prevAnswers) => [
             ...prevAnswers,
             [question, {
-                answer: t('components.chat.fetching-answer'), suggestingQuestions: [],
+                answer: t('components.chat.fetching-answer'), 
+                suggestingQuestions: [],
                 documentIds: [],
                 keywords: []
             }],
         ]);
 
-
-
-
-
-        let filterByDocumentIds: string[] = [];
-
-
-        const transformDocuments = (documents: any[]) => {
-            return documents.map(doc => doc.documentId); // Extracting documentId from each document
-        };
-        const formattedDocuments = transformDocuments(selectedDocuments);
-
-
-        if (button === "Selected Document" && selectedDocument) {
-            filterByDocumentIds = [selectedDocument[0].documentId];
-        } else if (button === "Search Results") {
-            filterByDocumentIds = searchResultDocuments.map((document) => document.documentId);
-        } else if (button === "Selected Documents") {
-            filterByDocumentIds = selectedDocuments.map((document) => document.documentId);
-        }
+        const formattedDocuments = selectedDocuments.map(doc => doc.documentId);
 
         try {
             const request: ChatRequest = {
@@ -212,24 +150,18 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
             };
 
             const response: ChatApiResponse = await Completion(request);
-
-            setIsLoading(false);
-
             const answerTimestamp = new Date();
 
             if (response && response.answer) {
                 const formattedAnswer = removeNewlines(response.answer);
                 const chatResp = await marked.parse(formattedAnswer);
 
-                // Update the conversation with the formatted answer
                 setConversationAnswers((prevAnswers) => {
                     const newAnswers = [...prevAnswers];
                     newAnswers[newAnswers.length - 1] = [question, { ...response, answer: chatResp }, userTimestamp, answerTimestamp];
                     return newAnswers;
                 });
             } else {
-                console.error("Invalid response received:", response);
-                // Update with error message
                 setConversationAnswers((prevAnswers) => {
                     const newAnswers = [...prevAnswers];
                     newAnswers[newAnswers.length - 1] = [question, { 
@@ -242,10 +174,6 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                 });
             }
         } catch (error) {
-            console.error("Error in makeApiRequest:", error);
-            setIsLoading(false);
-            
-            // Update conversation with error message
             const answerTimestamp = new Date();
             setConversationAnswers((prevAnswers) => {
                 const newAnswers = [...prevAnswers];
@@ -302,21 +230,6 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
             makeApiRequest(data.value);
         }
     }
-
-    // const handleOpenReference = async (referenceId: string, chunkTexts: string[]) => {
-    //     try {
-    //         const response: SingleDocument = await getDocument(referenceId);
-
-    //         if (response && response.result) {
-    //             setTokens(response.tokens);
-    //             setIsDialogOpen(true);
-    //             setDialogMetadata(response.result);
-    //             setAllChunkTexts(chunkTexts);
-    //         }
-    //     } catch (error) {
-    //         console.error("Error fetching data: ", error);
-    //     }
-    // };
 
     const handleOpenFeedbackForm = (sources: Reference[]) => {
         setReferencesForFeedbackForm(sources);
