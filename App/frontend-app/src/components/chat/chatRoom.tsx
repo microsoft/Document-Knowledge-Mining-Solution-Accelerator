@@ -354,45 +354,6 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                                     <div
                                         dangerouslySetInnerHTML={{ __html: response.answer }}
                                     />
-                                    {/* <div className={`mr-2 mt-2 ${styles["attachment-tag-container"]}`}>
-                                        {response.sources?.map((reference, index) => {
-                                            if (reference) {
-                                                return (
-                                                    <div>
-                                                        <Tooltip
-                                                            content={{
-                                                                children: reference.chunk_text
-                                                                    ? reference.chunk_text
-                                                                    : t("components.chat.no-information"),
-                                                                className: customStyles.tooltipContent,
-                                                            }}
-                                                            relationship="description"
-                                                            positioning="below"
-                                                            withArrow
-                                                        >
-                                                            <div>
-                                                                <AttachmentTag
-                                                                    key={index}
-                                                                    className={`mr-2 mt-2 ${styles["attachment-tag"]}`}
-                                                                    onClick={() =>
-                                                                        handleOpenReference(
-                                                                            reference.parent_id,
-                                                                            response.sources?.map(
-                                                                                (ref) => ref.chunk_text
-                                                                            ) || []
-                                                                        )
-                                                                    }
-                                                                    media={<DocumentOnePageLink20Regular />}
-                                                                >
-                                                                    {reference.title}
-                                                                </AttachmentTag>
-                                                            </div>
-                                                        </Tooltip>
-                                                    </div>
-                                                );
-                                            }
-                                        })}
-                                    </div> */}
                                     {response.suggestingQuestions?.filter((o) => o).length > 0 && (
                                         <div>
                                             <p className="mt-6">{t("components.chat.suggested-q-title")}</p>
@@ -414,33 +375,14 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
 
                                     {!isLoading && (
                                         <div className="mt-6">
-                                            {/* <FeedbackButtons
-                                                positiveFeedbackButton={{
-                                                    onClick: () =>
-                                                        handlePositiveFeedback(
-                                                            response.sources ? response.sources : []
-                                                        ),
-                                                }}
-                                                negativeFeedbackButton={{
-                                                    onClick: () =>
-                                                        handleOpenFeedbackForm(
-                                                            response.sources ? response.sources : []
-                                                        ),
-                                                }}
-                                                style={{ display: "flex", flexDirection: "row-reverse" }}
-                                            /> */}
-
-                                                        <div style={{ display: "flex", flexDirection: "row-reverse" }}>
-                                                        {/* <Tag size="extra-small">
-                                                            {t("components.dialog-content.ai-generated-tag-incorrect")}
-                                                        </Tag> */}
-                                                        <Tag 
-                                                            size="extra-small" 
-                                                            className="!bg-transparent !text-gray-500 !border-none !p-0 !flex !flex-row-reverse"
-                                                            >
-                                                            {t("components.dialog-content.ai-generated-tag-incorrect")}
-                                                        </Tag>
-                                                        </div>
+                                            <div style={{ display: "flex", flexDirection: "row-reverse" }}>
+                                                <Tag 
+                                                    size="extra-small" 
+                                                    className="!bg-transparent !text-gray-500 !border-none !p-0 !flex !flex-row-reverse"
+                                                >
+                                                    {t("components.dialog-content.ai-generated-tag-incorrect")}
+                                                </Tag>
+                                            </div>
                                         </div>
                                     )}
 
