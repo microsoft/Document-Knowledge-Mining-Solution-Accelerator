@@ -20,26 +20,9 @@ export async function fetch<T>(endpoint: RequestInfo, init: RequestInit & { noti
         const response = await window.fetch(endpoint, config);
 
         if (response.ok) {
-            // First, clone the response to avoid consuming the body multiple times
-            const clonedResponse = response.clone();
-            try {
-                return await clonedResponse.json();
-            } catch (jsonError) {
-                // If JSON parsing fails, return empty object
-                console.warn('Failed to parse JSON response:', jsonError);
-                return {} as T;
-            }
+            return await response.json().catch(() => ({}));
         } else {
-            // Clone the response before reading text to avoid consumption issues
-            const clonedResponse = response.clone();
-            let errorMessage = response.status.toString();
-            
-            try {
-                errorMessage = await clonedResponse.text() || errorMessage;
-            } catch (textError) {
-                console.warn('Failed to read error response text:', textError);
-            }
-            
+            const errorMessage = (await response.text()) || response.status.toString();
             console.error(`HTTP ${response.status}: ${errorMessage}`, response);
             if (notifyOnError || notifyOnError === undefined) notifyError(errorMessage);
             return Promise.reject(new Error(errorMessage));
@@ -83,19 +66,7 @@ async function get<T>(path: string, config?: RequestInit & { notifyOnError?: boo
 }
 
 async function post<T, U>(path: string, body?: T, config?: RequestInit & { notifyOnError?: boolean }): Promise<U> {
-    const defaultHeaders = {
-        'Content-Type': 'application/json',
-    };
-    
-    const init = { 
-        method: "POST", 
-        body: body ? JSON.stringify(body) : undefined,
-        headers: {
-            ...defaultHeaders,
-            ...(config?.headers || {})
-        },
-        ...config
-    };
+    const init = { method: "POST", body: JSON.stringify(body), ...config };
     return fetch<U>(path, init);
 }
 
