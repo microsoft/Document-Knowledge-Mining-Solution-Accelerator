@@ -1,6 +1,10 @@
 .options-panel-container {
     padding-bottom: 20px; /* Add more padding below the toggle */
     margin-top: 2px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .options-panel-container.sticky {
@@ -25,7 +29,8 @@
     position: relative;
     background-color: #ffffff;
     border-radius: 9999px;
-    width: 300px;
+    width: 100%;
+    max-width: 320px;
     height: 40px;
     display: flex;
     align-items: center;

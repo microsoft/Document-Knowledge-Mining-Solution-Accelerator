@@ -21,6 +21,54 @@
     }
 }
 
+/* Global overrides to ensure full width */
+:global(html), :global(body), :global(#root) {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+}
+
+/* Override home page chat-panel constraints on chat page */
+:global(.chat-panel) {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* Debug: Force full width for ALL elements on chat page */
+:global([data-testid="chat-page"]) * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Debug: Override any grid or flex constraints */
+:global(div) {
+    max-width: none !important;
+}
+
+/* Debug: Force full viewport width */
+:global(body) {
+    overflow-x: hidden !important;
+}
+
+/* Ensure no white space in chat area */
+.no-white-space {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Force full width for all containers */
+.full-width-container {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+}
+
 table {
     border-collapse: collapse;
     width: 100%;
@@ -40,19 +88,55 @@ table {
 
 .grey-background {
     background-color: #f0f0f03d;
+    width: 100%;
+    overflow-x: hidden; /* Prevent horizontal overflow */
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 
 .attachment-tag-container {
     display: flex;
     flex-wrap: wrap;
+    width: 100%;
 }
 
 .chat-container {
     max-block-size: 75vh;
+    width: 100%;
+    overflow-x: hidden; /* Prevent horizontal overflow */
+    margin: 0;
+    padding: 0;
 }
 
 .chatMessagesContainer, .questionContainer {
-    padding-right: 1rem;
-    padding-left: 1rem;
+    padding-right: 0.25rem;
+    padding-left: 0.25rem;
+    width: 100% !important;
+    box-sizing: border-box; /* Include padding in width calculation */
+    max-width: 100% !important; /* Ensure it doesn't exceed container width */
+    margin: 0 !important;
+}
+
+/* Force Copilot components to take full width */
+.chatMessagesContainer :global(fui-CopilotChat) {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.chatMessagesContainer :global([role="log"]) {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Ensure all chat message containers take full width */
+.chatMessagesContainer :global(.fui-CopilotMessage),
+.chatMessagesContainer :global(.fui-UserMessage) {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
 }

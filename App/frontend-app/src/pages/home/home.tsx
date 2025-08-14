@@ -242,7 +242,23 @@ export function Home({ isSearchResultsPage }: HomeProps) {
     }
 
     function toggleFilterPanel(): void {
+        const wasCollapsed = isFilterPanelCollapsed;
         setIsFilterPanelCollapsed(!isFilterPanelCollapsed);
+        
+        if (wasCollapsed) {
+            // Expanding: Reduce documents and chat widths to make room for filter panel
+            // Filter panel takes ~15%, so documents and chat should take ~85% total
+            setDocumentsWidth(34); // 34% of total width
+            setChatWidth(51);      // 51% of total width
+        } else {
+            // Collapsing: Expand documents and chat to fill the space
+            // Distribute the extra ~15% proportionally
+            const currentTotal = documentsWidth + chatWidth;
+            const expansionFactor = 100 / currentTotal; // Scale to fill 100%
+            
+            setDocumentsWidth(Math.round(documentsWidth * expansionFactor));
+            setChatWidth(Math.round(chatWidth * expansionFactor));
+        }
     }
 
     const handlePanelResize = (leftWidth: number, rightWidth: number) => {
@@ -539,10 +555,10 @@ export function Home({ isSearchResultsPage }: HomeProps) {
             </Header>
 
 <main className="w-full h-full flex flex-col">
-    <div className="flex flex-col md:flex-row flex-grow">
+    <div className={`flex flex-col md:flex-row flex-grow ${homeStyles["panels-container"]}`}>
         {/* Left Section: Filter Panel with Toggle */}
         {!isFilterPanelCollapsed && (
-            <div className={`flex flex-col w-full bg-white shadow-md p-4 ${homeStyles["no-bottom-padding"]} ${homeStyles["filters-panel"]} transition-all duration-300`}>
+            <div className={`flex flex-col bg-white shadow-md p-4 ${homeStyles["no-bottom-padding"]} ${homeStyles["filters-panel"]} transition-all duration-300`}>
                 {/* Filter Header with Toggle Button */}
                 <div className="mb-4 flex items-center justify-between">
                     <FilterButton onFilterPress={onFilterPress} />
@@ -568,7 +584,7 @@ export function Home({ isSearchResultsPage }: HomeProps) {
 
         {/* Collapsed Filter Toggle Button */}
         {isFilterPanelCollapsed && (
-            <div className="flex flex-col bg-white shadow-md p-2 min-w-[50px] items-center">
+            <div className={`flex flex-col bg-white shadow-md p-2 ${homeStyles["filters-panel-collapsed"]} items-center transition-all duration-300`}>
                 <Button 
                     appearance="subtle" 
                     icon={<ChevronRight24Regular />}
@@ -700,8 +716,8 @@ export function Home({ isSearchResultsPage }: HomeProps) {
             className={`flex flex-col bg-white shadow-md ${homeStyles["chat-panel"]} transition-all duration-300`}
             style={{ width: `${chatWidth}%`, minWidth: '300px' }}
         >
-            <div className="flex flex-col h-full">
-            <div className={`flex-grow overflow-y-auto ${homeStyles["no-bottom-padding"]}` } style={{ backgroundColor: '#f7f7f7', overflowX: 'hidden', overflowY: 'auto', display: 'flex', maxBlockSize: 'calc(100vh - 60px)'}}>
+            <div className="flex flex-col h-full w-full">
+            <div className={`flex-grow overflow-hidden ${homeStyles["no-bottom-padding"]}`} style={{ backgroundColor: '#f7f7f7', display: 'flex', maxBlockSize: 'calc(100vh - 60px)', width: '100%'}}>
                         <ChatRoom
                                     searchResultDocuments={searchResultDocuments}
                                     selectedDocuments={selectedDocuments}

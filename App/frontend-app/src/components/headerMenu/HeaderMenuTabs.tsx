@@ -118,7 +118,7 @@ export function HeaderMenuTabs({
                                                         icon={<Dismiss24Regular />}
                                                         iconPosition="after"
                                                         appearance="subtle"
-                                                        onClick={(e) => {
+                                                        onClick={(e: React.MouseEvent) => {
                                                             e.stopPropagation();
                                                             updateSelectedDocuments(document);
                                                         }}
