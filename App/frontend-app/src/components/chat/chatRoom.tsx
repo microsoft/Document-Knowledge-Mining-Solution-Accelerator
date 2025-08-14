@@ -161,17 +161,6 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                     newAnswers[newAnswers.length - 1] = [question, { ...response, answer: chatResp }, userTimestamp, answerTimestamp];
                     return newAnswers;
                 });
-            } else {
-                setConversationAnswers((prevAnswers) => {
-                    const newAnswers = [...prevAnswers];
-                    newAnswers[newAnswers.length - 1] = [question, { 
-                        answer: "Sorry, I received an invalid response. Please try asking your question again.", 
-                        suggestingQuestions: [],
-                        documentIds: [],
-                        keywords: []
-                    }, userTimestamp, answerTimestamp];
-                    return newAnswers;
-                });
             }
         } catch (error) {
             const answerTimestamp = new Date();
@@ -276,7 +265,6 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
             }
         } catch (error) {
             setIsLoading(false);
-            console.error("An error occurred while submitting the feedback:", error);
         }
     };
 
