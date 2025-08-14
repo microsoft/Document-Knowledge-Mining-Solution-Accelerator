@@ -233,7 +233,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                 setConversationAnswers((prevAnswers) => {
                     const newAnswers = [...prevAnswers];
                     newAnswers[newAnswers.length - 1] = [question, { 
-                        answer: t('components.chat.error-response'), 
+                        answer: "Sorry, I received an invalid response. Please try asking your question again.", 
                         suggestingQuestions: [],
                         documentIds: [],
                         keywords: []
@@ -250,7 +250,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
             setConversationAnswers((prevAnswers) => {
                 const newAnswers = [...prevAnswers];
                 newAnswers[newAnswers.length - 1] = [question, { 
-                    answer: t('components.chat.error-occurred'), 
+                    answer: "Sorry, an error occurred while processing your request. Please try again later.", 
                     suggestingQuestions: [],
                     documentIds: [],
                     keywords: []
