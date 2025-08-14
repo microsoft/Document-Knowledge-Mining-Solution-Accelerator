@@ -36,6 +36,22 @@
     max-width: 100% !important;
 }
 
+/* Debug: Force full width for ALL elements on chat page */
+:global([data-testid="chat-page"]) * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Debug: Override any grid or flex constraints */
+:global(div) {
+    max-width: none !important;
+}
+
+/* Debug: Force full viewport width */
+:global(body) {
+    overflow-x: hidden !important;
+}
+
 /* Ensure no white space in chat area */
 .no-white-space {
     margin: 0 !important;
