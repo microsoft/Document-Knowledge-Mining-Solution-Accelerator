@@ -1,4 +1,7 @@
+import { ApiError } from "../../types/apiError";
+
 export const httpClient = {
+    fetch,
     get,
     post,
     put,
@@ -6,63 +9,144 @@ export const httpClient = {
     download,
     patch,
     upload,
+    fetchRaw,
 };
 
-async function get<T>(path: string): Promise<T> {
-    const response = await fetch(path, { method: "GET" });
-    return response.json();
+export async function fetch<T>(endpoint: RequestInfo, init: RequestInit & { notifyOnError?: boolean } = {}): Promise<T> {
+    const { notifyOnError, ...config } = init;
+
+    try {
+        // Directly use window.fetch without authFetch
+        const response = await window.fetch(endpoint, config);
+
+        if (response.ok) {
+            // First, clone the response to avoid consuming the body multiple times
+            const clonedResponse = response.clone();
+            try {
+                return await clonedResponse.json();
+            } catch (jsonError) {
+                // If JSON parsing fails, return empty object
+                console.warn('Failed to parse JSON response:', jsonError);
+                return {} as T;
+            }
+        } else {
+            // Clone the response before reading text to avoid consumption issues
+            const clonedResponse = response.clone();
+            let errorMessage = response.status.toString();
+            
+            try {
+                errorMessage = await clonedResponse.text() || errorMessage;
+            } catch (textError) {
+                console.warn('Failed to read error response text:', textError);
+            }
+            
+            console.error(`HTTP ${response.status}: ${errorMessage}`, response);
+            if (notifyOnError || notifyOnError === undefined) notifyError(errorMessage);
+            return Promise.reject(new Error(errorMessage));
+        }
+    } catch (e: unknown) {
+        if (e instanceof Error) {
+            console.error(e.message);
+            if (notifyOnError || notifyOnError === undefined) notifyError(e.message);
+            return Promise.reject(e);
+        } else {
+            console.error(e || "Unknown error");
+            if (notifyOnError || notifyOnError === undefined) notifyError(String(e));
+            return Promise.reject(new Error(String(e)));
+        }
+    }
 }
 
-async function post<T, U>(path: string, body?: T): Promise<U> {
-    const response = await fetch(path, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: body ? JSON.stringify(body) : undefined
-    });
-    return response.json();
+export async function fetchRaw(endpoint: RequestInfo, init: RequestInit & { notifyOnError?: boolean } = {}): Promise<Response> {
+    const { notifyOnError, ...config } = init;
+
+    try {
+        // Directly use window.fetch without authFetch
+        return await window.fetch(endpoint, config);
+    } catch (e: unknown) {
+        if (e instanceof Error) {
+            console.error(e.message);
+            if (notifyOnError || notifyOnError === undefined) notifyError(e.message);
+            return Promise.reject(e);
+        } else {
+            console.error(e || "Unknown error");
+            if (notifyOnError || notifyOnError === undefined) notifyError(String(e));
+            return Promise.reject(new Error(String(e)));
+        }
+    }
 }
 
-async function put<T, U>(path: string, body: T): Promise<U> {
-    const response = await fetch(path, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-    });
-    return response.json();
+// Other methods remain unchanged...
+async function get<T>(path: string, config?: RequestInit & { notifyOnError?: boolean }): Promise<T> {
+    const init = { method: "GET", ...config };
+    return fetch<T>(path, init);
 }
 
-async function _delete<T>(path: string): Promise<T> {
-    const response = await fetch(path, { method: "DELETE" });
-    return response.json();
-}
-
-async function download(path: string, fileName: string): Promise<void> {
-    const response = await fetch(path);
-    const blob = await response.blob();
+async function post<T, U>(path: string, body?: T, config?: RequestInit & { notifyOnError?: boolean }): Promise<U> {
+    const defaultHeaders = {
+        'Content-Type': 'application/json',
+    };
     
-    const url = window.URL.createObjectURL(blob);
+    const init = { 
+        method: "POST", 
+        body: body ? JSON.stringify(body) : undefined,
+        headers: {
+            ...defaultHeaders,
+            ...(config?.headers || {})
+        },
+        ...config
+    };
+    return fetch<U>(path, init);
+}
+
+async function put<T, U>(path: string, body?: T, config?: RequestInit & { notifyOnError?: boolean }): Promise<U> {
+    const init = { method: "PUT", body: JSON.stringify(body), ...config };
+    return fetch<U>(path, init);
+}
+
+async function _delete<T>(path: string, config?: RequestInit & { notifyOnError?: boolean }): Promise<T> {
+    const init = { method: "DELETE", ...config };
+    return fetch<T>(path, init);
+}
+
+async function download(path: string, fileName: string, config?: RequestInit & { notifyOnError?: boolean }): Promise<void> {
+    const init = { method: "GET", ...config };
+    const response = await fetchRaw(path, init);
+    const blob = await response.blob();
+
+    const url = window.URL.createObjectURL(new Blob([blob]));
     const link = document.createElement("a");
     link.href = url;
     link.setAttribute("download", fileName);
-    
+
     document.body.appendChild(link);
     link.click();
     link.parentNode?.removeChild(link);
 }
 
-async function patch<T, U>(path: string, body: T): Promise<U> {
-    const response = await fetch(path, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-    });
-    return response.json();
+async function patch<T, U>(path: string, body: T, config?: RequestInit & { notifyOnError?: boolean }): Promise<U> {
+    const init = { method: "PATCH", body: JSON.stringify(body), ...config };
+    return fetch<U>(path, init);
 }
 
-async function upload<T>(path: string, formData: FormData): Promise<T> {
-    const response = await fetch(path, {
-        method: "POST",
-        body: formData
-    });
-    return response.json();
+export async function upload<T>(path: string, formData: FormData, config?: RequestInit & { notifyOnError?: boolean }): Promise<T> {
+    const init = { method: "POST", body: formData, ...config };
+    return fetch<T>(path, init);
+}
+
+function notifyError(_message: string) {
+    // TO DO: Implement error notification logic
+}
+
+export function parseHttpException(ex: any, t: (key: string) => string): string[] {
+    if (ex instanceof Error && ex.message.startsWith("{")) {
+        const error = JSON.parse(ex.message);
+        if ("errors" in error) {
+            const messages = Object.entries(error.errors).map((field) => error.errors[field[0]].join(", "));
+            return messages;
+        }
+    } else if (ex instanceof Error && ex.message === "403") {
+        return [t("common.forbidden")];
+    }
+    return [t("common.error")];
 }
