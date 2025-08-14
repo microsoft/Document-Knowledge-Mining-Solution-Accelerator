@@ -9,21 +9,26 @@ import {
     DialogSurface,
     DialogTitle,
     Tag,
+    Tooltip,
     makeStyles,
 } from "@fluentui/react-components";
 import { DocDialog } from "../documentViewer/documentViewer";
 import { Textarea } from "@fluentai/textarea";
 import type { TextareaSubmitEvents, TextareaValueData } from "@fluentai/textarea";
 import { CopilotChat, UserMessage, CopilotMessage } from "@fluentai/react-copilot-chat";
-import { ChatAdd24Regular } from "@fluentui/react-icons";
+import { ChatAdd24Regular, DocumentOnePageLink20Regular } from "@fluentui/react-icons";
+import { AttachmentTag } from "@fluentai/attachments";
 import styles from "./chatRoom.module.scss";
-import { CopilotProvider, Suggestion } from "@fluentai/react-copilot";
-import { Tokens } from "../../api/apiTypes/singleDocument";
+import { CopilotProvider, FeedbackButtons, Suggestion } from "@fluentai/react-copilot";
+import { Result, SingleDocument, Tokens } from "../../api/apiTypes/singleDocument";
+//import { getDocument } from "../../api/documentsService";
 import { Completion, PostFeedback } from "../../api/chatService";
 import { FeedbackForm } from "./FeedbackForm";
 import { Document } from "../../api/apiTypes/documentResults";
 import { AppContext } from "../../AppContext";
 import { useTranslation } from "react-i18next";
+import ReactMarkdown from "react-markdown";
+import { renderToStaticMarkup } from "react-dom/server";
 import { marked } from 'marked';
 const DefaultChatModel = "chat_4o";
 
@@ -43,10 +48,12 @@ interface ChatRoomProps {
 }
 
 export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDocument, disableOptionsPanel, clearChatFlag }: ChatRoomProps) {
+    const customStyles = useStyles();
     const { t } = useTranslation();
     const [chatSessionId, setChatSessionId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [disableSources, setDisableSources] = useState<boolean>(false);
+    const [error, setError] = useState<unknown>();
     const [model, setModel] = useState<string>("chat_35");
     const [source, setSource] = useState<string>("rag");
     const [temperature, setTemperature] = useState<number>(0.8);
@@ -98,7 +105,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
         if (clearChatFlag) {
             clearChat();
         }
-    }, [clearChatFlag]);
+    }, [clearChatFlag]); // Runs whenever clearChat changes
 
 
 
@@ -117,63 +124,133 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
 
     const makeApiRequest = async (question: string) => {
         setTextAreaValue("");
+        //Force Textarea re-render to reset internal showCount
         setTextareaKey(prev => prev + 1);
         setDisableSources(true);
         setIsLoading(true);
 
+        // A simple function to check if the text contains Markdown
+        const isMarkdown = (text: string) => {
+            const markdownPattern = /(^|\s)(#{1,6}|\*\*|__|[-*]|\d+\.\s|\[.*\]\(.*\)|```|`[^`]*`)/;
+            return markdownPattern.test(text);
+        };
+
         const userTimestamp = new Date();
-        
-        let currentSessionId = chatSessionId;
+        // Ensure we have a chatSessionId or create one if null/undefined
+
+
+        let currentSessionId = chatSessionId; // Get the current value of chatSessionId
         if (!currentSessionId) {
-            const newSessionId = uuidv4();
-            setChatSessionId(newSessionId);
-            currentSessionId = newSessionId;
+            const newSessionId = uuidv4(); // Generate a new UUID if no session exists
+            setChatSessionId(newSessionId); // Save it for future renders
+            currentSessionId = newSessionId; // Immediately use the new session ID in this function
+
         }
+        const markdownToHtmlString = (markdown: string) => {
+            return renderToStaticMarkup(<ReactMarkdown>{markdown}</ReactMarkdown>);
+        };
+        const markdown = `| Data Point | Value | Document Name | Page Number |
+|----------------|-----------|-------------------|------------------|
+| Households with accessibility needs | 23.1 million | Accessibility in Housing Report | Page 1 |
+| Households with mobility-related disabilities | 19% of U.S. households | Accessibility in Housing Report | Page 1 |
+| Households without entry-level bedroom or full bathroom planning to add features | 1% | Accessibility in Housing Report | Page 3 |
+| Households planning to make homes more accessible | 5% | Accessibility in Housing Report | Page 3 |
+| Households with someone using mobility devices | 13% | Accessibility in Housing Report | Page 1 |
+| Households with serious difficulty hearing | 12% | Accessibility in Housing Report | Page 24 |
+| Households with serious difficulty seeing | 12% | Accessibility in Housing Report | Page 24 |
+| Households with difficulty walking or climbing stairs | 12% | Accessibility in Housing Report | Page 24 |
+| Households with difficulty dressing or bathing | 12% | Accessibility in Housing Report | Page 24 |
+| Households with difficulty doing errands alone | 12% | Accessibility in Housing Report | Page 24 |
+| Households with full bathrooms on entry level | 58% | Accessibility in Housing Report | Page 11 |
+| Households with bedrooms on entry level | 46% | Accessibility in Housing Report | Page 11 |
+| Total single-family loans acquired by Fannie Mae in 2021 | $2.6 trillion | Annual Housing Report 2022 | Page 36 |
+| Total single-family loans acquired by Freddie Mac in 2021 | $2.6 trillion | Annual Housing Report 2022 | Page 36 |
+| Percentage of loans with LTV > 95% | 13.5% | Annual Housing Report 2022 | Page 44 |
+| Percentage of loans with LTV <= 60% | 15.6% | Annual Housing Report 2022 | Page 44 |
+| Total NPLs sold by Enterprises through December 2023 | 168,364 | FHFA Non-Performing Loan Sales Report | Page 2 |
+| Average delinquency of NPLs sold | 2.8 years | FHFA Non-Performing Loan Sales Report | Page 2 |
+| Average current mark-to-market LTV ratio of NPLs | 83% | FHFA Non-Performing Loan Sales Report | Page 2 |`;
+
+        const htmlString = await marked.parse(markdown);
+        const htmlString2 = markdownToHtmlString(markdown);
 
         setConversationAnswers((prevAnswers) => [
             ...prevAnswers,
             [question, {
-                answer: t('components.chat.fetching-answer'), 
-                suggestingQuestions: [],
+                answer: t('components.chat.fetching-answer'), suggestingQuestions: [],
                 documentIds: [],
                 keywords: []
             }],
         ]);
 
-        const formattedDocuments = selectedDocuments.map(doc => doc.documentId);
+
+
+
+        let filterByDocumentIds: string[] = [];
+
+
+        const transformDocuments = (documents: any[]) => {
+            return documents.map(doc => doc.documentId); // Extracting documentId from each document
+        };
+        const formattedDocuments = transformDocuments(selectedDocuments);
+
+
+        if (button === "Selected Document" && selectedDocument) {
+            filterByDocumentIds = [selectedDocument[0].documentId];
+        } else if (button === "Search Results") {
+            filterByDocumentIds = searchResultDocuments.map((document) => document.documentId);
+        } else if (button === "Selected Documents") {
+            filterByDocumentIds = selectedDocuments.map((document) => document.documentId);
+        }
 
         try {
+
+
+
             const request: ChatRequest = {
                 Question: question,
                 chatSessionId: currentSessionId,
                 DocumentIds: button === "All Documents" ? [] : formattedDocuments
+                // cha: history,
+                // options: {
+                //     model: model,
+                //     source: source,
+                //     temperature: temperature,
+                //     maxTokens: maxTokens,
+                // },
+                // filterByDocumentIds: filterByDocumentIds,
             };
 
+
             const response: ChatApiResponse = await Completion(request);
+
+
+
+            setIsLoading(false);
+
             const answerTimestamp = new Date();
 
-            if (response && response.answer) {
-                const formattedAnswer = removeNewlines(response.answer);
-                const chatResp = await marked.parse(formattedAnswer);
+            try {
+                if (response && response.answer) {
 
-                setConversationAnswers((prevAnswers) => {
-                    const newAnswers = [...prevAnswers];
-                    newAnswers[newAnswers.length - 1] = [question, { ...response, answer: chatResp }, userTimestamp, answerTimestamp];
-                    return newAnswers;
-                });
+                    const formattedAnswer = removeNewlines(response.answer)
+                    const chatResp = await marked.parse(formattedAnswer) // Convert to HTML if Markdown detected
+
+
+
+
+                    // Update the conversation with the formatted answer
+                    setConversationAnswers((prevAnswers) => {
+                        const newAnswers = [...prevAnswers];
+                        newAnswers[newAnswers.length - 1] = [question, { ...response, answer: chatResp }, userTimestamp, answerTimestamp];
+                        return newAnswers;
+                    });
+                }
+            } catch (error) {
+                console.error("Error parsing response body:", error);
             }
         } catch (error) {
-            const answerTimestamp = new Date();
-            setConversationAnswers((prevAnswers) => {
-                const newAnswers = [...prevAnswers];
-                newAnswers[newAnswers.length - 1] = [question, { 
-                    answer: "Sorry, an error occurred while processing your request. Please try again later.", 
-                    suggestingQuestions: [],
-                    documentIds: [],
-                    keywords: []
-                }, userTimestamp, answerTimestamp];
-                return newAnswers;
-            });
+            console.error("Error in makeApiRequest:", error);
         } finally {
             setIsLoading(false);
             setTimeout(() => {
@@ -220,6 +297,21 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
         }
     }
 
+    // const handleOpenReference = async (referenceId: string, chunkTexts: string[]) => {
+    //     try {
+    //         const response: SingleDocument = await getDocument(referenceId);
+
+    //         if (response && response.result) {
+    //             setTokens(response.tokens);
+    //             setIsDialogOpen(true);
+    //             setDialogMetadata(response.result);
+    //             setAllChunkTexts(chunkTexts);
+    //         }
+    //     } catch (error) {
+    //         console.error("Error fetching data: ", error);
+    //     }
+    // };
+
     const handleOpenFeedbackForm = (sources: Reference[]) => {
         setReferencesForFeedbackForm(sources);
         setIsFeedbackFormOpen(true);
@@ -265,6 +357,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
             }
         } catch (error) {
             setIsLoading(false);
+            console.error("An error occurred while submitting the feedback:", error);
         }
     };
 
@@ -306,7 +399,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
     }, []);
 
     return (
-        <div className="flex w-full flex-1 flex-col items-stretch grey-background !m-0 !p-0 !max-w-none">
+        <div className="mx-2 flex w-full flex-1 flex-col items-center grey-background">
             {isDialogOpen && (
                 <DocDialog
                     metadata={dialogMetadata as Document}
@@ -314,10 +407,11 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                     onClose={handleDialogClose}
                     allChunkTexts={allChunkTexts} clearChatFlag={false}                />
             )}
-            <div ref={chatContainerRef} className={`no-scrollbar flex w-full flex-1 flex-col overflow-auto !max-w-none !m-0 !p-0 ${styles["chat-container"]}`}>
+            <div ref={chatContainerRef} className={`no-scrollbar flex w-full flex-1 flex-col overflow-auto ${styles["chat-container"]}`}>
             {!disableOptionsPanel && (
                 <OptionsPanel
-                    className={`px-4 mx-0 my-10 flex flex-col items-center justify-center rounded-xl bg-neutral-500 bg-opacity-10 shadow-md outline outline-1 outline-transparent w-full`}
+                    // className="px-10 mx-auto my-10 flex flex-col items-center justify-center rounded-xl bg-neutral-500 bg-opacity-10 shadow-md outline outline-1 outline-transparent" 
+                    className={`px-10 mx-auto my-10 flex flex-col items-center justify-center rounded-xl bg-neutral-500 bg-opacity-10 shadow-md outline outline-1 outline-transparent`}
                     onModelChange={handleModelChange}
                     onSourceChange={handleSourceChange}
                     disabled={disableSources}
@@ -326,7 +420,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                 />
             )}
             <div ref={optionsBottom}></div>
-                <CopilotProvider className={`${styles.chatMessagesContainer} w-full !max-w-none`}>
+                <CopilotProvider className={styles.chatMessagesContainer}>
                     <CopilotChat>
                         {conversationAnswers.map(([prompt, response], index) => (
                             <Fragment key={index}>
@@ -342,6 +436,45 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                                     <div
                                         dangerouslySetInnerHTML={{ __html: response.answer }}
                                     />
+                                    {/* <div className={`mr-2 mt-2 ${styles["attachment-tag-container"]}`}>
+                                        {response.sources?.map((reference, index) => {
+                                            if (reference) {
+                                                return (
+                                                    <div>
+                                                        <Tooltip
+                                                            content={{
+                                                                children: reference.chunk_text
+                                                                    ? reference.chunk_text
+                                                                    : t("components.chat.no-information"),
+                                                                className: customStyles.tooltipContent,
+                                                            }}
+                                                            relationship="description"
+                                                            positioning="below"
+                                                            withArrow
+                                                        >
+                                                            <div>
+                                                                <AttachmentTag
+                                                                    key={index}
+                                                                    className={`mr-2 mt-2 ${styles["attachment-tag"]}`}
+                                                                    onClick={() =>
+                                                                        handleOpenReference(
+                                                                            reference.parent_id,
+                                                                            response.sources?.map(
+                                                                                (ref) => ref.chunk_text
+                                                                            ) || []
+                                                                        )
+                                                                    }
+                                                                    media={<DocumentOnePageLink20Regular />}
+                                                                >
+                                                                    {reference.title}
+                                                                </AttachmentTag>
+                                                            </div>
+                                                        </Tooltip>
+                                                    </div>
+                                                );
+                                            }
+                                        })}
+                                    </div> */}
                                     {response.suggestingQuestions?.filter((o) => o).length > 0 && (
                                         <div>
                                             <p className="mt-6">{t("components.chat.suggested-q-title")}</p>
@@ -363,14 +496,33 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
 
                                     {!isLoading && (
                                         <div className="mt-6">
-                                            <div style={{ display: "flex", flexDirection: "row-reverse" }}>
-                                                <Tag 
-                                                    size="extra-small" 
-                                                    className="!bg-transparent !text-gray-500 !border-none !p-0 !flex !flex-row-reverse"
-                                                >
-                                                    {t("components.dialog-content.ai-generated-tag-incorrect")}
-                                                </Tag>
-                                            </div>
+                                            {/* <FeedbackButtons
+                                                positiveFeedbackButton={{
+                                                    onClick: () =>
+                                                        handlePositiveFeedback(
+                                                            response.sources ? response.sources : []
+                                                        ),
+                                                }}
+                                                negativeFeedbackButton={{
+                                                    onClick: () =>
+                                                        handleOpenFeedbackForm(
+                                                            response.sources ? response.sources : []
+                                                        ),
+                                                }}
+                                                style={{ display: "flex", flexDirection: "row-reverse" }}
+                                            /> */}
+
+                                                        <div style={{ display: "flex", flexDirection: "row-reverse" }}>
+                                                        {/* <Tag size="extra-small">
+                                                            {t("components.dialog-content.ai-generated-tag-incorrect")}
+                                                        </Tag> */}
+                                                        <Tag 
+                                                            size="extra-small" 
+                                                            className="!bg-transparent !text-gray-500 !border-none !p-0 !flex !flex-row-reverse"
+                                                            >
+                                                            {t("components.dialog-content.ai-generated-tag-incorrect")}
+                                                        </Tag>
+                                                        </div>
                                         </div>
                                     )}
 
@@ -411,7 +563,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                 </CopilotProvider>
             </div>
 
-            <div className={`${styles.questionContainer} mb-6 mt-6 flex w-full justify-center px-2`}>
+            <div className={`${styles.questionContainer} mb-6 mt-6 flex w-full justify-center`}>
                 <Button
                     className={styles["new-topic"]}
                     shape="circular"
@@ -434,7 +586,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                     key={textareaKey}
                     ref={inputRef}
                     value={textAreaValue}
-                    className="!ml-2 max-h-48 w-full !max-w-none"
+                    className="!ml-4 max-h-48 w-full !max-w-none"
                     onChange={(_ev, newValue) => setTextAreaValue(newValue.value)}
                     showCount
                     aria-label="Chat input"
