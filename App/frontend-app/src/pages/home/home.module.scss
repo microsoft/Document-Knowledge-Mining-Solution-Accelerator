@@ -38,24 +38,38 @@
     width: 15% !important;
     min-width: 229px;
     transition: width 0.3s ease-in-out;
+    flex-shrink: 0; /* Prevent shrinking */
   }
   
   .documents-panel {
     width: 34% !important;
-    min-width: 410px;
+    min-width: 300px; /* Reduced from 410px for better responsiveness */
     transition: width 0.3s ease-in-out;
+    flex-grow: 1; /* Allow growing to fill space */
   }
   
   .chat-panel {
-    width: 51% !important;
+    width: 51%;
     min-width: 300px;
     transition: width 0.3s ease-in-out;
+    overflow: hidden; /* Prevent content from spilling out */
+    flex-grow: 1; /* Allow growing to fill space */
+  }
+
+  /* Full width override for chat page */
+  .chat-panel-fullwidth {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 300px;
+    transition: width 0.3s ease-in-out;
+    overflow: hidden;
   }
 
   .filters-panel-collapsed {
     width: 50px !important;
     min-width: 50px;
     transition: width 0.3s ease-in-out;
+    flex-shrink: 0; /* Prevent shrinking */
   }
 }
 
@@ -65,12 +79,22 @@
   flex-direction: row;
   flex-grow: 1;
   overflow: hidden;
+  width: 100%; /* Ensure full width */
 }
 
 .resizable-panel {
   display: flex;
   flex-direction: column;
   min-width: 200px;
+  overflow: hidden;
+}
+
+/* Main container for panels to prevent white space */
+.panels-container {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
 }
 
