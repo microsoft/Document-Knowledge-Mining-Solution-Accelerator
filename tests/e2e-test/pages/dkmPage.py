@@ -15,10 +15,10 @@ class DkmPage(BasePage):
         "//textarea[@placeholder='Ask a question or request (ctrl + enter to submit)']"
     )
     SEARCH_BOX = "//input[@type='search']"
-    HOUSING_2022 = "//body[1]/div[2]/div[1]/main[1]/div[1]/div[2]/div[4]/div[1]/div[1]/div[3]/div[2]/div[2]/span[1]"
-    HOUSING_2023 = "//body[1]/div[2]/div[1]/main[1]/div[1]/div[2]/div[4]/div[1]/div[1]/div[2]/div[2]/div[2]/span[1]"
+    HOUSING_2022 = "//body[1]/div[2]/div[1]/main[1]/div[1]/div[2]/div[4]/div[1]/div[1]/div[2]/div[2]/div[2]/span[1]"
+    HOUSING_2023 = "//body[1]/div[2]/div[1]/main[1]/div[1]/div[2]/div[4]/div[1]/div[1]/div[1]/div[2]/div[2]/span[1]"
     CONTRACTS_DETAILS_PAGE = "//body[1]/div[2]/div[1]/main[1]/div[1]/div[2]/div[4]/div[1]/div[1]/div[1]/div[2]/div[2]/div[1]/button[1]"
-    DETAILS_PAGE = "body > div:nth-child(3) > div:nth-child(1) > main:nth-child(2) > div:nth-child(1) > div:nth-child(2) > div:nth-child(4) > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(3) > button:nth-child(2)"
+    DETAILS_PAGE = "body > div:nth-child(3) > div:nth-child(1) > main:nth-child(2) > div:nth-child(1) > div:nth-child(2) > div:nth-child(4) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) > div:nth-child(2) > div:nth-child(3) > button:nth-child(2)"
     POP_UP_CHAT = "//button[@value='Chat Room']"
     CLOSE_POP_UP = "//button[@aria-label='close']"
     CLLEAR_ALL_POP_UP = "//button[normalize-space()='Clear all']"
