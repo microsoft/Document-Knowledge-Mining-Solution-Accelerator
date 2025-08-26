@@ -1,13 +1,29 @@
+@description('Required. Suffix to create unique resource names; 4-15 characters.')
+@minLength(4)
+@maxLength(15)
 param suffix string = uniqueString(resourceGroup().id)
+
+@description('Required. Contains ManagedIdentity Principal ID.')
 param managedIdentityPrincipalId string
 
 metadata description = 'Creates an Azure Cognitive Services instance.'
+
+@description('Required. Contains Name.')
 param name string
+
+@description('Required. Contains Resource Group Location.')
 param location string = resourceGroup().location
+
+@description('Required. Contains Tags.')
 param tags object = {}
+
 @description('The custom subdomain name used to access the API. Defaults to the value of the name parameter.')
 param customSubDomainName string = name
+
+@description('Required. Contains Deployments.')
 param deployments array = []
+
+@description('Optional. Contains the type.')
 param kind string = 'OpenAI'
 
 @allowed(['Enabled', 'Disabled'])
@@ -16,6 +32,7 @@ param sku object = {
   name: 'S0'
 }
 
+@description('Required. Contains the IP rules which are allowed.')
 param allowedIpRules array = []
 param networkAcls object = empty(allowedIpRules)
   ? {
@@ -86,6 +103,11 @@ resource roleAssignment2 'Microsoft.Authorization/roleAssignments@2022-04-01' = 
   }
 }
 
+@description('Contains the Endpoint.')
 output endpoint string = account.properties.endpoint
+
+@description('Contains the ID.')
 output id string = account.id
+
+@description('Contains Account Name.')
 output name string = account.name

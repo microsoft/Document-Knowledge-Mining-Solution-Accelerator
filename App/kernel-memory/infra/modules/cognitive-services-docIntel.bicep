@@ -1,9 +1,17 @@
+@description('Required. Suffix to create unique resource names; 4-15 characters.')
+@minLength(4)
+@maxLength(15)
 param suffix string = uniqueString(resourceGroup().id)
+
+@description('Required. Contains ManagedIdentity Principal ID.')
 param managedIdentityPrincipalId string
 
 metadata description = 'Creates an Azure Document Intelligence (form recognizer) instance.'
 
+@description('Required. Contains Name.')
 param name string
+
+@description('Required. Contains Resource Group Location.')
 param location string = resourceGroup().location
 
 @description('The custom subdomain name used to access the API. Defaults to the value of the name parameter.')
@@ -16,6 +24,7 @@ param sku object = {
   name: 'S0'
 }
 
+@description('Required. Contains IP Rules.')
 param allowedIpRules array = []
 param networkAcls object = empty(allowedIpRules)
   ? {
@@ -25,6 +34,10 @@ param networkAcls object = empty(allowedIpRules)
       ipRules: allowedIpRules
       defaultAction: 'Deny'
     }
+
+@description('Optional. Tags to be applied to the resources.')
+param tags object = {}
+
 
 resource account 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
   name: name
@@ -53,4 +66,5 @@ resource roleAssignment1 'Microsoft.Authorization/roleAssignments@2022-04-01' = 
   }
 }
 
+@description('Contains Endpoint.')
 output endpoint string = account.properties.endpoint

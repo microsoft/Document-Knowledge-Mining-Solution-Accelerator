@@ -1,3 +1,6 @@
+@description('Required. Suffix to create unique resource names; 4-15 characters.')
+@minLength(4)
+@maxLength(15)
 param suffix string = uniqueString(resourceGroup().id)
 
 @description('Managed Identity name.')
@@ -26,6 +29,11 @@ resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   }
 }
 
+@description('Contains Managed Identity ID.')
 output managedIdentityId string = managedIdentity.id
+
+@description('Contains Managed Identity Principal ID.')
 output managedIdentityPrincipalId string = managedIdentity.properties.principalId
+
+@description('Contains Managed Identity Client ID.')
 output managedIdentityClientId string = managedIdentity.properties.clientId

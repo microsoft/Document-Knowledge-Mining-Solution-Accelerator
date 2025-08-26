@@ -41,6 +41,9 @@ The value is stored as an environment variable and is required by the web servic
 @secure()
 param WebServiceAuthorizationKey2 string
 
+@description('Optional. The tags to apply to all deployed Azure resources.')
+param tags resourceInput<'Microsoft.Resources/resourceGroups@2025-04-01'>.tags = {}
+
 var rg = resourceGroup()
 
 var location = resourceGroup().location
@@ -155,6 +158,7 @@ module openAi 'modules/cognitive-services-openAI.bicep' = {
       name: 'S0'
     }
     deployments: openAiDeployments
+    tags : tags
   }
 }
 
@@ -174,6 +178,7 @@ module docIntel 'modules/cognitive-services-docIntel.bicep' = {
     sku: {
       name: 'S0'
     }
+    tags : tags
   }
 }
 
@@ -221,6 +226,7 @@ module containerAppService 'modules/container-app.bicep' = {
     AzureOpenAIText_Deployment: chatGpt.deploymentName
     AzureOpenAIText_Endpoint: openAi.outputs.endpoint
     AzureAIDocIntel_Endpoint: docIntel.outputs.endpoint
+    tags : tags
   }
 }
 

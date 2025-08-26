@@ -1,5 +1,9 @@
+@description('Required. Contains ManagedIdentity Principal ID.')
 param managedIdentityPrincipalId string
 
+@description('Required. Suffix to create unique resource names; 4-15 characters.')
+@minLength(4)
+@maxLength(15)
 param suffix string = uniqueString(resourceGroup().id)
 
 @description('Service name must only contain lowercase letters, digits or dashes, cannot use dash as the first two or last one characters, cannot contain consecutive dashes, and is limited between 2 and 60 characters in length.')
@@ -45,6 +49,9 @@ param hostingMode string = 'default'
 @description('Location for all resources.')
 param location string = resourceGroup().location
 
+@description('Optional. Tags to be applied to the resources.')
+param tags object = {}
+
 resource search 'Microsoft.Search/searchServices@2023-11-01' = {
   name: name
   location: location
@@ -89,4 +96,5 @@ resource roleAssignment2 'Microsoft.Authorization/roleAssignments@2022-04-01' = 
   }
 }
 
+@description('Contains ManagedIdentity Principal ID.')
 output searchName string = search.name

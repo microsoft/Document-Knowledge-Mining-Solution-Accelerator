@@ -1,7 +1,11 @@
 targetScope = 'resourceGroup'
 
+@description('Required. Suffix to create unique resource names; 4-15 characters.')
+@minLength(4)
+@maxLength(15)
 param suffix string = uniqueString(resourceGroup().id)
 
+@description('Required. Contains Resource Group Location.')
 param location string = resourceGroup().location
 
 @description('Optional. The tags to be assigned to the created resources.')
@@ -16,6 +20,7 @@ param storageBlobContainerName string = 'smemory'
 @description('The name of the Queue in Azure Storage.')
 param externalTasksQueueName string = 'km-queue-${suffix}'
 
+@description('Required. Contains ManagedIdentity Principal ID.')
 param managedIdentityPrincipalId string
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2021-09-01' = {
