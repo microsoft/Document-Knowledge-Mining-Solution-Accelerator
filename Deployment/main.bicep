@@ -23,6 +23,17 @@ var resourceGroupLocation = resourceGroup().location
 // Load the abbrevations file required to name the azure resources.
 var abbrs = loadJsonContent('./abbreviations.json')
 
+var deployerInfo = deployer()
+
+resource resourceGroupTags 'Microsoft.Resources/tags@2021-04-01' = {
+  name: 'default'
+  properties: {
+    tags: {
+      TemplateName: 'DKM'
+      CreatedBy: split(deployerInfo.userPrincipalName, '@')[0] 
+    }
+  }
+}
 
 // Create a storage account
 module gs_storageaccount 'bicep/azurestorageaccount.bicep' = {
