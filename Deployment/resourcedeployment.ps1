@@ -80,6 +80,7 @@ function PromptForParameters {
         [string]$location,
         [string]$modelLocation,
         [string]$email
+
 )
 
     Clear-Host
@@ -148,7 +149,7 @@ function PromptForParameters {
         resourceGroupName = $resourceGroupName
         location          = $location
         modelLocation     = $modelLocation
-        email             = $email
+        email             = $email      
     }
 }
 
@@ -171,7 +172,6 @@ function LoginAzure([string]$subscriptionID) {
             --password $env:AZURE_CLIENT_SECRET `
             --tenant $env:AZURE_TENANT_ID `
         Write-Host "CI deployment mode"
-        $createdBy = 'pipeline'
     }
     else{
         az login --tenant $tenantId
@@ -184,8 +184,6 @@ function LoginAzure([string]$subscriptionID) {
             Write-Host "Logged in to Azure with tenant ID '$tenantId' successfully." -ForegroundColor Green
         }
         Write-Host "manual deployment mode"
-        $createdBy = $email.Split('@')[0]
-        Write-Host "CreatedBy user is $createdBy"
     }
     az account set --subscription $subscriptionID
     Write-Host "Switched subscription to '$subscriptionID' `r`n" -ForegroundColor Yellow  
@@ -194,6 +192,13 @@ function LoginAzure([string]$subscriptionID) {
 function DeployAzureResources([string]$location, [string]$modelLocation) {
     Write-Host "Started Deploying Knowledge Mining Solution Accelerator Service Azure resources.....`r`n" -ForegroundColor Yellow
     
+    if ($env:CI -eq "true"){
+        $createdBy = 'pipeline'
+    }
+    else{
+        $createdBy = $email.Split('@')[0]
+    }
+
     try {
         # Generate a random number between 0 and 99999
         $randomNumber = Get-Random -Minimum 0 -Maximum 99999
@@ -233,16 +238,16 @@ function DeployAzureResources([string]$location, [string]$modelLocation) {
             Write-Host "Generated Resource Group Name: $resourceGroupName"
 
             Write-Host "No RG provided. Creating new RG: $resourceGroupName" -ForegroundColor Yellow
-            az group create --name $resourceGroupName --location $location --tags EnvironmentName=$environmentName TemplateName="DKM" | Out-Null
+            az group create --name $resourceGroupName --location $location --tags EnvironmentName=$environmentName TemplateName="DKM" createdBy=$createdBy | Out-Null
         }
         else {
             $exists = az group exists --name $resourceGroupName | ConvertFrom-Json
             if (-not $exists) {
                 Write-Host "Specified RG does not exist. Creating RG: $resourceGroupName" -ForegroundColor Yellow
-                az group create --name $resourceGroupName --location $location --tags EnvironmentName=$environmentName TemplateName="DKM" | Out-Null
+                az group create --name $resourceGroupName --location $location --tags EnvironmentName=$environmentName TemplateName="DKM" createdBy=$createdBy | Out-Null
             }
             else {
-                az group update --name $resourceGroupName --set tags.EnvironmentName=$environmentName tags.TemplateName="DKM" | Out-Null
+                az group update --name $resourceGroupName --set tags.EnvironmentName=$environmentName tags.TemplateName="DKM" tags.createdBy=$createdBy | Out-Null
                 Write-Host "Using existing RG: $resourceGroupName" -ForegroundColor Green
             }
         }
