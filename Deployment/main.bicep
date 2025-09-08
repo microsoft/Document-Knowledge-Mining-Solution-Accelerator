@@ -23,14 +23,15 @@ var resourceGroupLocation = resourceGroup().location
 // Load the abbrevations file required to name the azure resources.
 var abbrs = loadJsonContent('./abbreviations.json')
 
-var deployerInfo = deployer()
+@description('Optional created by user name')
+param createdBy string //= empty(deployer().userPrincipalName) ? '' : split(deployer().userPrincipalName, '@')[0]
 
 resource resourceGroupTags 'Microsoft.Resources/tags@2021-04-01' = {
   name: 'default'
   properties: {
     tags: {
       TemplateName: 'DKM'
-      CreatedBy: split(deployerInfo.userPrincipalName, '@')[0] 
+      CreatedBy: createdBy
     }
   }
 }
@@ -212,4 +213,6 @@ output gs_containerregistry_endpoint string = gs_containerregistry.outputs.acrEn
 
 //return resourcegroup resource ID
 output gs_resourcegroup_id string = resourceGroup().id
+
+output createdByOutput string = createdBy
 

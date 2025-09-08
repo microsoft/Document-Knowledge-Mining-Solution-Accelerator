@@ -80,7 +80,7 @@ function PromptForParameters {
         [string]$location,
         [string]$modelLocation,
         [string]$email
-    )
+)
 
     Clear-Host
 
@@ -169,8 +169,9 @@ function LoginAzure([string]$subscriptionID) {
         az login --service-principal `
             --username $env:AZURE_CLIENT_ID `
             --password $env:AZURE_CLIENT_SECRET `
-            --tenant $env:AZURE_TENANT_ID
+            --tenant $env:AZURE_TENANT_ID `
         Write-Host "CI deployment mode"
+        $createdBy = 'pipeline'
     }
     else{
         az login --tenant $tenantId
@@ -183,9 +184,10 @@ function LoginAzure([string]$subscriptionID) {
             Write-Host "Logged in to Azure with tenant ID '$tenantId' successfully." -ForegroundColor Green
         }
         Write-Host "manual deployment mode"
+        $createdBy = $email
     }
     az account set --subscription $subscriptionID
-    Write-Host "Switched subscription to '$subscriptionID' `r`n" -ForegroundColor Yellow
+    Write-Host "Switched subscription to '$subscriptionID' `r`n" -ForegroundColor Yellow  
 }
 
 function DeployAzureResources([string]$location, [string]$modelLocation) {
@@ -246,7 +248,7 @@ function DeployAzureResources([string]$location, [string]$modelLocation) {
 
         # Perform a what-if deployment to preview changes
         Write-Host "Evaluating Deployment resource availabilities to preview changes..." -ForegroundColor Yellow
-        $whatIfResult = az deployment group what-if --resource-group $resourceGroupName --template-file "./main.bicep" --name $deploymentName --parameters modeldatacenter=$modelLocation location=$location environmentName=$environmentName
+        $whatIfResult = az deployment group what-if --resource-group $resourceGroupName --template-file "./main.bicep" --name $deploymentName --parameters modeldatacenter=$modelLocation location=$location environmentName=$environmentName createdBy=$createdBy
 
         if ($LASTEXITCODE -ne 0) {
             Write-Host "There might be something wrong with your deployment." -ForegroundColor Red
@@ -257,7 +259,7 @@ function DeployAzureResources([string]$location, [string]$modelLocation) {
         # Proceed with the actual deployment
         Write-Host "Proceeding with Deployment..." -ForegroundColor Yellow
         Write-Host "Resource Group Name: $resourceGroupName" -ForegroundColor Yellow
-        $deploymentResult = az deployment group create --resource-group $resourceGroupName --template-file "./main.bicep" --name $deploymentName --parameters modeldatacenter=$modelLocation location=$location environmentName=$environmentName
+        $deploymentResult = az deployment group create --resource-group $resourceGroupName --template-file "./main.bicep" --name $deploymentName --parameters modeldatacenter=$modelLocation location=$location environmentName=$environmentName createdBy=$createdBy 
         # Check if deploymentResult is valid        
         ValidateVariableIsNullOrEmpty -variableValue $deploymentResult -variableName "Deployment Result"  
         if ($LASTEXITCODE -ne 0) {
