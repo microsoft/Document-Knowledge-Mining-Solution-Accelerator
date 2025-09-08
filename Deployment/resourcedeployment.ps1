@@ -184,7 +184,8 @@ function LoginAzure([string]$subscriptionID) {
             Write-Host "Logged in to Azure with tenant ID '$tenantId' successfully." -ForegroundColor Green
         }
         Write-Host "manual deployment mode"
-        $createdBy = $email
+        $createdBy = $email.Split('@')[0]
+        Write-Host "CreatedBy user is $createdBy"
     }
     az account set --subscription $subscriptionID
     Write-Host "Switched subscription to '$subscriptionID' `r`n" -ForegroundColor Yellow  
