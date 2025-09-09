@@ -76,27 +76,6 @@ param enableScalability bool = false
 @description('Optional. Enable purge protection for the Key Vault')
 param enablePurgeProtection bool = false
 
-@description('Optional. Cognitive Account Name')
-param cognitiveAccountName string = ''
-
-@description('Optional. Azure Search Service Name')
-param azureSearchServiceName string = ''
-
-@description('Optional. Azure Cosmos DB Name')
-param azureCosmosDbName string = ''
-
-@description('Optional. Azure Cognitive Service Name')
-param azureCognitiveServiceName string = ''
-
-@description('Optional. Contains Azure OpenAI Service Endpoint.')
-param azureOpenAiServiceEndpoint string = ''
-
-@description('Optional. Contains Azure Search Service Endpoint.')
-param azureSearchServiceEndpoint string = ''
-
-@description('Optional. Contains Azure Cognitive Service Endpoint.')
-param azureCognitiveServiceEndpoint string = ''
-
 @minLength(1)
 @description('Optional. Name of the Text Embedding model to deploy:')
 @allowed([
@@ -631,7 +610,7 @@ module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
 
 // ========== Cognitive Services - Document Intellignece module ========== //
 var docIntelAccountName = 'di-${solutionSuffix}'
-module docIntel 'br/public:avm/res/cognitive-services/account:0.13.2' = {
+module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.13.2' = {
   name: take('avm.res.cognitiveservices.account.${docIntelAccountName}', 64)
   params: {
     name: docIntelAccountName
@@ -744,6 +723,8 @@ module applicationInsights 'br/public:avm/res/insights/component:0.6.0' = if (en
 /* 
   Outputs
 */
+output AZURE_TENANT_ID string = subscription().tenantId
+
 @description('Contains Solution Name.')
 output SOLUTION_NAME string = solutionSuffix
 
@@ -753,45 +734,56 @@ output RESOURCE_GROUP_NAME string = resourceGroup().name
 @description('Contains Resource Group Location.')
 output RESOURCE_GROUP_LOCATION string = solutionLocation
 
-@description('Contains Resource Group Name.')
-output STORAGE_ACCOUNT_NAME string = storageAccountName
+output AZURE_RESOURCE_GROUP_ID string = resourceGroup().id
 
-@description('Contains Cognitive Account Name.')
-output COGNITIVE_ACCOUNT_NAME string = cognitiveAccountName
+output AZURE_APP_CONFIG_NAME string = avmAppConfig.outputs.name
+
+output AZURE_APP_CONFIG_ENDPOINT string = avmAppConfig.outputs.endpoint
+
+@description('Contains Resource Group Name.')
+output STORAGE_ACCOUNT_NAME string = avmStorageAccount.outputs.name
 
 @description('Contains Cosmos DB Name.')
-output AZ_COSMOSDB_NAME string = azureCosmosDbName
+output AZURE_COSMOSDB_NAME string = avmCosmosDB.outputs.name
 
 @description('Contains Cognitive Service Name.')
-output AZ_COGNITIVE_SERVICE_NAME string = azureCognitiveServiceName
-
-@description('Contains Azure Search Service Name.')
-output AZ_SEARCH_SERVICE_NAME string = azureSearchServiceName
-
-@description('Contains Azure OpenAI Search Service Name.')
-output AZ_OPENAI_SERVICE_NAME string = openAiAccountName
-
-@description('Contains Azure OpenAI Service Endpoint.')
-output AZ_OPENAI_SERVICE_ENDPOINT string = azureOpenAiServiceEndpoint
-
-@description('Contains Azure Search Service Endpoint.')
-output AZ_SEARCH_SERVICE_ENDPOINT string = azureSearchServiceEndpoint
+output AZURE_COGNITIVE_SERVICE_NAME string = documentIntelligence.outputs.name
 
 @description('Contains Azure Cognitive Service Endpoint.')
-output AZ_COGNITIVE_SERVICE_ENDPOINT string = azureCognitiveServiceEndpoint
+output AZURE_COGNITIVE_SERVICE_ENDPOINT string = documentIntelligence.outputs.endpoint
+
+@description('Contains Azure Search Service Name.')
+output AZURE_SEARCH_SERVICE_NAME string = avmSearchSearchServices.outputs.name
+
+@description('Contains Azure Search Service Name.')
+output AZURE_AKS_NAME string = managedCluster.outputs.name
+
+@description('Contains Azure Search Service Name.')
+output AZURE_AKS_MI_ID string = managedCluster.outputs.systemAssignedMIPrincipalId
+
+@description('Contains Azure Search Service Name.')
+output AZURE_CONTAINER_REGISTRY_NAME string = avmContainerRegistry.outputs.name
+
+@description('Contains Azure OpenAI Search Service Name.')
+output AZURE_OPENAI_SERVICE_NAME string = avmOpenAi.outputs.name
+
+@description('Contains Azure OpenAI Service Endpoint.')
+output AZURE_OPENAI_SERVICE_ENDPOINT string = avmOpenAi.outputs.endpoint
+
+@description('Contains Azure Search Service Endpoint.')
+output AZ_SEARCH_SERVICE_ENDPOINT string = avmSearchSearchServices.outputs.name
 
 @description('Contains Azure GPT40 Model ID.')
-output AZ_GPT4O_MODEL_ID string = azureSearchServiceName
+output AZ_GPT4O_MODEL_ID string = chatGpt.deploymentName
 
 @description('Contains Azure OpenAI embedding model name.')
-output AZ_GPT4O_MODEL_NAME string = azureGpt40ModelName
+output AZ_GPT4O_MODEL_NAME string = chatGpt.modelName
 
 @description('Contains Azure OpenAI embedding model name.')
-output AZ_GPT_EMBEDDING_MODEL_NAME string = embeddingModel
+output AZ_GPT_EMBEDDING_MODEL_NAME string = embedding.modelName
 
-@description('Contains Azure OpenAI embedding model capacity.')
-output AZ_OPENAI_EMBEDDING_MODEL_CAPACITY int = embeddingDeploymentCapacity
-
+@description('Contains Azure OpenAI embedding model name.')
+output AZ_GPT_EMBEDDING_MODEL_ID string = embedding.deploymentName
 
 // @description('The FQDN of the frontend web app service.')
 // output kmServiceEndpoint string = containerAppService.outputs.kmServiceFQDN
