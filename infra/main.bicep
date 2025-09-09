@@ -1,7 +1,27 @@
-@description('Suffix to create unique resource names; 4-6 characters. Default is a random 6 characters.')
-@minLength(4)
-@maxLength(6)
-param suffix string = substring(newGuid(), 0, 6)
+// ========== main.bicep ========== //
+targetScope = 'resourceGroup'
+
+@minLength(3)
+@maxLength(20)
+@description('Required. A unique prefix for all resources in this deployment. This should be 3-20 characters long:')
+param solutionName string = 'dkm'
+
+@description('Optional. Azure location for the solution. If not provided, it defaults to the resource group location.')
+param location string = ''
+
+@maxLength(5)
+@description('Optional. A unique token for the solution. This is used to ensure resource names are unique for global resources. Defaults to a 5-character substring of the unique string generated from the subscription ID, resource group name, and solution name.')
+param solutionUniqueToken string = substring(uniqueString(subscription().id, resourceGroup().name, solutionName), 0, 5)
+
+var solutionSuffix= toLower(trim(replace(
+  replace(
+    replace(replace(replace(replace('${solutionName}${solutionUniqueToken}', '-', ''), '_', ''), '.', ''), '/', ''),
+    ' ',
+    ''
+  ),
+  '*',
+  ''
+)))
 
 @description('''
 gpt-35-turbo-16k deployment model\'s Tokens-Per-Minute (TPM) capacity, measured in thousands.
@@ -20,26 +40,6 @@ For model limits specific to your region, refer to the documentation at https://
 @minValue(1)
 @maxValue(40)
 param embeddingDeploymentCapacity int = 30
-
-@description('''
-PLEASE CHOOSE A SECURE AND SECRET KEY ! -
-Kernel Memory Service Authorization AccessKey 1.
-The value is stored as an environment variable and is required by the web service to authenticate HTTP requests.
-''')
-@minLength(32)
-@maxLength(128)
-@secure()
-param WebServiceAuthorizationKey1 string
-
-@description('''
-PLEASE CHOOSE A SECURE AND SECRET KEY ! -
-Kernel Memory Service Authorization AccessKey 2.
-The value is stored as an environment variable and is required by the web service to authenticate HTTP requests.
-''')
-@minLength(32)
-@maxLength(128)
-@secure()
-param WebServiceAuthorizationKey2 string
 
 @description('Optional. The tags to apply to all deployed Azure resources.')
 param tags resourceInput<'Microsoft.Resources/resourceGroups@2025-04-01'>.tags = {}
@@ -76,6 +76,8 @@ param enableScalability bool = false
 @description('Optional. Enable purge protection for the Key Vault')
 param enablePurgeProtection bool = false
 
+var solutionLocation = empty(location) ? resourceGroup().location : location
+
 // @description('Optional. Key vault reference and secret settings for the module\'s secrets export.')
 // param secretsExportConfiguration secretsExportConfigurationType?
 // Replica regions list based on article in [Azure regions list](https://learn.microsoft.com/azure/reliability/regions-list) and [Enhance resilience by replicating your Log Analytics workspace across regions](https://learn.microsoft.com/azure/azure-monitor/logs/workspace-replication#supported-regions) for supported regions for Log Analytics Workspace.
@@ -91,7 +93,7 @@ var replicaRegionPairs = {
   uksouth: 'westeurope'
   westeurope: 'northeurope'
 }
-var replicaLocation = replicaRegionPairs[resourceGroup().location]
+var replicaLocation = replicaRegionPairs[solutionLocation]
 
 @description('Optional. The Container Registry hostname where the docker images for the container app are located.')
 param containerRegistryHostname string = 'biabcontainerreg.azurecr.io'
@@ -108,14 +110,10 @@ var logAnalyticsWorkspaceResourceId = useExistingLogAnalytics
   ? existingLogAnalyticsWorkspaceId
   : logAnalyticsWorkspace!.outputs.resourceId
 
-var rg = resourceGroup()
-
-var location = resourceGroup().location
-
 var chatGpt = {
-  modelName: 'gpt-35-turbo-16k'
+  modelName: 'gpt-4.1-mini'
   deploymentName: 'chat'
-  deploymentVersion: '0613'
+  deploymentVersion: '2025-04-14'
   deploymentCapacity: chatGptDeploymentCapacity
 }
 
@@ -135,7 +133,7 @@ var openAiDeployments = [
       version: chatGpt.deploymentVersion
     }
     sku: {
-      name: 'Standard'
+      name: 'GlobalStandard'
       capacity: chatGpt.deploymentCapacity
     }
   }
@@ -147,7 +145,7 @@ var openAiDeployments = [
       version: embedding.deploymentVersion
     }
     sku: {
-      name: 'Standard'
+      name: 'GlobalStandard'
       capacity: embedding.deploymentCapacity
     }
   }
@@ -158,18 +156,14 @@ var privateDnsZones = [
   'privatelink.cognitiveservices.azure.com'
   'privatelink.openai.azure.com'
   'privatelink.services.ai.azure.com'
-  'privatelink.contentunderstanding.ai.azure.com'
   'privatelink.blob.${environment().suffixes.storage}'
   'privatelink.queue.${environment().suffixes.storage}'
   'privatelink.file.${environment().suffixes.storage}'
   'privatelink.api.azureml.ms'
-  'privatelink.notebooks.azure.net'
   'privatelink.mongo.cosmos.azure.com'
   'privatelink.azconfig.io'
   'privatelink.vaultcore.azure.net'
   'privatelink.azurecr.io'
-  'privatelink${environment().suffixes.sqlServerHostname}'
-  'privatelink.azurewebsites.net'
   'privatelink.search.windows.net'
 ]
 // DNS Zone Index Constants
@@ -177,20 +171,15 @@ var dnsZoneIndex = {
   cognitiveServices: 0
   openAI: 1
   aiServices: 2
-  contentUnderstanding: 3
-  storageBlob: 4
-  storageQueue: 5
-  storageFile: 6
-  aiFoundry: 7
-  notebooks: 8
-  cosmosDB: 9
-  appConfig: 10
-  keyVault: 11
-  containerRegistry: 12
-  sqlServer: 13
-  appService: 14
-  search: 15
-  formRecognizer: 16
+  storageBlob: 3
+  storageQueue: 4
+  storageFile: 5
+  aiFoundry: 6
+  cosmosDB: 7
+  appConfig: 8
+  keyVault: 9
+  containerRegistry: 10
+  search: 11
 }
 @batchSize(5)
 module avmPrivateDnsZones 'br/public:avm/res/network/private-dns-zone:0.7.1' = [
@@ -220,13 +209,13 @@ param aiDeploymentsLocation string
 // ========== Log Analytics Workspace ========== //
 // WAF best practices for Log Analytics: https://learn.microsoft.com/en-us/azure/well-architected/service-guides/azure-log-analytics
 // WAF PSRules for Log Analytics: https://azure.github.io/PSRule.Rules.Azure/en/rules/resource/#azure-monitor-logs
-var logAnalyticsWorkspaceResourceName = 'log-${suffix}'
+var logAnalyticsWorkspaceResourceName = 'log-${solutionSuffix}'
 module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0.12.0' = if (enableMonitoring) {
   name: take('avm.res.operational-insights.workspace.${logAnalyticsWorkspaceResourceName}', 64)
   params: {
     name: logAnalyticsWorkspaceResourceName
     tags: tags
-    location: location
+    location: solutionLocation
     enableTelemetry: enableTelemetry
     skuName: 'PerGB2018'
     dataRetention: 365
@@ -281,14 +270,14 @@ module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0
 }
 
 module network 'modules/network.bicep' = if (enablePrivateNetworking) {
-  name: take('network-${suffix}-deployment', 64)
+  name: take('network-${solutionSuffix}-deployment', 64)
   params: {
-    resourcesName: suffix
+    resourcesName: solutionSuffix
     logAnalyticsWorkSpaceResourceId: logAnalyticsWorkspaceResourceId
     vmAdminUsername: vmAdminUsername ?? 'JumpboxAdminUser'
     vmAdminPassword: vmAdminPassword ?? 'JumpboxAdminP@ssw0rd1234!'
     vmSize: vmSize ?? 'Standard_DS2_v2' // Default VM size 
-    location: location
+    location: solutionLocation
     tags: tags
     enableTelemetry: enableTelemetry
   }
@@ -298,12 +287,12 @@ module network 'modules/network.bicep' = if (enablePrivateNetworking) {
 // ========== AVM WAF ========== //
 // ========== User Assigned Identity ========== //
 // WAF best practices for identity and access management: https://learn.microsoft.com/en-us/azure/well-architected/security/identity-access
-var userAssignedIdentityResourceName = 'id-${suffix}'
+var userAssignedIdentityResourceName = 'id-${solutionSuffix}'
 module userAssignedIdentity 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.1' = {
   name: take('avm.res.managed-identity.user-assigned-identity.${userAssignedIdentityResourceName}', 64)
   params: {
     name: userAssignedIdentityResourceName
-    location: location
+    location: solutionLocation
     tags: tags
     enableTelemetry: enableTelemetry
   }
@@ -313,12 +302,12 @@ module userAssignedIdentity 'br/public:avm/res/managed-identity/user-assigned-id
 // ========== AVM WAF ========== //
 // ========== Storage account module ========== //
 
-var storageAccountName = 'storage-${suffix}'
+var storageAccountName = 'st${solutionSuffix}'
 module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = {
   name: take('avm.res.storage.storage-account.${storageAccountName}', 64)
   params : {
     name: storageAccountName
-    location: location
+    location: solutionLocation
     managedIdentities: { systemAssigned: true }
     minimumTlsVersion: 'TLS1_2'
     enableTelemetry: enableTelemetry
@@ -345,7 +334,7 @@ module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = {
     privateEndpoints: enablePrivateNetworking
       ? [
           {
-            name: 'pep-blob-${suffix}'
+            name: 'pep-blob-${solutionSuffix}'
             privateDnsZoneGroup: {
               privateDnsZoneGroupConfigs: [
                 {
@@ -358,7 +347,7 @@ module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = {
             service: 'blob'
           }
           {
-            name: 'pep-queue-${suffix}'
+            name: 'pep-queue-${solutionSuffix}'
             privateDnsZoneGroup: {
               privateDnsZoneGroupConfigs: [
                 {
@@ -387,8 +376,8 @@ module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = {
 }
 
 // ========== AI Foundry: AI Search ========== //
-var aiSearchName = 'srch-${suffix}'
-// var aiSearchConnectionName = 'myCon-${suffix}'
+var aiSearchName = 'srch-${solutionSuffix}'
+// var aiSearchConnectionName = 'myCon-${solutionSuffix}'
 // var varKvSecretNameAzureSearchKey = 'AZURE-SEARCH-KEY'
 // AI Foundry: AI Search
 module avmSearchSearchServices 'br/public:avm/res/search/search-service:0.9.1' = {
@@ -396,22 +385,22 @@ module avmSearchSearchServices 'br/public:avm/res/search/search-service:0.9.1' =
   params: {
     name: aiSearchName
     tags: tags
-    location: aiDeploymentsLocation
+    location: solutionLocation
     enableTelemetry: enableTelemetry
     diagnosticSettings: enableMonitoring ? [{ workspaceResourceId: logAnalyticsWorkspaceResourceId }] : null
-    sku: 'standard3'
+    sku: enableScalability ? 'standard' : 'basic'
     managedIdentities: { userAssignedResourceIds: [userAssignedIdentity!.outputs.resourceId] }
     replicaCount: 1
     partitionCount: 1
 
     roleAssignments: [
       {
-        roleDefinitionIdOrName: 'Cognitive Services Contributor' // Cognitive Search Contributor
+        roleDefinitionIdOrName: 'Search Index Data Contributor' // Cognitive Search Contributor
         principalId: userAssignedIdentity.outputs.principalId
         principalType: 'ServicePrincipal'
       }
       {
-        roleDefinitionIdOrName: 'Cognitive Services OpenAI User'//'5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'// Cognitive Services OpenAI User
+        roleDefinitionIdOrName: 'Search Index Data Reader' //'5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'// Cognitive Services OpenAI User
         principalId: userAssignedIdentity.outputs.principalId
         principalType: 'ServicePrincipal'
       }
@@ -445,12 +434,12 @@ module avmSearchSearchServices 'br/public:avm/res/search/search-service:0.9.1' =
 // ========== AVM WAF ========== //
 // ========== Cognitive Services - OpenAI module ========== //
 
-var openAiAccountName = 'openai-${suffix}'
+var openAiAccountName = 'openai-${solutionSuffix}'
 module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
   name: take('avm.res.cognitiveservices.account.${openAiAccountName}', 64)
   params: {
     name: openAiAccountName
-    location: location
+    location: solutionLocation
     kind: 'OpenAI'
     sku: 'S0'
     tags: tags
@@ -470,7 +459,7 @@ module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
     privateEndpoints: enablePrivateNetworking
       ? [
           {
-            name: 'pep-openai-${suffix}'
+            name: 'pep-openai-${solutionSuffix}'
             subnetResourceId: network.outputs.subnetPrivateEndpointsResourceId
             service: 'account'
             privateDnsZoneGroup: {
@@ -508,14 +497,13 @@ module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
 // ========== Cognitive Services - docIntel module ========== //
 
 // Document Intelligence (Form Recognizer)
-var docIntelAccountName = 'docIntel-${suffix}'
+var docIntelAccountName = 'docIntel-${solutionSuffix}'
 
 module docIntel 'br/public:avm/res/cognitive-services/account:0.13.2' = {
   name: take('avm.res.cognitiveservices.account.${docIntelAccountName}', 64)
-  scope: rg
   params: {
     name: docIntelAccountName
-    location: location
+    location: solutionLocation
     kind: 'FormRecognizer'
     tags: tags
     sku: 'S0'
@@ -534,14 +522,14 @@ module docIntel 'br/public:avm/res/cognitive-services/account:0.13.2' = {
     privateEndpoints: enablePrivateNetworking
       ? [
           {
-            name: 'pep-docintel-${suffix}'
+            name: 'pep-docintel-${solutionSuffix}'
             subnetResourceId: network.outputs.subnetPrivateEndpointsResourceId
             service: 'account'
             privateDnsZoneGroup: {
               privateDnsZoneGroupConfigs: [
                 {
                   name: 'docintel-dns-zone-group'
-                  privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.formRecognizer]!.outputs.resourceId
+                  privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.cognitiveServices]!.outputs.resourceId
                 }
               ]
             }
@@ -564,112 +552,112 @@ module docIntel 'br/public:avm/res/cognitive-services/account:0.13.2' = {
 // ========== AVM WAF ========== //
 // ========== Container App module ========== //
 
-var containerAppResourceName = 'ca-${suffix}'
-module containerApp 'br/public:avm/res/app/container-app:0.18.1' = {
-  name: take('avm.res.app.container-app.${containerAppResourceName}', 64)
-  params: {
-    name: containerAppResourceName
-    tags: tags
-    location: location
-    enableTelemetry: enableTelemetry
-    environmentResourceId: containerAppEnvironment.outputs.resourceId
-    managedIdentities: { systemAssigned: true }
-    ingressTargetPort: 8000
-    ingressExternal: true
-    activeRevisionsMode: 'Single'
-    // corsPolicy: {
-    //   allowedOrigins: [
-    //     'https://${webSiteName}.azurewebsites.net'
-    //     'http://${webSiteName}.azurewebsites.net'
-    //   ]
-    // }
-    // WAF aligned configuration for Scalability
-    scaleSettings: {
-      maxReplicas: enableScalability ? 3 : 1
-      minReplicas: enableScalability ? 2 : 1
-      rules: [
-        {
-          name: 'http-scaler'
-          http: {
-            metadata: {
-              concurrentRequests: '100'
-            }
-          }
-        }
-      ]
-    }
-    containers: [
-      {
-        name: 'backend'
-        image: '${containerRegistryHostname}/${containerImageName}:${containerImageTag}'
-        resources: {
-          cpu: '2.0'
-          memory: '4.0Gi'
-        }
-        env: [
-          {
-            name: '{ENVIRONMENT_VARIABLE_NAME}'
-            value: '{ENVIRONMENT_VARIABLE_VALUE}'
-          }
-        ]
-      }
-    ]
-  }
-}
+//var containerAppResourceName = 'ca-${solutionSuffix}'
+// module containerApp 'br/public:avm/res/app/container-app:0.18.1' = {
+//   name: take('avm.res.app.container-app.${containerAppResourceName}', 64)
+//   params: {
+//     name: containerAppResourceName
+//     tags: tags
+//     location: solutionLocation
+//     enableTelemetry: enableTelemetry
+//     environmentResourceId: containerAppEnvironment.outputs.resourceId
+//     managedIdentities: { systemAssigned: true }
+//     ingressTargetPort: 8000
+//     ingressExternal: true
+//     activeRevisionsMode: 'Single'
+//     // corsPolicy: {
+//     //   allowedOrigins: [
+//     //     'https://${webSiteName}.azurewebsites.net'
+//     //     'http://${webSiteName}.azurewebsites.net'
+//     //   ]
+//     // }
+//     // WAF aligned configuration for Scalability
+//     scaleSettings: {
+//       maxReplicas: enableScalability ? 3 : 1
+//       minReplicas: enableScalability ? 2 : 1
+//       rules: [
+//         {
+//           name: 'http-scaler'
+//           http: {
+//             metadata: {
+//               concurrentRequests: '100'
+//             }
+//           }
+//         }
+//       ]
+//     }
+//     containers: [
+//       {
+//         name: 'backend'
+//         image: '${containerRegistryHostname}/${containerImageName}:${containerImageTag}'
+//         resources: {
+//           cpu: '2.0'
+//           memory: '4.0Gi'
+//         }
+//         env: [
+//           {
+//             name: '{ENVIRONMENT_VARIABLE_NAME}'
+//             value: '{ENVIRONMENT_VARIABLE_VALUE}'
+//           }
+//         ]
+//       }
+//     ]
+//   }
+// }
 
-var containerAppEnvironmentResourceName = 'cae-${suffix}'
-module containerAppEnvironment 'br/public:avm/res/app/managed-environment:0.11.2' = {
-  name: take('avm.res.app.managed-environment.${containerAppEnvironmentResourceName}', 64)
-  params: {
-    name: containerAppEnvironmentResourceName
-    location: location
-    tags: tags
-    enableTelemetry: enableTelemetry
-    publicNetworkAccess: 'Enabled'
-    internal: false
-    // WAF aligned configuration for Private Networking
-    infrastructureSubnetResourceId: enablePrivateNetworking ? network.?outputs.?subnetResourceIds[3] : null
+// var containerAppEnvironmentResourceName = 'cae-${solutionSuffix}'
+// module containerAppEnvironment 'br/public:avm/res/app/managed-environment:0.11.2' = {
+//   name: take('avm.res.app.managed-environment.${containerAppEnvironmentResourceName}', 64)
+//   params: {
+//     name: containerAppEnvironmentResourceName
+//     location: solutionLocation
+//     tags: tags
+//     enableTelemetry: enableTelemetry
+//     publicNetworkAccess: 'Enabled'
+//     internal: false
+//     // WAF aligned configuration for Private Networking
+//     infrastructureSubnetResourceId: enablePrivateNetworking ? network.?outputs.?subnetResourceIds[3] : null
 
-    // WAF aligned configuration for Monitoring
-    appLogsConfiguration: enableMonitoring
-      ? {
-          destination: 'log-analytics'
-          logAnalyticsConfiguration: {
-            customerId: logAnalyticsWorkspace!.outputs.logAnalyticsWorkspaceId
-            sharedKey: logAnalyticsWorkspace!.outputs!.primarySharedKey
-          }
-        }
-      : null
-    appInsightsConnectionString: enableMonitoring ? applicationInsights!.outputs.connectionString : null
-    // WAF aligned configuration for Redundancy
-    zoneRedundant: enableRedundancy ? true : false
-    infrastructureResourceGroupName: enableRedundancy ? '${resourceGroup().name}-infra' : null
-    workloadProfiles: enableRedundancy
-      ? [
-          {
-            maximumCount: 3
-            minimumCount: 3
-            name: 'CAW01'
-            workloadProfileType: 'D4'
-          }
-        ]
-      : [
-          {
-            name: 'Consumption'
-            workloadProfileType: 'Consumption'
-          }
-        ]
-  }
-}
+//     // WAF aligned configuration for Monitoring
+//     appLogsConfiguration: enableMonitoring
+//       ? {
+//           destination: 'log-analytics'
+//           logAnalyticsConfiguration: {
+//             customerId: logAnalyticsWorkspace!.outputs.logAnalyticsWorkspaceId
+//             sharedKey: logAnalyticsWorkspace!.outputs!.primarySharedKey
+//           }
+//         }
+//       : null
+//     appInsightsConnectionString: enableMonitoring ? applicationInsights!.outputs.connectionString : null
+//     // WAF aligned configuration for Redundancy
+//     zoneRedundant: enableRedundancy ? true : false
+//     infrastructureResourceGroupName: enableRedundancy ? '${resourceGroup().name}-infra' : null
+//     workloadProfiles: enableRedundancy
+//       ? [
+//           {
+//             maximumCount: 3
+//             minimumCount: 3
+//             name: 'CAW01'
+//             workloadProfileType: 'D4'
+//           }
+//         ]
+//       : [
+//           {
+//             name: 'Consumption'
+//             workloadProfileType: 'Consumption'
+//           }
+//         ]
+//   }
+// }
 
 // ========== Application Insights ========== //
-var applicationInsightsResourceName = 'appi-${suffix}'
+var applicationInsightsResourceName = 'appi-${solutionSuffix}'
 module applicationInsights 'br/public:avm/res/insights/component:0.6.0' = if (enableMonitoring) {
   name: take('avm.res.insights.component.${applicationInsightsResourceName}', 64)
   params: {
     name: applicationInsightsResourceName
     tags: tags
-    location: location
+    location: solutionLocation
     enableTelemetry: enableTelemetry
     retentionInDays: 365
     kind: 'web'
@@ -685,13 +673,13 @@ module applicationInsights 'br/public:avm/res/insights/component:0.6.0' = if (en
 */
 
 @description('Contains Solution Name.')
-output SOLUTION_NAME string = suffix
+output SOLUTION_NAME string = solutionSuffix
 
 @description('Contains Resource Group Name.')
 output RESOURCE_GROUP_NAME string = resourceGroup().name
 
 @description('Contains Resource Group Location.')
-output RESOURCE_GROUP_LOCATION string = location
+output RESOURCE_GROUP_LOCATION string = solutionLocation
 
 // @description('The FQDN of the frontend web app service.')
 // output kmServiceEndpoint string = containerAppService.outputs.kmServiceFQDN
