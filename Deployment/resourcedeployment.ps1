@@ -193,7 +193,7 @@ function DeployAzureResources([string]$location, [string]$modelLocation) {
     Write-Host "Started Deploying Knowledge Mining Solution Accelerator Service Azure resources.....`r`n" -ForegroundColor Yellow
     
     if ($env:CI -eq "true"){
-        $createdBy = 'pipeline'
+        $createdBy = 'Pipeline'
     }
     else{
         $createdBy = $email.Split('@')[0]
