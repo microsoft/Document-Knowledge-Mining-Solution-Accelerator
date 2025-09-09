@@ -73,13 +73,7 @@ function ValidateVariableIsNullOrEmpty {
 # Function to prompt for parameters with kind messages
 function PromptForParameters {
     param(
-        [string]$tenantId,
-        [string]$subscriptionID,
-        [string]$environmentName,
-        [string]$resourceGroupName,
-        [string]$location,
-        [string]$modelLocation,
-        [string]$email
+                [string]$email
     )
 
     Clear-Host
@@ -88,72 +82,18 @@ function PromptForParameters {
     
     startBanner
 
-    $availableRegions = @(
-        'EastUS', 'EastUS2', 'WestUS', 'WestUS2', 'WestUS3', 'CentralUS', 'NorthCentralUS', 'SouthCentralUS', 
-        'WestEurope', 'NorthEurope', 'SoutheastAsia', 'EastAsia', 'JapanEast', 'JapanWest', 
-        'AustraliaEast', 'AustraliaSoutheast', 'CentralIndia', 'SouthIndia', 'CanadaCentral', 
-        'CanadaEast', 'UKSouth', 'UKWest', 'FranceCentral', 'FranceSouth', 'KoreaCentral', 
-        'KoreaSouth', 'GermanyWestCentral', 'GermanyNorth', 'NorwayWest', 'NorwayEast', 
-        'SwitzerlandNorth', 'SwitzerlandWest', 'UAENorth', 'UAECentral', 'SouthAfricaNorth', 
-        'SouthAfricaWest', 'BrazilSouth', 'BrazilSoutheast', 'QatarCentral', 'ChinaNorth', 
-        'ChinaEast', 'ChinaNorth2', 'ChinaEast2'
-    )
-
-    $availableModelRegions = @(
-        'EastUS', 'EastUS2', 'SwedenCentral', 'WestUS3'
-    )
-
-    if (-not $tenantId) {
-        Write-Host "Please enter your Azure tenant ID" -ForegroundColor Cyan
-        $tenantId = Read-Host -Prompt '> '
-    }
-    if (-not $subscriptionID) {
-        Write-Host "Please enter your Azure subscription ID to deploy your resources" -ForegroundColor Cyan
-        $subscriptionID = Read-Host -Prompt '> '
-    }
-
-    if (-not $environmentName) {
-        Write-Host "Please enter Environment name" -ForegroundColor Cyan
-        $environmentName = Read-Host -Prompt '> '
-    }
-
-    if (-not $resourceGroupName) {
-        Write-Host "Please enter your Azure Resource Group Name to deploy your resources (leave blank to auto-generate one)" -ForegroundColor Cyan
-        $resourceGroupName = Read-Host -Prompt '> '
-    }
-
-    if (-not $location) {
-        Write-Host "Please enter the Azure Data Center Region to deploy your resources" -ForegroundColor Cyan
-        Write-Host "Available regions are:" -ForegroundColor Cyan
-        Write-Host ($availableRegions -join ', ') -ForegroundColor Yellow
-        $location = Read-Host -Prompt '> '
-    }
-
-    if (-not $modelLocation) {
-        Write-Host "Please enter the Azure Data Center Region to deploy your GPT model" -ForegroundColor Cyan
-        Write-Host "Available regions are:" -ForegroundColor Cyan
-        Write-Host ($availableModelRegions -join ', ') -ForegroundColor Yellow
-        $modelLocation = Read-Host -Prompt '> '
-    }
-
     if (-not $email) {
         Write-Host "Please enter your email address for certificate management" -ForegroundColor Cyan
         $email = Read-Host -Prompt '> '
     }
 
     return @{
-        tenantId          = $tenantId
-        subscriptionID    = $subscriptionID
-        environmentName   = $environmentName
-        resourceGroupName = $resourceGroupName
-        location          = $location
-        modelLocation     = $modelLocation
         email             = $email
     }
 }
 
-# # Prompt for parameters with kind messages
-# $params = PromptForParameters -tenantId $tenantId -subscriptionID $subscriptionID -environmentName $environmentName -resourceGroupName $resourceGroupName -location $location -modelLocation $modelLocation -email $email
+# Prompt for parameters with kind messages
+ $params = PromptForParameters -email $email
 # # Assign the parameters to variables
 # $tenantId = $params.tenantId
 # $subscriptionID = $params.subscriptionID
@@ -161,7 +101,7 @@ function PromptForParameters {
 # $resourceGroupName = $params.resourceGroupName
 # $location = $params.location
 # $modelLocation = $params.modelLocation
-# $email = $params.email
+$email = $params.email
 
 function LoginAzure([string]$tenantId, [string]$subscriptionID) {
     Write-Host "Log in to Azure.....`r`n" -ForegroundColor Yellow
