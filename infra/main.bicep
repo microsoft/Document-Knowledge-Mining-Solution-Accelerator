@@ -48,7 +48,7 @@ param tags resourceInput<'Microsoft.Resources/resourceGroups@2025-04-01'>.tags =
 param enableTelemetry bool = true
 
 @description('Optional. Enable private networking for applicable resources, aligned with the WAF recommendations. Defaults to false.')
-param enablePrivateNetworking bool = true
+param enablePrivateNetworking bool = false
 
 @description('Optional: Existing Log Analytics Workspace Resource ID')
 param existingLogAnalyticsWorkspaceId string = ''
@@ -326,7 +326,7 @@ module avmContainerRegistry './modules/container-registry.bicep' = {
 
 // ========== Cosmos Database for Mongo DB ========== //
 module avmCosmosDB 'br/public:avm/res/document-db/database-account:0.15.0' = {
-  name: 'cosmos-${solutionSuffix}'
+  name: take('avm.res.cosmos-${solutionSuffix}', 64)
   params: {
     name: 'cosmos-${solutionSuffix}'
     location: solutionLocation
@@ -382,7 +382,7 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
   name: take('avm.res.app-configuration.configuration-store.${appConfigName}', 64)
   params: {
     name: appConfigName
-    location: location
+    location: solutionLocation
     managedIdentities: { systemAssigned: true }
     sku: 'Standard'
     enableTelemetry: enableTelemetry
@@ -672,6 +672,7 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.
     dnsPrefix: 'aks-${solutionSuffix}'
     enableRBAC: true
     disableLocalAccounts: false
+    publicNetworkAccess: 'Enabled'
     managedIdentities: {
       systemAssigned: true
       // userAssignedResourceIds: [

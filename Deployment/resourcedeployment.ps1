@@ -1,4 +1,4 @@
-﻿﻿# Copyright (c) Microsoft Corporation.
+﻿# Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
 #https://patorjk.com/software/taag
@@ -346,23 +346,18 @@ class DeploymentResult {
 
     }
 
-    [hashtable]GetAzdEnvValues() {
-        $envVars = @{}
+    [void]MapResult() {
 
+        $envValues = @{}
         azd env get-values | ForEach-Object {
             if ($_ -match "^\s*([^#][^=]+?)\s*=\s*(.+)\s*$") {
                 $key = $matches[1].Trim()
                 $value = $matches[2].Trim()
-                $envVars[$key] = $value
+                $envValues[$key] = $value.Trim('\"')
             }
         }
 
-        return $envVars
-    }
-
-    [void]MapResult() {
-
-        $envValues = Get-AzdEnvValues
+        # $envValues = Get-AzdEnvValues
         $this.TenantId = $envValues["AZURE_TENANT_ID"]
         $this.SubscriptionId = $envValues["AZURE_SUBSCRIPTION_ID"]
 
@@ -445,9 +440,9 @@ try {
     # Map the deployment result to DeploymentResult object
     $deploymentResult.MapResult()
     # Display the deployment result
-    DisplayResult(deploymentResult)
+    DisplayResult($deploymentResult)
 
-    LoginAzure($deploymentResult.TenantId, $deploymentResult.SubscriptionId)
+    LoginAzure $deploymentResult.TenantId $deploymentResult.SubscriptionId
 
     ###############################################################
     # Step 2 : Get Secrets from Azure resources
