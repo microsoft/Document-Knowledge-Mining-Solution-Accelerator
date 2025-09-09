@@ -410,38 +410,6 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
     //     value: chatGpt.modelName
     //   }
     //   {
-    //     name: 'Application:AIServices:GPT-4o:Endpoint'
-    //     value: avmOpenAi.outputs.endpoint
-    //   }
-    //   {
-    //     name: 'Application:AIServices:GPT-4o:Key'
-    //     value: '{gpt-4o-mini-apikey}'
-    //   }
-    //   {
-    //     name: 'Application:AIServices:GPT-4o:ModelName'
-    //     value: chatGpt.modelName
-    //   }
-    //   {
-    //     name: 'Application:AIServices:TextEmbedding:Endpoint'
-    //     value: avmOpenAi.outputs.endpoint
-    //   }
-    //   {
-    //     name: 'Application:AIServices:TextEmbedding:Key'
-    //     value: '{textembedding-key}'
-    //   }
-    //   {
-    //     name: 'Application:AIServices:TextEmbedding:ModelName'
-    //     value: embedding.modelName
-    //   }
-    //   {
-    //     name: 'Application:Services:CognitiveService:DocumentIntelligence:APIKey'
-    //     value: documentIntelligence.outputs.exportedSecrets.primaryAdminKey
-    //   }
-    //   {
-    //     name: 'Application:Services:CognitiveService:DocumentIntelligence:Endpoint'
-    //     value: documentIntelligence.outputs.endpoint
-    //   }
-    //   {
     //     name: 'Application:Services:KernelMemory:Endpoint'
     //     value: 'http://kernelmemory-service'
     //   }
