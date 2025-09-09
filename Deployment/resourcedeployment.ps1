@@ -210,8 +210,8 @@ function DeployAzureResources() {
         }
 
         # Required values from .env
-        $envLocation      = if ($env:LOCATION) { $env:LOCATION } else { "eastus" }
-        $environmentName  = if ($env:ENVIRONMENT_NAME) { $env:ENVIRONMENT_NAME } else { "dev" }
+        $envLocation      = if ($env:RESOURCE_GROUP_LOCATION) { $env:RESOURCE_GROUP_LOCATION } else { "eastus" }
+        $environmentName  = if ($env:AZURE_ENV_NAME) { $env:AZURE_ENV_NAME } else { "dev" }
         $resourceGroupName = if ($env:RESOURCE_GROUP_NAME) { $env:RESOURCE_GROUP_NAME } else { "" }
 
         # Generate random deployment name
