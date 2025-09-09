@@ -39,7 +39,7 @@ For model limits specific to your region, refer to the documentation at https://
 ''')
 @minValue(1)
 @maxValue(40)
-param embeddingDeploymentCapacity int = 30
+param embeddingDeploymentCapacity int = 1
 
 @description('Optional. The tags to apply to all deployed Azure resources.')
 param tags resourceInput<'Microsoft.Resources/resourceGroups@2025-04-01'>.tags = {}
@@ -119,15 +119,15 @@ var useExistingLogAnalytics = !empty(existingLogAnalyticsWorkspaceId)
 
 var chatGpt = {
   modelName: 'gpt-4.1-mini'
-  deploymentName: 'chat'
+  deploymentName: 'gpt-4.1-mini'
   deploymentVersion: '2025-04-14'
   deploymentCapacity: chatGptDeploymentCapacity
 }
 
 var embedding = {
-  modelName: 'text-embedding-ada-002'
-  deploymentName: 'embedding'
-  deploymentVersion: '2'
+  modelName: 'text-embedding-3-large'
+  deploymentName: 'text-embedding-3-large'
+  deploymentVersion: '1'
   deploymentCapacity: embeddingDeploymentCapacity
 }
 
@@ -387,7 +387,7 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
     sku: 'Standard'
     enableTelemetry: enableTelemetry
     tags: tags
-
+    disableLocalAuth: false
     roleAssignments: [
       {
         principalId: userAssignedIdentity.outputs.principalId
@@ -396,6 +396,144 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
       }
     ]
 
+    // keyValues: [
+    //   {
+    //     name: 'Application:AIServices:GPT-4o-mini:Endpoint'
+    //     value: avmOpenAi.outputs.endpoint
+    //   }
+    //   {
+    //     name: 'Application:AIServices:GPT-4o-mini:Key'
+    //     value: '' // Todo: avmOpenAi.outputs.
+    //   }
+    //   {
+    //     name: 'Application:AIServices:GPT-4o-mini:ModelName'
+    //     value: chatGpt.modelName
+    //   }
+    //   {
+    //     name: 'Application:AIServices:GPT-4o:Endpoint'
+    //     value: avmOpenAi.outputs.endpoint
+    //   }
+    //   {
+    //     name: 'Application:AIServices:GPT-4o:Key'
+    //     value: '{gpt-4o-mini-apikey}'
+    //   }
+    //   {
+    //     name: 'Application:AIServices:GPT-4o:ModelName'
+    //     value: chatGpt.modelName
+    //   }
+    //   {
+    //     name: 'Application:AIServices:TextEmbedding:Endpoint'
+    //     value: avmOpenAi.outputs.endpoint
+    //   }
+    //   {
+    //     name: 'Application:AIServices:TextEmbedding:Key'
+    //     value: '{textembedding-key}'
+    //   }
+    //   {
+    //     name: 'Application:AIServices:TextEmbedding:ModelName'
+    //     value: embedding.modelName
+    //   }
+    //   {
+    //     name: 'Application:Services:CognitiveService:DocumentIntelligence:APIKey'
+    //     value: documentIntelligence.outputs.exportedSecrets.primaryAdminKey
+    //   }
+    //   {
+    //     name: 'Application:Services:CognitiveService:DocumentIntelligence:Endpoint'
+    //     value: documentIntelligence.outputs.endpoint
+    //   }
+    //   {
+    //     name: 'Application:Services:KernelMemory:Endpoint'
+    //     value: 'http://kernelmemory-service'
+    //   }
+    //   {
+    //     name: 'Application:Services:PersistentStorage:CosmosMongo:Collections:ChatHistory:Collection'
+    //     value: 'ChatHistory'
+    //   }
+    //   {
+    //     name: 'Application:Services:PersistentStorage:CosmosMongo:Collections:ChatHistory:Database'
+    //     value: 'DPS'
+    //   }
+    //   {
+    //     name: 'Application:Services:PersistentStorage:CosmosMongo:Collections:DocumentManager:Collection'
+    //     value: 'Documents'
+    //   }
+    //   {
+    //     name: 'Application:Services:PersistentStorage:CosmosMongo:Collections:DocumentManager:Database'
+    //     value: 'DPS'
+    //   }
+    //   {
+    //     name: 'Application:Services:PersistentStorage:CosmosMongo:ConnectionString'
+    //     value: avmCosmosDB.outputs.primaryReadWriteConnectionString
+    //   }
+    //   {
+    //     name: 'Application:Services:AzureAISearch:APIKey'
+    //     value: avmSearchSearchServices.outputs.exportedSecrets.primaryAdminKey
+    //   }
+    //   {
+    //     name: 'Application:Services:AzureAISearch:Endpoint'
+    //     value: 'https://${avmSearchSearchServices.outputs.name}.search.windows.net'
+    //   }
+    //   {
+    //     name: 'KernelMemory:Services:AzureAIDocIntel:APIKey'
+    //     value: documentIntelligence.outputs.exportedSecrets.primaryAdminKey
+    //   }
+    //   {
+    //     name: 'KernelMemory:Services:AzureAIDocIntel:Endpoint'
+    //     value: documentIntelligence.outputs.endpoint
+    //   }
+    //   {
+    //     name: 'KernelMemory:Services:AzureAISearch:APIKey'
+    //     value: avmSearchSearchServices.outputs.exportedSecrets.primaryAdminKey
+    //   }
+    //   {
+    //     name: 'KernelMemory:Services:AzureAISearch:Endpoint'
+    //     value: 'https://${avmSearchSearchServices.outputs.name}.search.windows.net'
+    //   }
+    //   {
+    //     name: 'KernelMemory:Services:AzureBlobs:Account'
+    //     value: avmStorageAccount.outputs.name
+    //   }
+    //   {
+    //     name: 'KernelMemory:Services:AzureBlobs:ConnectionString'
+    //     value: avmStorageAccount.outputs.primaryConnectionString
+    //   }
+    //   {
+    //     name: 'KernelMemory:Services:AzureBlobs:Container'
+    //     value: 'smemory'
+    //   }
+    //   {
+    //     name: 'KernelMemory:Services:AzureOpenAIEmbedding:APIKey'
+    //     value: '{azureopenaiembedding-apikey}'
+    //   }
+    //   {
+    //     name: 'KernelMemory:Services:AzureOpenAIEmbedding:Deployment'
+    //     value: embedding.deploymentName
+    //   }
+    //   {
+    //     name: 'KernelMemory:Services:AzureOpenAIEmbedding:Endpoint'
+    //     value: avmOpenAi.outputs.endpoint
+    //   }
+    //   {
+    //     name: 'KernelMemory:Services:AzureOpenAIText:APIKey'
+    //     value: '{azureopenaitext-apikey}'
+    //   }
+    //   {
+    //     name: 'KernelMemory:Services:AzureOpenAIText:Deployment'
+    //     value: chatGpt.deploymentName
+    //   }
+    //   {
+    //     name: 'KernelMemory:Services:AzureOpenAIText:Endpoint'
+    //     value: avmOpenAi.outputs.endpoint
+    //   }
+    //   {
+    //     name: 'KernelMemory:Services:AzureQueues:Account'
+    //     value: avmStorageAccount.outputs.name
+    //   }
+    //   {
+    //     name: 'KernelMemory:Services:AzureQueues:ConnectionString'
+    //     value: avmStorageAccount.outputs.primaryConnectionString
+    //   }
+    // ]
     // WAF aligned networking
     publicNetworkAccess: enablePrivateNetworking ? 'Disabled' : 'Enabled'
     privateEndpoints: enablePrivateNetworking
@@ -560,6 +698,7 @@ module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
     tags: tags
     enableTelemetry: enableTelemetry
     customSubDomainName: openAiAccountName
+    disableLocalAuth: false
     managedIdentities: {
       systemAssigned: true
     }
@@ -619,6 +758,7 @@ module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.13.2
     tags: tags
     sku: 'S0'
     customSubDomainName: docIntelAccountName
+    disableLocalAuth: false
     managedIdentities: {
       systemAssigned: true
     }

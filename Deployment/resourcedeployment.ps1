@@ -713,7 +713,7 @@ try {
     ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.ResourceGroupName -variableName "Resource group name"    
     
     ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.AksName -variableName "AKS cluster name"    
-        
+    
     # Get vmss resource group name
     $vmssResourceGroupName = $(az aks show --resource-group $deploymentResult.ResourceGroupName --name $deploymentResult.AksName --query nodeResourceGroup --output tsv)
     
@@ -728,7 +728,7 @@ try {
         
     # Create System Assigned Managed Identity
     $systemAssignedIdentity = $(az vmss identity assign --resource-group $vmssResourceGroupName --name $vmssName --query systemAssignedIdentity --output tsv)
-    
+
     # Validate if System Assigned Identity is null or empty
     ValidateVariableIsNullOrEmpty -variableValue $systemAssignedIdentity -variableName "System-assigned managed identity"    
     
@@ -737,14 +737,14 @@ try {
  
     # Assign the role for aks system assigned managed identity to App Configuration Data Reader role with the scope of Resourcegroup
     az role assignment create --assignee $systemAssignedIdentity --role "App Configuration Data Reader" --scope $deploymentResult.ResourceGroupId
-
+    
     # Assign the role for aks system assigned managed identity to Azure blob storage Data Contributor role with the scope of Storage Account
     Write-Host "Assign the role for aks system assigned managed identity to App Storage Blob Data Contributor role" -ForegroundColor Green
-    az role assignment create --assignee $systemAssignedIdentity --role "Storage Blob Data Contributor" --scope "/subscriptions/$subscriptionID/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.Storage/storageAccounts/$($deploymentResult.StorageAccountName)"
+    az role assignment create --assignee $systemAssignedIdentity --role "Storage Blob Data Contributor" --scope "/subscriptions/$($deploymentResult.SubscriptionId)/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.Storage/storageAccounts/$($deploymentResult.StorageAccountName)"
 
     # Assign the role for aks system assigned managed identity to Azure Queue Data Contributor role with the scope of Storage Account
     Write-Host "Assign the role for aks system assigned managed identity to App Storage Queue Data Contributor role" -ForegroundColor Green
-    az role assignment create --assignee $systemAssignedIdentity --role "Storage Queue Data Contributor" --scope "/subscriptions/$subscriptionID/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.Storage/storageAccounts/$($deploymentResult.StorageAccountName)"
+    az role assignment create --assignee $systemAssignedIdentity --role "Storage Queue Data Contributor" --scope "/subscriptions/$($deploymentResult.SubscriptionId)/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.Storage/storageAccounts/$($deploymentResult.StorageAccountName)"
 
     # 8. Update aks nodepools to updated new role
     try {
