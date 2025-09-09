@@ -80,7 +80,8 @@ function PromptForParameters {
         [string]$location,
         [string]$modelLocation,
         [string]$email
-    )
+
+)
 
     Clear-Host
 
@@ -148,7 +149,7 @@ function PromptForParameters {
         resourceGroupName = $resourceGroupName
         location          = $location
         modelLocation     = $modelLocation
-        email             = $email
+        email             = $email      
     }
 }
 
@@ -169,7 +170,7 @@ function LoginAzure([string]$subscriptionID) {
         az login --service-principal `
             --username $env:AZURE_CLIENT_ID `
             --password $env:AZURE_CLIENT_SECRET `
-            --tenant $env:AZURE_TENANT_ID
+            --tenant $env:AZURE_TENANT_ID `
         Write-Host "CI deployment mode"
     }
     else{
@@ -185,12 +186,19 @@ function LoginAzure([string]$subscriptionID) {
         Write-Host "manual deployment mode"
     }
     az account set --subscription $subscriptionID
-    Write-Host "Switched subscription to '$subscriptionID' `r`n" -ForegroundColor Yellow
+    Write-Host "Switched subscription to '$subscriptionID' `r`n" -ForegroundColor Yellow  
 }
 
 function DeployAzureResources([string]$location, [string]$modelLocation) {
     Write-Host "Started Deploying Knowledge Mining Solution Accelerator Service Azure resources.....`r`n" -ForegroundColor Yellow
     
+    if ($env:CI -eq "true"){
+        $createdBy = 'Pipeline'
+    }
+    else{
+        $createdBy = $email.Split('@')[0]
+    }
+
     try {
         # Generate a random number between 0 and 99999
         $randomNumber = Get-Random -Minimum 0 -Maximum 99999
@@ -230,23 +238,23 @@ function DeployAzureResources([string]$location, [string]$modelLocation) {
             Write-Host "Generated Resource Group Name: $resourceGroupName"
 
             Write-Host "No RG provided. Creating new RG: $resourceGroupName" -ForegroundColor Yellow
-            az group create --name $resourceGroupName --location $location --tags EnvironmentName=$environmentName TemplateName="DKM" | Out-Null
+            az group create --name $resourceGroupName --location $location --tags EnvironmentName=$environmentName TemplateName="DKM" createdBy=$createdBy | Out-Null
         }
         else {
             $exists = az group exists --name $resourceGroupName | ConvertFrom-Json
             if (-not $exists) {
                 Write-Host "Specified RG does not exist. Creating RG: $resourceGroupName" -ForegroundColor Yellow
-                az group create --name $resourceGroupName --location $location --tags EnvironmentName=$environmentName TemplateName="DKM" | Out-Null
+                az group create --name $resourceGroupName --location $location --tags EnvironmentName=$environmentName TemplateName="DKM" createdBy=$createdBy | Out-Null
             }
             else {
-                az group update --name $resourceGroupName --set tags.EnvironmentName=$environmentName tags.TemplateName="DKM" | Out-Null
+                az group update --name $resourceGroupName --set tags.EnvironmentName=$environmentName tags.TemplateName="DKM" tags.createdBy=$createdBy | Out-Null
                 Write-Host "Using existing RG: $resourceGroupName" -ForegroundColor Green
             }
         }
 
         # Perform a what-if deployment to preview changes
         Write-Host "Evaluating Deployment resource availabilities to preview changes..." -ForegroundColor Yellow
-        $whatIfResult = az deployment group what-if --resource-group $resourceGroupName --template-file "./main.bicep" --name $deploymentName --parameters modeldatacenter=$modelLocation location=$location environmentName=$environmentName
+        $whatIfResult = az deployment group what-if --resource-group $resourceGroupName --template-file "./main.bicep" --name $deploymentName --parameters modeldatacenter=$modelLocation location=$location environmentName=$environmentName createdBy=$createdBy
 
         if ($LASTEXITCODE -ne 0) {
             Write-Host "There might be something wrong with your deployment." -ForegroundColor Red
@@ -257,7 +265,7 @@ function DeployAzureResources([string]$location, [string]$modelLocation) {
         # Proceed with the actual deployment
         Write-Host "Proceeding with Deployment..." -ForegroundColor Yellow
         Write-Host "Resource Group Name: $resourceGroupName" -ForegroundColor Yellow
-        $deploymentResult = az deployment group create --resource-group $resourceGroupName --template-file "./main.bicep" --name $deploymentName --parameters modeldatacenter=$modelLocation location=$location environmentName=$environmentName
+        $deploymentResult = az deployment group create --resource-group $resourceGroupName --template-file "./main.bicep" --name $deploymentName --parameters modeldatacenter=$modelLocation location=$location environmentName=$environmentName createdBy=$createdBy 
         # Check if deploymentResult is valid        
         ValidateVariableIsNullOrEmpty -variableValue $deploymentResult -variableName "Deployment Result"  
         if ($LASTEXITCODE -ne 0) {
