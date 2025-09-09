@@ -190,6 +190,7 @@ var dnsZoneIndex = {
   sqlServer: 13
   appService: 14
   search: 15
+  formRecognizer: 16
 }
 @batchSize(5)
 module avmPrivateDnsZones 'br/public:avm/res/network/private-dns-zone:0.7.1' = [
@@ -293,20 +294,6 @@ module network 'modules/network.bicep' = if (enablePrivateNetworking) {
   }
 }
 
-/*
-  Module to create a Managed Identity.
-  See https://learn.microsoft.com/entra/identity/managed-identities-azure-resources/overview
-  
-  The managed identity is the main code-to-services and service-to-service authentication mechanism.
-*/
-// module managedidentity 'modules/managed-identity.bicep' = {
-//   name: 'managedidentity-${suffix}'
-//   scope: rg
-//   params: {
-//     location: location
-//     suffix: suffix
-//   }
-// }
 
 // ========== AVM WAF ========== //
 // ========== User Assigned Identity ========== //
@@ -322,22 +309,6 @@ module userAssignedIdentity 'br/public:avm/res/managed-identity/user-assigned-id
   }
 }
 
-/* 
-  Module to create a Storage Account
-  See https://learn.microsoft.com/azure/storage/common/storage-account-overview
-  
-  The storage account is used to store files (KM Document Storage) and
-  to run asynchronous ingestion (KM Pipelines Orchestration).
-*/
-// module storage 'modules/storage.bicep' = {
-//   name: 'storage-${suffix}'
-//   scope: rg
-//   params: {
-//     location: location
-//     suffix: suffix
-//     managedIdentityPrincipalId: managedidentity.outputs.managedIdentityPrincipalId
-//   }
-// }
 
 // ========== AVM WAF ========== //
 // ========== Storage account module ========== //
@@ -415,24 +386,6 @@ module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = {
   }
 }
 
-/*
-  Module to create a Azure AI Search service
-  See https://azure.microsoft.com/products/ai-services/ai-search
-  
-  Azure AI Search is used to store document chunks and LLM embeddings, and to search
-  for relevant data when searching memories and asking questions.
-*/
-// module search 'modules/ai-search.bicep' = {
-//   name: 'search-${suffix}'
-//   scope: rg
-//   params: {
-//     location: location
-//     name: 'km-search-${suffix}'
-//     suffix: suffix
-//     managedIdentityPrincipalId: managedidentity.outputs.managedIdentityPrincipalId
-//   }
-// }
-
 // ========== AI Foundry: AI Search ========== //
 var aiSearchName = 'srch-${suffix}'
 // var aiSearchConnectionName = 'myCon-${suffix}'
@@ -488,43 +441,18 @@ module avmSearchSearchServices 'br/public:avm/res/search/search-service:0.9.1' =
   }
 }
 
-/*
-  Module to create a Azure OpenAI service
-  See https://azure.microsoft.com/products/ai-services/openai-service
-      and https://github.com/Azure-Samples/azure-search-openai-demo/blob/main/infra/main.bicep for more details
-  
-  Azure OpenAI is used to generate text embeddings, and to generate text from memories (answers and summaries)
-*/
-// module openAi 'modules/cognitive-services-openAI.bicep' = {
-//   name: 'openai-${suffix}'
-//   scope: rg
-//   params: {
-//     suffix: suffix
-//     managedIdentityPrincipalId: managedidentity.outputs.managedIdentityPrincipalId
-//     name: 'km-openai-${suffix}'
-//     location: location
-//     sku: {
-//       name: 'S0'
-//     }
-//     deployments: openAiDeployments
-//     tags : tags
-//   }
-// }
 
 // ========== AVM WAF ========== //
 // ========== Cognitive Services - OpenAI module ========== //
 
 var openAiAccountName = 'openai-${suffix}'
-
 module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
   name: take('avm.res.cognitiveservices.account.${openAiAccountName}', 64)
   params: {
     name: openAiAccountName
     location: location
     kind: 'OpenAI'
-    sku: {
-      name: 'S0'
-    }
+    sku: 'S0'
     tags: tags
     enableTelemetry: enableTelemetry
 
@@ -549,7 +477,7 @@ module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
               privateDnsZoneGroupConfigs: [
                 {
                   name: 'openai-dns-zone-group'
-                  privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.openAi]!.outputs.resourceId
+                  privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.openAI]!.outputs.resourceId
                 }
               ]
             }
@@ -576,26 +504,6 @@ module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
   }
 }
 
-/*
-  Module to create a Azure Document Intelligence service
-  See https://azure.microsoft.com/products/ai-services/ai-document-intelligence
-  Azure Document Intelligence is used to extract text from images
-*/
-// module docIntel 'modules/cognitive-services-docIntel.bicep' = {
-//   name: 'docIntel-${suffix}'
-//   scope: rg
-//   params: {
-//     suffix: suffix
-//     managedIdentityPrincipalId: userAssignedIdentity.outputs.managedIdentityPrincipalId
-//     name: 'km-docIntel-${suffix}'
-//     location: location
-//     sku: {
-//       name: 'S0'
-//     }
-//     tags : tags
-//   }
-// }
-
 // ========== AVM WAF ========== //
 // ========== Cognitive Services - docIntel module ========== //
 
@@ -610,9 +518,7 @@ module docIntel 'br/public:avm/res/cognitive-services/account:0.13.2' = {
     location: location
     kind: 'FormRecognizer'
     tags: tags
-    sku: {
-      name: 'S0'
-    }
+    sku: 'S0'
     managedIdentities: {
       systemAssigned: true
     }
@@ -655,55 +561,6 @@ module docIntel 'br/public:avm/res/cognitive-services/account:0.13.2' = {
 }
 
 
-/* 
-  Module to create an Azure Container Apps environment and a container app
-  See https://learn.microsoft.com/en-us/azure/container-apps/environment
-      and https://azure.github.io/aca-dotnet-workshop/aca/10-aca-iac-bicep/iac-bicep/#2-define-an-azure-container-apps-environment for more samples
-*/
-module containerAppsEnvironment 'modules/container-apps-environment.bicep' = {
-  name: 'containerAppsEnvironment-${suffix}'
-  scope: rg
-  params: {
-    location: location
-    suffix: suffix
-  }
-}
-
-/*
-  Module to create web app containing the Docker image
-  See https://azure.microsoft.com/products/container-apps
-  
-  The Azure Container app hosts the docker container containing KM web service.
-*/
-// module containerAppService 'modules/container-app.bicep' = {
-//   name: 'containerAppService-${suffix}'
-//   scope: rg
-//   params: {
-//     location: location
-//     suffix: suffix
-//     containerAppsEnvironmentId: containerAppsEnvironment.outputs.containerAppsEnvironmentId
-//     appInsightsInstrumentationKey: containerAppsEnvironment.outputs.applicationInsightsInstrumentationKey
-//     applicationInsightsConnectionString: containerAppsEnvironment.outputs.applicationInsightsConnectionString
-//     managedIdentityId: us.outputs.managedIdentityId
-//     managedIdentityClientId: managedidentity.outputs.managedIdentityClientId
-
-//     KernelMemory__ServiceAuthorization__AccessKey1: WebServiceAuthorizationKey1
-//     KernelMemory__ServiceAuthorization__AccessKey2: WebServiceAuthorizationKey2
-
-//     AzureAISearch_Endpoint: 'https://${search.outputs.searchName }.search.windows.net'
-//     AzureBlobs_Account: storage.outputs.storageAccountName
-//     AzureQueues_Account: storage.outputs.storageAccountName
-//     AzureQueues_QueueName: storage.outputs.queueName
-//     AzureOpenAIEmbedding_Deployment: embedding.deploymentName
-//     AzureOpenAIEmbedding_Endpoint: openAi.outputs.endpoint
-//     AzureOpenAIText_Deployment: chatGpt.deploymentName
-//     AzureOpenAIText_Endpoint: openAi.outputs.endpoint
-//     AzureAIDocIntel_Endpoint: docIntel.outputs.endpoint
-//     tags : tags
-//   }
-// }
-
-
 // ========== AVM WAF ========== //
 // ========== Container App module ========== //
 
@@ -715,17 +572,17 @@ module containerApp 'br/public:avm/res/app/container-app:0.18.1' = {
     tags: tags
     location: location
     enableTelemetry: enableTelemetry
-    environmentResourceId: containerAppsEnvironment.outputs.resourceId
+    environmentResourceId: containerAppEnvironment.outputs.resourceId
     managedIdentities: { systemAssigned: true }
     ingressTargetPort: 8000
     ingressExternal: true
     activeRevisionsMode: 'Single'
-    corsPolicy: {
-      allowedOrigins: [
-        'https://${webSiteName}.azurewebsites.net'
-        'http://${webSiteName}.azurewebsites.net'
-      ]
-    }
+    // corsPolicy: {
+    //   allowedOrigins: [
+    //     'https://${webSiteName}.azurewebsites.net'
+    //     'http://${webSiteName}.azurewebsites.net'
+    //   ]
+    // }
     // WAF aligned configuration for Scalability
     scaleSettings: {
       maxReplicas: enableScalability ? 3 : 1
@@ -760,9 +617,81 @@ module containerApp 'br/public:avm/res/app/container-app:0.18.1' = {
   }
 }
 
+var containerAppEnvironmentResourceName = 'cae-${suffix}'
+module containerAppEnvironment 'br/public:avm/res/app/managed-environment:0.11.2' = {
+  name: take('avm.res.app.managed-environment.${containerAppEnvironmentResourceName}', 64)
+  params: {
+    name: containerAppEnvironmentResourceName
+    location: location
+    tags: tags
+    enableTelemetry: enableTelemetry
+    publicNetworkAccess: 'Enabled'
+    internal: false
+    // WAF aligned configuration for Private Networking
+    infrastructureSubnetResourceId: enablePrivateNetworking ? network.?outputs.?subnetResourceIds[3] : null
+
+    // WAF aligned configuration for Monitoring
+    appLogsConfiguration: enableMonitoring
+      ? {
+          destination: 'log-analytics'
+          logAnalyticsConfiguration: {
+            customerId: logAnalyticsWorkspace!.outputs.logAnalyticsWorkspaceId
+            sharedKey: logAnalyticsWorkspace!.outputs!.primarySharedKey
+          }
+        }
+      : null
+    appInsightsConnectionString: enableMonitoring ? applicationInsights!.outputs.connectionString : null
+    // WAF aligned configuration for Redundancy
+    zoneRedundant: enableRedundancy ? true : false
+    infrastructureResourceGroupName: enableRedundancy ? '${resourceGroup().name}-infra' : null
+    workloadProfiles: enableRedundancy
+      ? [
+          {
+            maximumCount: 3
+            minimumCount: 3
+            name: 'CAW01'
+            workloadProfileType: 'D4'
+          }
+        ]
+      : [
+          {
+            name: 'Consumption'
+            workloadProfileType: 'Consumption'
+          }
+        ]
+  }
+}
+
+// ========== Application Insights ========== //
+var applicationInsightsResourceName = 'appi-${suffix}'
+module applicationInsights 'br/public:avm/res/insights/component:0.6.0' = if (enableMonitoring) {
+  name: take('avm.res.insights.component.${applicationInsightsResourceName}', 64)
+  params: {
+    name: applicationInsightsResourceName
+    tags: tags
+    location: location
+    enableTelemetry: enableTelemetry
+    retentionInDays: 365
+    kind: 'web'
+    disableIpMasking: false
+    flowType: 'Bluefield'
+    // WAF aligned configuration for Monitoring
+    workspaceResourceId: enableMonitoring ? logAnalyticsWorkspace.outputs.resourceId : ''
+    diagnosticSettings: enableMonitoring ? [{ workspaceResourceId: logAnalyticsWorkspace.outputs.resourceId }] : null
+  }
+}
 /* 
   Outputs
 */
+
+@description('Contains Solution Name.')
+output SOLUTION_NAME string = suffix
+
+@description('Contains Resource Group Name.')
+output RESOURCE_GROUP_NAME string = resourceGroup().name
+
+@description('Contains Resource Group Location.')
+output RESOURCE_GROUP_LOCATION string = location
 
 // @description('The FQDN of the frontend web app service.')
 // output kmServiceEndpoint string = containerAppService.outputs.kmServiceFQDN
