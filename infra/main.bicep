@@ -4,7 +4,7 @@ targetScope = 'resourceGroup'
 @minLength(3)
 @maxLength(20)
 @description('Required. A unique prefix for all resources in this deployment. This should be 3-20 characters long:')
-param solutionName string = 'dkm'
+param solutionName string = 'kmgs'
 
 @description('Optional. Azure location for the solution. If not provided, it defaults to the resource group location.')
 param location string = ''
@@ -48,7 +48,7 @@ param tags resourceInput<'Microsoft.Resources/resourceGroups@2025-04-01'>.tags =
 param enableTelemetry bool = true
 
 @description('Optional. Enable private networking for applicable resources, aligned with the WAF recommendations. Defaults to false.')
-param enablePrivateNetworking bool = false
+param enablePrivateNetworking bool = true
 
 @description('Optional: Existing Log Analytics Workspace Resource ID')
 param existingLogAnalyticsWorkspaceId string = ''
@@ -65,7 +65,7 @@ param vmAdminPassword string?
 param vmSize string = 'Standard_DS2_v2'
 
 @description('Optional. Enable monitoring applicable resources, aligned with the Well Architected Framework recommendations. This setting enables Application Insights and Log Analytics and configures all the resources applicable resources to send logs. Defaults to false.')
-param enableMonitoring bool = false
+param enableMonitoring bool = true
 
 @description('Optional. Enable redundancy for applicable resources, aligned with the Well Architected Framework recommendations. Defaults to false.')
 param enableRedundancy bool = false
@@ -106,9 +106,6 @@ param containerImageTag string = 'latest_2025-07-22_895'
 
 // Extracts subscription, resource group, and workspace name from the resource ID when using an existing Log Analytics workspace
 var useExistingLogAnalytics = !empty(existingLogAnalyticsWorkspaceId)
-var logAnalyticsWorkspaceResourceId = useExistingLogAnalytics
-  ? existingLogAnalyticsWorkspaceId
-  : logAnalyticsWorkspace!.outputs.resourceId
 
 var chatGpt = {
   modelName: 'gpt-4.1-mini'
@@ -155,15 +152,15 @@ var openAiDeployments = [
 var privateDnsZones = [
   'privatelink.cognitiveservices.azure.com'
   'privatelink.openai.azure.com'
-  'privatelink.services.ai.azure.com'
+  'privatelink.services.ai.azure.com' // Todo: to be deleted
   'privatelink.blob.${environment().suffixes.storage}'
   'privatelink.queue.${environment().suffixes.storage}'
-  'privatelink.file.${environment().suffixes.storage}'
+  'privatelink.file.${environment().suffixes.storage}' // Todo: to be deleted
   'privatelink.api.azureml.ms'
   'privatelink.mongo.cosmos.azure.com'
   'privatelink.azconfig.io'
-  'privatelink.vaultcore.azure.net'
-  'privatelink.azurecr.io'
+  'privatelink.vaultcore.azure.net' // Todo: to be deleted
+  'privatelink.azurecr.io' // Todo: to be deleted
   'privatelink.search.windows.net'
 ]
 // DNS Zone Index Constants
@@ -189,7 +186,7 @@ module avmPrivateDnsZones 'br/public:avm/res/network/private-dns-zone:0.7.1' = [
       name: zone
       tags: tags
       enableTelemetry: enableTelemetry
-      virtualNetworkLinks: [{ virtualNetworkResourceId: network.outputs.subnetPrivateEndpointsResourceId }]
+      virtualNetworkLinks: [{ virtualNetworkResourceId: network!.outputs.vnetResourceId }]
     }
   }
 ]
@@ -210,7 +207,7 @@ param aiDeploymentsLocation string
 // WAF best practices for Log Analytics: https://learn.microsoft.com/en-us/azure/well-architected/service-guides/azure-log-analytics
 // WAF PSRules for Log Analytics: https://azure.github.io/PSRule.Rules.Azure/en/rules/resource/#azure-monitor-logs
 var logAnalyticsWorkspaceResourceName = 'log-${solutionSuffix}'
-module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0.12.0' = if (enableMonitoring) {
+module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0.12.0' = if (enableMonitoring && !useExistingLogAnalytics) {
   name: take('avm.res.operational-insights.workspace.${logAnalyticsWorkspaceResourceName}', 64)
   params: {
     name: logAnalyticsWorkspaceResourceName
@@ -268,6 +265,7 @@ module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0
       : null
   }
 }
+var logAnalyticsWorkspaceResourceId = useExistingLogAnalytics ? existingLogAnalyticsWorkspaceId : logAnalyticsWorkspace!.outputs.resourceId
 
 module network 'modules/network.bicep' = if (enablePrivateNetworking) {
   name: take('network-${solutionSuffix}-deployment', 64)
@@ -283,8 +281,6 @@ module network 'modules/network.bicep' = if (enablePrivateNetworking) {
   }
 }
 
-
-// ========== AVM WAF ========== //
 // ========== User Assigned Identity ========== //
 // WAF best practices for identity and access management: https://learn.microsoft.com/en-us/azure/well-architected/security/identity-access
 var userAssignedIdentityResourceName = 'id-${solutionSuffix}'
@@ -298,8 +294,119 @@ module userAssignedIdentity 'br/public:avm/res/managed-identity/user-assigned-id
   }
 }
 
+// ========== Container Registry ========== //
+module avmContainerRegistry './modules/container-registry.bicep' = {
+  //name: format(deployment_param.resource_name_format_string, abbrs.containers.containerRegistry)
+  params: {
+    acrName: 'cr${replace(solutionSuffix, '-', '')}'
+    location: solutionLocation
+    acrSku: 'Standard'
+    publicNetworkAccess: 'Enabled'
+    zoneRedundancy: 'Disabled'
+    roleAssignments: [
+      {
+        principalId: managedCluster.outputs.systemAssignedMIPrincipalId
+        roleDefinitionIdOrName: 'AcrPull'
+        principalType: 'ServicePrincipal'
+      }
+    ]
+    tags: tags
+  }
+}
 
-// ========== AVM WAF ========== //
+// ========== Cosmos Database for Mongo DB ========== //
+module avmCosmosDB 'br/public:avm/res/document-db/database-account:0.15.0' = {
+  name: 'cosmos-${solutionSuffix}'
+  params: {
+    name: 'cosmos-${solutionSuffix}'
+    location: solutionLocation
+    mongodbDatabases: [
+      {
+        name: 'default'
+        tag: 'default database'
+      }
+    ]
+    tags: tags
+    enableTelemetry: enableTelemetry
+    databaseAccountOfferType: 'Standard'
+    automaticFailover: false
+    serverVersion: '7.0'
+    capabilitiesToAdd: [
+      'EnableMongo'
+    ]
+    enableAnalyticalStorage: true
+    defaultConsistencyLevel: 'Session'
+    maxIntervalInSeconds: 5
+    maxStalenessPrefix: 100
+    zoneRedundant: false
+
+    // WAF related parameters
+    networkRestrictions: {
+      publicNetworkAccess: (enablePrivateNetworking) ? 'Disabled' : 'Enabled'
+      ipRules: []
+      virtualNetworkRules: []
+    }
+
+    privateEndpoints: (enablePrivateNetworking)
+      ? [
+          {
+            name: 'cosmosdb-private-endpoint-${solutionSuffix}'
+            privateDnsZoneGroup: {
+              privateDnsZoneGroupConfigs: [
+                {
+                  privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.cosmosDB].outputs.resourceId
+                }
+              ]
+            }
+            service: 'MongoDB'
+            subnetResourceId: network!.outputs.subnetPrivateEndpointsResourceId // Use the backend subnet
+          }
+        ]
+      : []
+  }
+}
+
+// ========== App Configuration store ========== //
+var appConfigName = 'appcs-${solutionSuffix}'
+module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6.3' = {
+  name: take('avm.res.app-configuration.configuration-store.${appConfigName}', 64)
+  params: {
+    name: appConfigName
+    location: location
+    managedIdentities: { systemAssigned: true }
+    sku: 'Standard'
+    enableTelemetry: enableTelemetry
+    tags: tags
+
+    roleAssignments: [
+      {
+        principalId: userAssignedIdentity.outputs.principalId
+        roleDefinitionIdOrName: 'App Configuration Data Reader'
+        principalType: 'ServicePrincipal'
+      }
+    ]
+
+    // WAF aligned networking
+    publicNetworkAccess: enablePrivateNetworking ? 'Disabled' : 'Enabled'
+    privateEndpoints: enablePrivateNetworking
+      ? [
+          {
+            name: 'pep-appconfig-${solutionSuffix}'
+            privateDnsZoneGroup: {
+              privateDnsZoneGroupConfigs: [
+                {
+                  name: 'appconfig-dns-zone-group'
+                  privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.appConfig].outputs.resourceId
+                }
+              ]
+            }
+            subnetResourceId: network!.outputs.subnetPrivateEndpointsResourceId
+          }
+        ]
+      : []
+  }
+}
+
 // ========== Storage account module ========== //
 
 var storageAccountName = 'st${solutionSuffix}'
@@ -392,7 +499,7 @@ module avmSearchSearchServices 'br/public:avm/res/search/search-service:0.9.1' =
     managedIdentities: { userAssignedResourceIds: [userAssignedIdentity!.outputs.resourceId] }
     replicaCount: 1
     partitionCount: 1
-
+  
     roleAssignments: [
       {
         roleDefinitionIdOrName: 'Search Index Data Contributor' // Cognitive Search Contributor
@@ -430,11 +537,9 @@ module avmSearchSearchServices 'br/public:avm/res/search/search-service:0.9.1' =
   }
 }
 
+// // ========== Cognitive Services - OpenAI module ========== //
 
-// ========== AVM WAF ========== //
-// ========== Cognitive Services - OpenAI module ========== //
-
-var openAiAccountName = 'openai-${solutionSuffix}'
+var openAiAccountName = 'oai-${solutionSuffix}'
 module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
   name: take('avm.res.cognitiveservices.account.${openAiAccountName}', 64)
   params: {
@@ -444,7 +549,7 @@ module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
     sku: 'S0'
     tags: tags
     enableTelemetry: enableTelemetry
-
+    customSubDomainName: openAiAccountName
     managedIdentities: {
       systemAssigned: true
     }
@@ -493,12 +598,8 @@ module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
   }
 }
 
-// ========== AVM WAF ========== //
-// ========== Cognitive Services - docIntel module ========== //
-
-// Document Intelligence (Form Recognizer)
-var docIntelAccountName = 'docIntel-${solutionSuffix}'
-
+// ========== Cognitive Services - Document Intellignece module ========== //
+var docIntelAccountName = 'di-${solutionSuffix}'
 module docIntel 'br/public:avm/res/cognitive-services/account:0.13.2' = {
   name: take('avm.res.cognitiveservices.account.${docIntelAccountName}', 64)
   params: {
@@ -507,6 +608,7 @@ module docIntel 'br/public:avm/res/cognitive-services/account:0.13.2' = {
     kind: 'FormRecognizer'
     tags: tags
     sku: 'S0'
+    customSubDomainName: docIntelAccountName
     managedIdentities: {
       systemAssigned: true
     }
@@ -548,107 +650,46 @@ module docIntel 'br/public:avm/res/cognitive-services/account:0.13.2' = {
   }
 }
 
-
-// ========== AVM WAF ========== //
-// ========== Container App module ========== //
-
-//var containerAppResourceName = 'ca-${solutionSuffix}'
-// module containerApp 'br/public:avm/res/app/container-app:0.18.1' = {
-//   name: take('avm.res.app.container-app.${containerAppResourceName}', 64)
-//   params: {
-//     name: containerAppResourceName
-//     tags: tags
-//     location: solutionLocation
-//     enableTelemetry: enableTelemetry
-//     environmentResourceId: containerAppEnvironment.outputs.resourceId
-//     managedIdentities: { systemAssigned: true }
-//     ingressTargetPort: 8000
-//     ingressExternal: true
-//     activeRevisionsMode: 'Single'
-//     // corsPolicy: {
-//     //   allowedOrigins: [
-//     //     'https://${webSiteName}.azurewebsites.net'
-//     //     'http://${webSiteName}.azurewebsites.net'
-//     //   ]
-//     // }
-//     // WAF aligned configuration for Scalability
-//     scaleSettings: {
-//       maxReplicas: enableScalability ? 3 : 1
-//       minReplicas: enableScalability ? 2 : 1
-//       rules: [
-//         {
-//           name: 'http-scaler'
-//           http: {
-//             metadata: {
-//               concurrentRequests: '100'
-//             }
-//           }
-//         }
-//       ]
-//     }
-//     containers: [
-//       {
-//         name: 'backend'
-//         image: '${containerRegistryHostname}/${containerImageName}:${containerImageTag}'
-//         resources: {
-//           cpu: '2.0'
-//           memory: '4.0Gi'
-//         }
-//         env: [
-//           {
-//             name: '{ENVIRONMENT_VARIABLE_NAME}'
-//             value: '{ENVIRONMENT_VARIABLE_VALUE}'
-//           }
-//         ]
-//       }
-//     ]
-//   }
-// }
-
-// var containerAppEnvironmentResourceName = 'cae-${solutionSuffix}'
-// module containerAppEnvironment 'br/public:avm/res/app/managed-environment:0.11.2' = {
-//   name: take('avm.res.app.managed-environment.${containerAppEnvironmentResourceName}', 64)
-//   params: {
-//     name: containerAppEnvironmentResourceName
-//     location: solutionLocation
-//     tags: tags
-//     enableTelemetry: enableTelemetry
-//     publicNetworkAccess: 'Enabled'
-//     internal: false
-//     // WAF aligned configuration for Private Networking
-//     infrastructureSubnetResourceId: enablePrivateNetworking ? network.?outputs.?subnetResourceIds[3] : null
-
-//     // WAF aligned configuration for Monitoring
-//     appLogsConfiguration: enableMonitoring
-//       ? {
-//           destination: 'log-analytics'
-//           logAnalyticsConfiguration: {
-//             customerId: logAnalyticsWorkspace!.outputs.logAnalyticsWorkspaceId
-//             sharedKey: logAnalyticsWorkspace!.outputs!.primarySharedKey
-//           }
-//         }
-//       : null
-//     appInsightsConnectionString: enableMonitoring ? applicationInsights!.outputs.connectionString : null
-//     // WAF aligned configuration for Redundancy
-//     zoneRedundant: enableRedundancy ? true : false
-//     infrastructureResourceGroupName: enableRedundancy ? '${resourceGroup().name}-infra' : null
-//     workloadProfiles: enableRedundancy
-//       ? [
-//           {
-//             maximumCount: 3
-//             minimumCount: 3
-//             name: 'CAW01'
-//             workloadProfileType: 'D4'
-//           }
-//         ]
-//       : [
-//           {
-//             name: 'Consumption'
-//             workloadProfileType: 'Consumption'
-//           }
-//         ]
-//   }
-// }
+// ========== Azure Kubernetes Service (AKS) ========== //
+module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.1' = {
+  name: take('avm.res.container-service.managed-cluster.aks-${solutionSuffix}', 64)
+  params: {
+    name: 'aks-${solutionSuffix}'
+    location: solutionLocation
+    tags: tags
+    enableTelemetry: enableTelemetry
+    kubernetesVersion: '1.30.4'
+    dnsPrefix: 'aks-${solutionSuffix}'
+    enableRBAC: true
+    disableLocalAccounts: false
+    managedIdentities: {
+      systemAssigned: true
+      // userAssignedResourceIds: [
+      //   userAssignedIdentity.outputs.resourceId
+      // ]
+    }
+    primaryAgentPoolProfiles: [
+      {
+        name: 'agentpool'
+        vmSize: 'Standard_D4ds_v5'
+        count: 2
+        osType: 'Linux'
+        mode: 'System'
+        type: 'VirtualMachineScaleSets'
+      }
+    ]
+    roleAssignments: [
+      {
+        principalId: userAssignedIdentity.outputs.principalId
+        roleDefinitionIdOrName: 'Contributor'
+        principalType: 'ServicePrincipal'
+      }
+    ]
+    // WAF aligned configuration for Monitoring
+    monitoringWorkspaceResourceId: enableMonitoring ? logAnalyticsWorkspaceResourceId : null
+    // WAF aligned configuration for Private Networking
+  }
+}
 
 // ========== Application Insights ========== //
 var applicationInsightsResourceName = 'appi-${solutionSuffix}'
@@ -668,10 +709,10 @@ module applicationInsights 'br/public:avm/res/insights/component:0.6.0' = if (en
     diagnosticSettings: enableMonitoring ? [{ workspaceResourceId: logAnalyticsWorkspace.outputs.resourceId }] : null
   }
 }
+
 /* 
   Outputs
 */
-
 @description('Contains Solution Name.')
 output SOLUTION_NAME string = solutionSuffix
 
