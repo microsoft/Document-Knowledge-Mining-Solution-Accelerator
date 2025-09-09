@@ -188,55 +188,59 @@ function LoginAzure([string]$subscriptionID) {
     Write-Host "Switched subscription to '$subscriptionID' `r`n" -ForegroundColor Yellow
 }
 
-function DeployAzureResources([string]$location, [string]$modelLocation) {
+function DeployAzureResources() {
     Write-Host "Started Deploying Knowledge Mining Solution Accelerator Service Azure resources.....`r`n" -ForegroundColor Yellow
-    
+
     try {
-        # Generate a random number between 0 and 99999
+        # Load variables from .env file
+        if (Test-Path ".env") {
+            Get-Content ".env" | ForEach-Object {
+                if ($_ -match "^\s*([^#][^=]+)=(.+)$") {
+                    $key = $matches[1].Trim()
+                    $value = $matches[2].Trim()
+                    Set-Variable -Name $key -Value $value -Scope Script
+                }
+            }
+            Write-Host "Loaded variables from .env file" -ForegroundColor Green
+        }
+        else {
+            Write-Host ".env file not found. Please create one." -ForegroundColor Red
+            failureBanner
+            exit 1
+        }
+
+        # Required values from .env
+        $envLocation      = if ($env:RESOURCE_GROUP_LOCATION) { $env:RESOURCE_GROUP_LOCATION } else { "eastus" }
+        $environmentName  = if ($env:AZURE_ENV_NAME) { $env:AZURE_ENV_NAME } else { "dev" }
+        $resourceGroupName = if ($env:RESOURCE_GROUP_NAME) { $env:RESOURCE_GROUP_NAME } else { "" }
+
+        # Generate random deployment name
         $randomNumber = Get-Random -Minimum 0 -Maximum 99999
-        # Pad the number with leading zeros to ensure it is 5 digits long
         $randomNumberPadded = $randomNumber.ToString("D5")
-        # Make deployment name unique by appending random number
         $deploymentName = "KM_SA_Deployment$randomNumberPadded"
 
-
-        if (-not $resourceGroupName) {
-            # Generate a new RG name using your existing logic
-
-            # Load abbreviation from abbreviations.json (optional)
+        if (-not $resourceGroupName -or $resourceGroupName -eq "") {
+            # Load abbreviation for RG prefix
             $abbrs = Get-Content -Raw -Path "./abbreviations.json" | ConvertFrom-Json
             if (-not $abbrs -or -not $abbrs.managementGovernance.resourceGroup) {
                 Write-Host "abbreviations.json is missing or malformed."
                 failureBanner
                 exit 1
             }
-            $rgPrefix = $abbrs.managementGovernance.resourceGroup  # e.g., "rg-"
-
-            # Constants
+            $rgPrefix = $abbrs.managementGovernance.resourceGroup
             $resourceprefix_name = "kmgs"
 
-            # Call Bicep to generate resourcePrefix
-            $resourcePrefix = az deployment sub create `
-                --location $location `
-                --name $deploymentName `
-                --template-file ./resourcePrefix.bicep `
-                --parameters environmentName=$environmentName location=$location `
-                --query "properties.outputs.resourcePrefix.value" `
-                -o tsv
-
-            # Final Resource Group Name
-            $resourceGroupName = "$rgPrefix$resourceprefix_name$resourcePrefix"
+            # Just generate RG name using prefix and random suffix
+            $resourceGroupName = "$rgPrefix$resourceprefix_name$randomNumberPadded"
 
             Write-Host "Generated Resource Group Name: $resourceGroupName"
-
-            Write-Host "No RG provided. Creating new RG: $resourceGroupName" -ForegroundColor Yellow
-            az group create --name $resourceGroupName --location $location --tags EnvironmentName=$environmentName TemplateName="DKM" | Out-Null
+            az group create --name $resourceGroupName --location $envLocation --tags EnvironmentName=$environmentName TemplateName="DKM" | Out-Null
         }
         else {
             $exists = az group exists --name $resourceGroupName | ConvertFrom-Json
             if (-not $exists) {
                 Write-Host "Specified RG does not exist. Creating RG: $resourceGroupName" -ForegroundColor Yellow
-                az group create --name $resourceGroupName --location $location --tags EnvironmentName=$environmentName TemplateName="DKM" | Out-Null
+                az group create --name $resourceGroupName --location $envLocation --tags EnvironmentName=$environmentName TemplateName="DKM" | Out-Null
             }
             else {
                 az group update --name $resourceGroupName --set tags.EnvironmentName=$environmentName tags.TemplateName="DKM" | Out-Null
@@ -244,34 +248,44 @@ function DeployAzureResources([string]$location, [string]$modelLocation) {
             }
         }
 
-        # Perform a what-if deployment to preview changes
-        Write-Host "Evaluating Deployment resource availabilities to preview changes..." -ForegroundColor Yellow
-        $whatIfResult = az deployment group what-if --resource-group $resourceGroupName --template-file "./main.bicep" --name $deploymentName --parameters modeldatacenter=$modelLocation location=$location environmentName=$environmentName
-
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "There might be something wrong with your deployment." -ForegroundColor Red
-            Write-Host $whatIfResult -ForegroundColor Red
-            failureBanner
-            exit 1            
-        }
-        # Proceed with the actual deployment
-        Write-Host "Proceeding with Deployment..." -ForegroundColor Yellow
-        Write-Host "Resource Group Name: $resourceGroupName" -ForegroundColor Yellow
-        $deploymentResult = az deployment group create --resource-group $resourceGroupName --template-file "./main.bicep" --name $deploymentName --parameters modeldatacenter=$modelLocation location=$location environmentName=$environmentName
-        # Check if deploymentResult is valid        
-        ValidateVariableIsNullOrEmpty -variableValue $deploymentResult -variableName "Deployment Result"  
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "Deployment failed. Stopping execution." -ForegroundColor Red
-            Write-Host $deploymentResult -ForegroundColor Red
-            failureBanner
-            exit 1
+        # Not taking values from main.bicep.
+        # Instead, you can deploy resources manually with az CLI using values from .env.
+        # Example: deploying storage account (if defined in .env)
+        if ($env:STORAGE_ACCOUNT_NAME) {
+            Write-Host "Deploying storage account: $($env:STORAGE_ACCOUNT_NAME)" -ForegroundColor Yellow
+            az storage account create `
+                --name $env:STORAGE_ACCOUNT_NAME `
+                --resource-group $resourceGroupName `
+                --location $envLocation `
+                --sku Standard_LRS `
+                --kind StorageV2 | Out-Null
         }
 
-        $joinedString = $deploymentResult -join "" 
-        $jsonString = ConvertFrom-Json $joinedString 
-        
-        return $jsonString
-    } catch {
+        # Example: deploying Cognitive Services (if defined in .env)
+        if ($env:COGNITIVE_ACCOUNT_NAME) {
+            Write-Host "Deploying Cognitive Services: $($env:COGNITIVE_ACCOUNT_NAME)" -ForegroundColor Yellow
+            az cognitiveservices account create `
+                --name $env:COGNITIVE_ACCOUNT_NAME `
+                --resource-group $resourceGroupName `
+                --kind CognitiveServices `
+                --sku S0 `
+                --location $envLocation `
+                --yes | Out-Null
+        }
+
+        Write-Host "Deployment completed successfully using .env values" -ForegroundColor Green
+
+        # Build JSON result
+        $result = @{
+            ResourceGroupName = $resourceGroupName
+            DeploymentName    = $deploymentName
+            Location          = $envLocation
+            Environment       = $environmentName
+            Timestamp         = (Get-Date).ToString("s")
+        }
+        return ($result | ConvertTo-Json -Depth 3)
+    }
+    catch {
         Write-Host "An error occurred during the deployment process:" -ForegroundColor Red
         Write-Host $_.Exception.Message -ForegroundColor Red
         Write-Host $_.InvocationInfo.PositionMessage -ForegroundColor Red
@@ -280,6 +294,7 @@ function DeployAzureResources([string]$location, [string]$modelLocation) {
         exit 1
     }
 }
+
 
 function DisplayResult([pscustomobject]$jsonString) {
     $resourcegroupName = $jsonString.properties.outputs.gs_resourcegroup_name.value
@@ -511,62 +526,75 @@ try {
     ###############################################################
     $deploymentResult = [DeploymentResult]::new()
     LoginAzure($subscriptionID)
-    # Deploy Azure Resources
-    Write-Host "Deploying Azure resources in $location region.....`r`n" -ForegroundColor Yellow
+    # Deploy Azure Resources using .env values
+    Write-Host "Deploying Azure resources from .env configuration.....`r`n" -ForegroundColor Yellow
 
-    $resultJson = DeployAzureResources -location $location -modelLocation $modelLocation
+    $resultJson = DeployAzureResources
 
+    # Convert JSON string back to object
+    $resultObj = $resultJson | ConvertFrom-Json
     # Ensure ResourceGroupName is set correctly
-    $deploymentResult.ResourceGroupName = $resourceGroupName
+    $deploymentResult.ResourceGroupName = $resultObj.ResourceGroupName
     # Map the deployment result to DeploymentResult object
     $deploymentResult.MapResult($resultJson)
     # Display the deployment result
-    DisplayResult($resultJson)
+    DisplayResult $resultObj
 
     ###############################################################
     # Step 2 : Get Secrets from Azure resources
     Show-Banner -Title "Step 2 : Get Secrets from Azure resources"
     ###############################################################
-    # Validate if the Storage Account Name is empty or null    
+
+    # Pull values from environment variables (or fall back to defaults)
+    # Build deployment result object from .env values
+    $deploymentResult = [PSCustomObject]@{
+        ResourceGroupName          = $env:RESOURCE_GROUP_NAME
+        StorageAccountName         = $env:STORAGE_ACCOUNT_NAME
+        AzCosmosDBName             = $env:AZ_COSMOSDB_NAME
+        AzCognitiveServiceName     = $env:AZ_COGNITIVE_SERVICE_NAME
+        AzSearchServiceName        = $env:AZ_SEARCH_SERVICE_NAME
+        AzOpenAiServiceName        = $env:AZ_OPENAI_SERVICE_NAME
+        AzOpenAiServiceEndpoint    = $env:AZ_OPENAI_SERVICE_ENDPOINT
+        AzSearchServiceEndpoint    = $env:AZ_SEARCH_SERVICE_ENDPOINT
+        AzCognitiveServiceEndpoint = $env:AZ_COGNITIVE_SERVICE_ENDPOINT
+        AzGPT4oModelId             = $env:AZ_GPT4O_MODEL_ID
+        AzGPT4oModelName           = $env:AZ_GPT4O_MODEL_NAME
+        AzGPTEmbeddingModelName    = $env:AZ_GPT_EMBEDDING_MODEL_NAME
+    }
+
+    # Validate Storage Account Name
     ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.StorageAccountName -variableName "Storage Account Name"
 
     # Get the storage account key
-    $storageAccountKey = az storage account keys list --account-name $deploymentResult.StorageAccountName --resource-group $deploymentResult.ResourceGroupName --query "[0].value" -o tsv
-    
-    # Validate if the storage account key is empty or null
-    ValidateVariableIsNullOrEmpty -variableValue $storageAccountKey -variableName "Storage account key"  
-    
-    ## Construct the connection string manually
-    $storageAccountConnectionString = "DefaultEndpointsProtocol=https;AccountName=$($deploymentResult.StorageAccountName);AccountKey=$storageAccountKey;EndpointSuffix=core.windows.net"
-    # Validate if the Storage Account Connection String is empty or null
-    ValidateVariableIsNullOrEmpty -variableValue $storageAccountConnectionString -variableName "Storage Account Connection String"
-    
-    ## Assign the connection string to the deployment result object
-    $deploymentResult.StorageAccountConnectionString = $storageAccountConnectionString  
+    $storageAccountKey = az storage account keys list `
+        --account-name $deploymentResult.StorageAccountName `
+        --resource-group $deploymentResult.ResourceGroupName `
+        --query "[0].value" -o tsv
 
-    # Check if ResourceGroupName is valid
-    ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.ResourceGroupName -variableName "Resource group name"  
-   
-    # Check if AzCosmosDBName is valid
-    ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.AzCosmosDBName -variableName "Az Cosmos DB name"  
-    
-    # Check if AzCognitiveServiceName is valid
-    ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.AzCognitiveServiceName -variableName "Az Cognitive Service name"  
-    
-    # Check if AzSearchServiceName is valid
-    ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.AzSearchServiceName -variableName "Az Search Service name"  
-    
-    # Check if AzOpenAiServiceName is valid
-    ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.AzOpenAiServiceName -variableName "Az OpenAI Service name"  
-      
-    # Get MongoDB connection string
-    $deploymentResult.AzCosmosDBConnectionString = az cosmosdb keys list --name $deploymentResult.AzCosmosDBName --resource-group $deploymentResult.ResourceGroupName --type connection-strings --query "connectionStrings[0].connectionString" -o tsv
-    # Get Azure Cognitive Service API Key
-    $deploymentResult.AzCognitiveServiceKey = az cognitiveservices account keys list --name $deploymentResult.AzCognitiveServiceName --resource-group $deploymentResult.ResourceGroupName --query "key1" -o tsv
-    # Get Azure Search Service Admin Key
-    $deploymentResult.AzSearchAdminKey = az search admin-key show --service-name $deploymentResult.AzSearchServiceName --resource-group $deploymentResult.ResourceGroupName --query "primaryKey" -o tsv
-    # Get Azure Open AI Service API Key
-    $deploymentResult.AzOpenAiServiceKey = az cognitiveservices account keys list --name $deploymentResult.AzOpenAiServiceName --resource-group $deploymentResult.ResourceGroupName --query "key1" -o tsv
+    # Validate storage account key
+    ValidateVariableIsNullOrEmpty -variableValue $storageAccountKey -variableName "Storage account key"
+
+    # Construct connection string manually
+    $storageAccountConnectionString = "DefaultEndpointsProtocol=https;AccountName=$($deploymentResult.StorageAccountName);AccountKey=$storageAccountKey;EndpointSuffix=core.windows.net"
+
+    # Validate storage account connection string
+    ValidateVariableIsNullOrEmpty -variableValue $storageAccountConnectionString -variableName "Storage Account Connection String"
+
+    # Assign connection string
+    $deploymentResult | Add-Member -NotePropertyName StorageAccountConnectionString -NotePropertyValue $storageAccountConnectionString -Force
+
+    # Validate core service names
+    ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.ResourceGroupName -variableName "Resource group name"
+    ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.AzCosmosDBName -variableName "Az Cosmos DB name"
+    ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.AzCognitiveServiceName -variableName "Az Cognitive Service name"
+    ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.AzSearchServiceName -variableName "Az Search Service name"
+    ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.AzOpenAiServiceName -variableName "Az OpenAI Service name"
+
+    # Retrieve secrets
+    $deploymentResult | Add-Member -NotePropertyName AzCosmosDBConnectionString -NotePropertyValue (az cosmosdb keys list --name $deploymentResult.AzCosmosDBName --resource-group $deploymentResult.ResourceGroupName --type connection-strings --query "connectionStrings[0].connectionString" -o tsv) -Force
+    $deploymentResult | Add-Member -NotePropertyName AzCognitiveServiceKey -NotePropertyValue (az cognitiveservices account keys list --name $deploymentResult.AzCognitiveServiceName --resource-group $deploymentResult.ResourceGroupName --query "key1" -o tsv) -Force
+    $deploymentResult | Add-Member -NotePropertyName AzSearchAdminKey -NotePropertyValue (az search admin-key show --service-name $deploymentResult.AzSearchServiceName --resource-group $deploymentResult.ResourceGroupName --query "primaryKey" -o tsv) -Force
+    $deploymentResult | Add-Member -NotePropertyName AzOpenAiServiceKey -NotePropertyValue (az cognitiveservices account keys list --name $deploymentResult.AzOpenAiServiceName --resource-group $deploymentResult.ResourceGroupName --query "key1" -o tsv) -Force
 
     Write-Host "Secrets have been retrieved successfully." -ForegroundColor Green
 

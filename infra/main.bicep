@@ -76,6 +76,37 @@ param enableScalability bool = false
 @description('Optional. Enable purge protection for the Key Vault')
 param enablePurgeProtection bool = false
 
+@description('Optional. Cognitive Account Name')
+param cognitiveAccountName string = ''
+
+@description('Optional. Azure Search Service Name')
+param azureSearchServiceName string = ''
+
+@description('Optional. Azure Cosmos DB Name')
+param azureCosmosDbName string = ''
+
+@description('Optional. Azure Cognitive Service Name')
+param azureCognitiveServiceName string = ''
+
+@description('Optional. Contains Azure OpenAI Service Endpoint.')
+param azureOpenAiServiceEndpoint string = ''
+
+@description('Optional. Contains Azure Search Service Endpoint.')
+param azureSearchServiceEndpoint string = ''
+
+@description('Optional. Contains Azure Cognitive Service Endpoint.')
+param azureCognitiveServiceEndpoint string = ''
+
+@minLength(1)
+@description('Optional. Name of the Text Embedding model to deploy:')
+@allowed([
+  'text-embedding-ada-002'
+])
+param embeddingModel string = 'text-embedding-ada-002'
+
+@description('Optional. Contains Azure GPT 40 Model Name.')
+param azureGpt40ModelName string = ''
+
 var solutionLocation = empty(location) ? resourceGroup().location : location
 
 // @description('Optional. Key vault reference and secret settings for the module\'s secrets export.')
@@ -721,6 +752,46 @@ output RESOURCE_GROUP_NAME string = resourceGroup().name
 
 @description('Contains Resource Group Location.')
 output RESOURCE_GROUP_LOCATION string = solutionLocation
+
+@description('Contains Resource Group Name.')
+output STORAGE_ACCOUNT_NAME string = storageAccountName
+
+@description('Contains Cognitive Account Name.')
+output COGNITIVE_ACCOUNT_NAME string = cognitiveAccountName
+
+@description('Contains Cosmos DB Name.')
+output AZ_COSMOSDB_NAME string = azureCosmosDbName
+
+@description('Contains Cognitive Service Name.')
+output AZ_COGNITIVE_SERVICE_NAME string = azureCognitiveServiceName
+
+@description('Contains Azure Search Service Name.')
+output AZ_SEARCH_SERVICE_NAME string = azureSearchServiceName
+
+@description('Contains Azure OpenAI Search Service Name.')
+output AZ_OPENAI_SERVICE_NAME string = openAiAccountName
+
+@description('Contains Azure OpenAI Service Endpoint.')
+output AZ_OPENAI_SERVICE_ENDPOINT string = azureOpenAiServiceEndpoint
+
+@description('Contains Azure Search Service Endpoint.')
+output AZ_SEARCH_SERVICE_ENDPOINT string = azureSearchServiceEndpoint
+
+@description('Contains Azure Cognitive Service Endpoint.')
+output AZ_COGNITIVE_SERVICE_ENDPOINT string = azureCognitiveServiceEndpoint
+
+@description('Contains Azure GPT40 Model ID.')
+output AZ_GPT4O_MODEL_ID string = azureSearchServiceName
+
+@description('Contains Azure OpenAI embedding model name.')
+output AZ_GPT4O_MODEL_NAME string = azureGpt40ModelName
+
+@description('Contains Azure OpenAI embedding model name.')
+output AZ_GPT_EMBEDDING_MODEL_NAME string = embeddingModel
+
+@description('Contains Azure OpenAI embedding model capacity.')
+output AZ_OPENAI_EMBEDDING_MODEL_CAPACITY int = embeddingDeploymentCapacity
+
 
 // @description('The FQDN of the frontend web app service.')
 // output kmServiceEndpoint string = containerAppService.outputs.kmServiceFQDN
