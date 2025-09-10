@@ -90,6 +90,19 @@ module network 'network/main.bicep' = {
                 sourcePortRange: '*'
                 destinationPortRange: '443'
                 sourceAddressPrefixes: ['0.0.0.0/0']
+                destinationAddressPrefix: '*'
+              }
+            }
+            {
+              name: 'AllowHttpInbound'
+              properties: {
+                access: 'Allow'
+                direction: 'Inbound'
+                priority: 110
+                protocol: 'Tcp'
+                sourcePortRange: '*'
+                destinationPortRange: '80'
+                sourceAddressPrefixes: ['0.0.0.0/0']
                 destinationAddressPrefixes: ['10.0.0.0/23']
               }
             }
@@ -121,7 +134,6 @@ module network 'network/main.bicep' = {
             }
           ]
         }
-        delegation: 'Microsoft.App/environments'
       }
       {
         name: 'peps'

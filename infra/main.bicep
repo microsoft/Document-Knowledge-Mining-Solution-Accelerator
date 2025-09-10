@@ -48,7 +48,7 @@ param tags resourceInput<'Microsoft.Resources/resourceGroups@2025-04-01'>.tags =
 param enableTelemetry bool = true
 
 @description('Optional. Enable private networking for applicable resources, aligned with the WAF recommendations. Defaults to false.')
-param enablePrivateNetworking bool = false
+param enablePrivateNetworking bool = true
 
 @description('Optional: Existing Log Analytics Workspace Resource ID')
 param existingLogAnalyticsWorkspaceId string = ''
@@ -494,6 +494,22 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
         value: 'AzureIdentity'
       }
     ]
+
+    publicNetworkAccess: 'Enabled'
+  }
+}
+
+module avmAppConfigUpdated 'br/public:avm/res/app-configuration/configuration-store:0.6.3' = if(enablePrivateNetworking) {
+  name: take('avm.res.app-configuration.configuration-store-update.${appConfigName}', 64)
+  params: {
+    name: appConfigName
+    location: solutionLocation
+    managedIdentities: { systemAssigned: true }
+    sku: 'Standard'
+    enableTelemetry: enableTelemetry
+    tags: tags
+    disableLocalAuth: true
+    
     // WAF aligned networking
     publicNetworkAccess: enablePrivateNetworking ? 'Disabled' : 'Enabled'
     privateEndpoints: enablePrivateNetworking
@@ -513,10 +529,12 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
         ]
       : []
   }
+  dependsOn: [
+    avmAppConfig
+  ]
 }
 
 // ========== Storage account module ========== //
-
 var storageAccountName = 'st${solutionSuffix}'
 module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = {
   name: take('avm.res.storage.storage-account.${storageAccountName}', 64)
@@ -644,7 +662,6 @@ module avmSearchSearchServices 'br/public:avm/res/search/search-service:0.9.1' =
 }
 
 // // ========== Cognitive Services - OpenAI module ========== //
-
 var openAiAccountName = 'oai-${solutionSuffix}'
 module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
   name: take('avm.res.cognitiveservices.account.${openAiAccountName}', 64)
@@ -775,6 +792,9 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.
       //   userAssignedIdentity.outputs.resourceId
       // ]
     }
+    serviceCidr: '10.20.0.0/16'
+    dnsServiceIP: '10.20.0.10'
+    enablePrivateCluster: false
     primaryAgentPoolProfiles: [
       {
         name: 'agentpool'
@@ -783,6 +803,7 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.
         osType: 'Linux'
         mode: 'System'
         type: 'VirtualMachineScaleSets'
+        vnetSubnetResourceId: enableMonitoring ? network!.outputs.subnetWebResourceId : null
       }
     ]
     roleAssignments: [
