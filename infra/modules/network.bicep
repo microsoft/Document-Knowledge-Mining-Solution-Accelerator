@@ -103,7 +103,7 @@ module network 'network/main.bicep' = {
                 sourcePortRange: '*'
                 destinationPortRange: '80'
                 sourceAddressPrefixes: ['0.0.0.0/0']
-                destinationAddressPrefixes: ['10.0.0.0/23']
+                destinationAddressPrefix: '*'
               }
             }
             {
