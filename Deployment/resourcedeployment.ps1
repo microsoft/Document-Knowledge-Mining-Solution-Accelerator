@@ -686,6 +686,23 @@ try {
     Write-Host "Assign the role for aks system assigned managed identity to App Storage Queue Data Contributor role" -ForegroundColor Green
     az role assignment create --assignee $systemAssignedIdentity --role "Storage Queue Data Contributor" --scope "/subscriptions/$($deploymentResult.SubscriptionId)/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.Storage/storageAccounts/$($deploymentResult.StorageAccountName)"
 
+    # Assign the role for aks system assigned managed identity to Azure Queue Data Contributor role with the scope of Storage Account
+    Write-Host "Assign the role for aks system assigned managed identity to App Cognitive Services OpenAI User role" -ForegroundColor Green
+    az role assignment create --assignee $systemAssignedIdentity --role "Cognitive Services OpenAI User" --scope "/subscriptions/$($deploymentResult.SubscriptionId)/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.CognitiveServices/accounts/$($deploymentResult.AzOpenAiServiceName)"
+
+    # Assign the role for aks system assigned managed identity to Azure Queue Data Contributor role with the scope of Storage Account
+    Write-Host "Assign the role for aks system assigned managed identity to App Search Index Data Contributor role" -ForegroundColor Green
+    az role assignment create --assignee $systemAssignedIdentity --role "Search Index Data Contributor" --scope "/subscriptions/$($deploymentResult.SubscriptionId)/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.Search/searchServices/$($deploymentResult.AzSearchServiceName)"
+
+    # Assign the role for aks system assigned managed identity to Azure Queue Data Contributor role with the scope of Storage Account
+    Write-Host "Assign the role for aks system assigned managed identity to App Search Service Contributor role" -ForegroundColor Green
+    az role assignment create --assignee $systemAssignedIdentity --role "Search Service Contributor" --scope "/subscriptions/$($deploymentResult.SubscriptionId)/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.Search/searchServices/$($deploymentResult.AzSearchServiceName)"
+
+    # Assign the role for aks system assigned managed identity to Azure Queue Data Contributor role with the scope of Storage Account
+    Write-Host "Assign the role for aks system assigned managed identity to App Cognitive Services User role" -ForegroundColor Green
+    az role assignment create --assignee $systemAssignedIdentity --role "Cognitive Services User" --scope "/subscriptions/$($deploymentResult.SubscriptionId)/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.CognitiveServices/accounts/$($deploymentResult.AzCognitiveServiceName)"
+
+
     # 8. Update aks nodepools to updated new role
     try {
         Write-Host "Upgrading node pools..." -ForegroundColor Cyan

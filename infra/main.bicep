@@ -396,112 +396,96 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
       }
     ]
 
-    // keyValues: [
-    //   {
-    //     name: 'Application:AIServices:GPT-4o-mini:Endpoint'
-    //     value: avmOpenAi.outputs.endpoint
-    //   }
-    //   {
-    //     name: 'Application:AIServices:GPT-4o-mini:Key'
-    //     value: '' // Todo: avmOpenAi.outputs.
-    //   }
-    //   {
-    //     name: 'Application:AIServices:GPT-4o-mini:ModelName'
-    //     value: chatGpt.modelName
-    //   }
-    //   {
-    //     name: 'Application:Services:KernelMemory:Endpoint'
-    //     value: 'http://kernelmemory-service'
-    //   }
-    //   {
-    //     name: 'Application:Services:PersistentStorage:CosmosMongo:Collections:ChatHistory:Collection'
-    //     value: 'ChatHistory'
-    //   }
-    //   {
-    //     name: 'Application:Services:PersistentStorage:CosmosMongo:Collections:ChatHistory:Database'
-    //     value: 'DPS'
-    //   }
-    //   {
-    //     name: 'Application:Services:PersistentStorage:CosmosMongo:Collections:DocumentManager:Collection'
-    //     value: 'Documents'
-    //   }
-    //   {
-    //     name: 'Application:Services:PersistentStorage:CosmosMongo:Collections:DocumentManager:Database'
-    //     value: 'DPS'
-    //   }
-    //   {
-    //     name: 'Application:Services:PersistentStorage:CosmosMongo:ConnectionString'
-    //     value: avmCosmosDB.outputs.primaryReadWriteConnectionString
-    //   }
-    //   {
-    //     name: 'Application:Services:AzureAISearch:APIKey'
-    //     value: avmSearchSearchServices.outputs.exportedSecrets.primaryAdminKey
-    //   }
-    //   {
-    //     name: 'Application:Services:AzureAISearch:Endpoint'
-    //     value: 'https://${avmSearchSearchServices.outputs.name}.search.windows.net'
-    //   }
-    //   {
-    //     name: 'KernelMemory:Services:AzureAIDocIntel:APIKey'
-    //     value: documentIntelligence.outputs.exportedSecrets.primaryAdminKey
-    //   }
-    //   {
-    //     name: 'KernelMemory:Services:AzureAIDocIntel:Endpoint'
-    //     value: documentIntelligence.outputs.endpoint
-    //   }
-    //   {
-    //     name: 'KernelMemory:Services:AzureAISearch:APIKey'
-    //     value: avmSearchSearchServices.outputs.exportedSecrets.primaryAdminKey
-    //   }
-    //   {
-    //     name: 'KernelMemory:Services:AzureAISearch:Endpoint'
-    //     value: 'https://${avmSearchSearchServices.outputs.name}.search.windows.net'
-    //   }
-    //   {
-    //     name: 'KernelMemory:Services:AzureBlobs:Account'
-    //     value: avmStorageAccount.outputs.name
-    //   }
-    //   {
-    //     name: 'KernelMemory:Services:AzureBlobs:ConnectionString'
-    //     value: avmStorageAccount.outputs.primaryConnectionString
-    //   }
-    //   {
-    //     name: 'KernelMemory:Services:AzureBlobs:Container'
-    //     value: 'smemory'
-    //   }
-    //   {
-    //     name: 'KernelMemory:Services:AzureOpenAIEmbedding:APIKey'
-    //     value: '{azureopenaiembedding-apikey}'
-    //   }
-    //   {
-    //     name: 'KernelMemory:Services:AzureOpenAIEmbedding:Deployment'
-    //     value: embedding.deploymentName
-    //   }
-    //   {
-    //     name: 'KernelMemory:Services:AzureOpenAIEmbedding:Endpoint'
-    //     value: avmOpenAi.outputs.endpoint
-    //   }
-    //   {
-    //     name: 'KernelMemory:Services:AzureOpenAIText:APIKey'
-    //     value: '{azureopenaitext-apikey}'
-    //   }
-    //   {
-    //     name: 'KernelMemory:Services:AzureOpenAIText:Deployment'
-    //     value: chatGpt.deploymentName
-    //   }
-    //   {
-    //     name: 'KernelMemory:Services:AzureOpenAIText:Endpoint'
-    //     value: avmOpenAi.outputs.endpoint
-    //   }
-    //   {
-    //     name: 'KernelMemory:Services:AzureQueues:Account'
-    //     value: avmStorageAccount.outputs.name
-    //   }
-    //   {
-    //     name: 'KernelMemory:Services:AzureQueues:ConnectionString'
-    //     value: avmStorageAccount.outputs.primaryConnectionString
-    //   }
-    // ]
+    keyValues: [
+      {
+        name: 'Application:AIServices:GPT-4o-mini:Endpoint'
+        value: avmOpenAi.outputs.endpoint
+      }
+      {
+        name: 'Application:AIServices:GPT-4o-mini:ModelName'
+        value: chatGpt.modelName
+      }
+      {
+        name: 'Application:Services:KernelMemory:Endpoint'
+        value: 'http://kernelmemory-service'
+      }
+      {
+        name: 'Application:Services:PersistentStorage:CosmosMongo:Collections:ChatHistory:Collection'
+        value: 'ChatHistory'
+      }
+      {
+        name: 'Application:Services:PersistentStorage:CosmosMongo:Collections:ChatHistory:Database'
+        value: 'DPS'
+      }
+      {
+        name: 'Application:Services:PersistentStorage:CosmosMongo:Collections:DocumentManager:Collection'
+        value: 'Documents'
+      }
+      {
+        name: 'Application:Services:PersistentStorage:CosmosMongo:Collections:DocumentManager:Database'
+        value: 'DPS'
+      }
+      {
+        name: 'Application:Services:PersistentStorage:CosmosMongo:ConnectionString'
+        value: avmCosmosDB.outputs.primaryReadWriteConnectionString
+      }
+      {
+        name: 'Application:Services:AzureAISearch:Endpoint'
+        value: 'https://${avmSearchSearchServices.outputs.name}.search.windows.net'
+      }
+      {
+        name: 'KernelMemory:Services:AzureAIDocIntel:Auth'
+        value: 'AzureIdentity'
+      }
+      {
+        name: 'KernelMemory:Services:AzureAIDocIntel:Endpoint'
+        value: documentIntelligence.outputs.endpoint
+      }
+      {
+        name: 'KernelMemory:Services:AzureAISearch:Auth'
+        value: 'AzureIdentity'
+      }
+      {
+        name: 'KernelMemory:Services:AzureAISearch:Endpoint'
+        value: 'https://${avmSearchSearchServices.outputs.name}.search.windows.net'
+      }
+      {
+        name: 'KernelMemory:Services:AzureBlobs:Account'
+        value: avmStorageAccount.outputs.name
+      }
+      {
+        name: 'KernelMemory:Services:AzureBlobs:Auth'
+        value: 'AzureIdentity'
+      }
+      {
+        name: 'KernelMemory:Services:AzureBlobs:Container'
+        value: 'smemory'
+      }
+      {
+        name: 'KernelMemory:Services:AzureOpenAIEmbedding:Deployment'
+        value: embedding.deploymentName
+      }
+      {
+        name: 'KernelMemory:Services:AzureOpenAIEmbedding:Endpoint'
+        value: avmOpenAi.outputs.endpoint
+      }
+      {
+        name: 'KernelMemory:Services:AzureOpenAIText:Deployment'
+        value: chatGpt.deploymentName
+      }
+      {
+        name: 'KernelMemory:Services:AzureOpenAIText:Endpoint'
+        value: avmOpenAi.outputs.endpoint
+      }
+      {
+        name: 'KernelMemory:Services:AzureQueues:Account'
+        value: avmStorageAccount.outputs.name
+      }
+      {
+        name: 'KernelMemory:Services:AzureQueues:Auth'
+        value: 'AzureIdentity'
+      }
+    ]
     // WAF aligned networking
     publicNetworkAccess: enablePrivateNetworking ? 'Disabled' : 'Enabled'
     privateEndpoints: enablePrivateNetworking
@@ -615,7 +599,11 @@ module avmSearchSearchServices 'br/public:avm/res/search/search-service:0.9.1' =
     managedIdentities: { userAssignedResourceIds: [userAssignedIdentity!.outputs.resourceId] }
     replicaCount: 1
     partitionCount: 1
-  
+    authOptions: {
+      aadOrApiKey: {
+        aadAuthFailureMode: 'http401WithBearerChallenge'
+      }
+    }
     roleAssignments: [
       {
         roleDefinitionIdOrName: 'Search Index Data Contributor' // Cognitive Search Contributor

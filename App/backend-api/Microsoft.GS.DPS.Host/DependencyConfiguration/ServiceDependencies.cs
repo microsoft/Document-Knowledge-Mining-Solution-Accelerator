@@ -12,6 +12,7 @@ using Microsoft.GS.DPS.Model.UserInterface;
 using Microsoft.GS.DPS.Storage.AISearch;
 using Microsoft.GS.DPSHost.AppConfiguration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.GS.DPSHost.Helpers;
 
 namespace Microsoft.GS.DPSHost.ServiceConfiguration
 {
@@ -31,7 +32,7 @@ namespace Microsoft.GS.DPSHost.ServiceConfiguration
                     return Kernel.CreateBuilder()
                                  .AddAzureOpenAIChatCompletion(deploymentName: builder.Configuration.GetSection("Application:AIServices:GPT-4o-mini")["ModelName"] ?? "",
                                                               endpoint: builder.Configuration.GetSection("Application:AIServices:GPT-4o-mini")["Endpoint"] ?? "",
-                                                              apiKey: builder.Configuration.GetSection("Application:AIServices:GPT-4o-mini")["Key"] ?? "")
+                                                              credentials: AzureCredentialHelper.GetAzureCredential())
 
                                  .Build();
                 })
@@ -66,7 +67,7 @@ namespace Microsoft.GS.DPSHost.ServiceConfiguration
                 .AddSingleton<TagUpdater>(x =>
                 {
                     var services = x.GetRequiredService<IOptions<Services>>().Value;
-                    return new TagUpdater(services.AzureAISearch.Endpoint, services.AzureAISearch.APIKey);
+                    return new TagUpdater(services.AzureAISearch.Endpoint, AzureCredentialHelper.GetAzureCredential());
 
                 })
 

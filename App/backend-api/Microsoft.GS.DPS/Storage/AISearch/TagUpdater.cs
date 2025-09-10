@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Azure;
+using Azure.Core;
 using Azure.Search.Documents;
 using Azure.Search.Documents.Models;
 
@@ -12,9 +13,9 @@ namespace Microsoft.GS.DPS.Storage.AISearch
     {
         private readonly SearchClient _searchClient;
 
-        public TagUpdater(string searchEndPoint, string searchAPIKey, string indexName = "default")
+        public TagUpdater(string searchEndPoint, TokenCredential tokenCredential, string indexName = "default")
         {
-            _searchClient = new SearchClient(new Uri(searchEndPoint), indexName, new AzureKeyCredential(searchAPIKey));
+            _searchClient = new SearchClient(new Uri(searchEndPoint), indexName, tokenCredential);
         }
 
         public async Task UpdateTags(string documentId, List<string> updatingTags)
