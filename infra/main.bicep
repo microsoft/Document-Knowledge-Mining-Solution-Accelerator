@@ -462,12 +462,20 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
         value: 'smemory'
       }
       {
+        name: 'KernelMemory:Services:AzureOpenAIEmbedding:Auth'
+        value: 'AzureIdentity'
+      }
+      {
         name: 'KernelMemory:Services:AzureOpenAIEmbedding:Deployment'
         value: embedding.deploymentName
       }
       {
         name: 'KernelMemory:Services:AzureOpenAIEmbedding:Endpoint'
         value: avmOpenAi.outputs.endpoint
+      }
+      {
+        name: 'KernelMemory:Services:AzureOpenAIText:Auth'
+        value: 'AzureIdentity'
       }
       {
         name: 'KernelMemory:Services:AzureOpenAIText:Deployment'
@@ -599,11 +607,6 @@ module avmSearchSearchServices 'br/public:avm/res/search/search-service:0.9.1' =
     managedIdentities: { userAssignedResourceIds: [userAssignedIdentity!.outputs.resourceId] }
     replicaCount: 1
     partitionCount: 1
-    authOptions: {
-      aadOrApiKey: {
-        aadAuthFailureMode: 'http401WithBearerChallenge'
-      }
-    }
     roleAssignments: [
       {
         roleDefinitionIdOrName: 'Search Index Data Contributor' // Cognitive Search Contributor
@@ -616,7 +619,6 @@ module avmSearchSearchServices 'br/public:avm/res/search/search-service:0.9.1' =
         principalType: 'ServicePrincipal'
       }
     ]
-    disableLocalAuth: false
     semanticSearch: 'free'
     // secretsExportConfiguration: {
     //   keyVaultResourceId: keyvault.outputs.resourceId
@@ -654,7 +656,6 @@ module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
     tags: tags
     enableTelemetry: enableTelemetry
     customSubDomainName: openAiAccountName
-    disableLocalAuth: false
     managedIdentities: {
       systemAssigned: true
     }
@@ -714,7 +715,6 @@ module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.13.2
     tags: tags
     sku: 'S0'
     customSubDomainName: docIntelAccountName
-    disableLocalAuth: false
     managedIdentities: {
       systemAssigned: true
     }

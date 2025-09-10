@@ -73,7 +73,7 @@ function ValidateVariableIsNullOrEmpty {
 # Function to prompt for parameters with kind messages
 function PromptForParameters {
     param(
-                [string]$email
+        [string]$email
     )
 
     Clear-Host
@@ -88,7 +88,7 @@ function PromptForParameters {
     }
 
     return @{
-        email             = $email
+        email = $email
     }
 }
 
@@ -222,15 +222,12 @@ class DeploymentResult {
     [string]$ResourceGroupName
     [string]$ResourceGroupId
     [string]$StorageAccountName
-    [string]$StorageAccountConnectionString
     [string]$AzSearchServiceName
     [string]$AzSearchServicEndpoint
-    [string]$AzSearchAdminKey
     [string]$AksName
     [string]$AksMid
     [string]$AzContainerRegistryName
     [string]$AzCognitiveServiceName
-    [string]$AzCognitiveServiceKey
     [string]$AzCognitiveServiceEndpoint
     [string]$AzOpenAiServiceName
     [string]$AzGPT4oModelName
@@ -238,7 +235,6 @@ class DeploymentResult {
     [string]$AzGPTEmbeddingModelName
     [string]$AzGPTEmbeddingModelId
     [string]$AzOpenAiServiceEndpoint
-    [string]$AzOpenAiServiceKey
     [string]$AzCosmosDBName
     [string]$AzCosmosDBConnectionString
     [string]$AzAppConfigEndpoint
@@ -252,11 +248,9 @@ class DeploymentResult {
         $this.ResourceGroupId = ""
         # Storage Account
         $this.StorageAccountName = ""
-        $this.StorageAccountConnectionString = ""
         # Azure Search
         $this.AzSearchServiceName = ""
         $this.AzSearchServicEndpoint = ""
-        $this.AzSearchAdminKey = ""
         # AKS
         $this.AksName = ""
         $this.AksMid = ""
@@ -265,11 +259,9 @@ class DeploymentResult {
         # Cognitive Service - Azure AI Intelligence Document Service
         $this.AzCognitiveServiceName = ""
         $this.AzCognitiveServiceEndpoint = ""
-        $this.AzCognitiveServiceKey = ""
         # Open AI Service
         $this.AzOpenAiServiceName = ""
         $this.AzOpenAiServiceEndpoint = ""
-        $this.AzOpenAiServiceKey = ""
         # Model - GPT4o
         $this.AzGPT4oModelName = ""
         $this.AzGPT4oModelId = ""
@@ -377,33 +369,20 @@ try {
     # Deploy Azure Resources
     Write-Host "Retrieving the deployment details.....`r`n" -ForegroundColor Yellow
 
-    # Map the deployment result to DeploymentResult object
+    # Map the deployment result to DeploymentResult object from .env file
     $deploymentResult.MapResult()
+
     # Display the deployment result
     DisplayResult($deploymentResult)
 
     LoginAzure $deploymentResult.TenantId $deploymentResult.SubscriptionId
 
     ###############################################################
-    # Step 2 : Get Secrets from Azure resources
-    Show-Banner -Title "Step 2 : Get Secrets from Azure resources"
+    # Step 2 : Validate deloyment result
+    Show-Banner -Title "Step 2 : Validate deloyment result"
     ###############################################################
     # Validate if the Storage Account Name is empty or null    
     ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.StorageAccountName -variableName "Storage Account Name"
-
-    # Get the storage account key
-    $storageAccountKey = az storage account keys list --account-name $deploymentResult.StorageAccountName --resource-group $deploymentResult.ResourceGroupName --query "[0].value" -o tsv
-    
-    # Validate if the storage account key is empty or null
-    ValidateVariableIsNullOrEmpty -variableValue $storageAccountKey -variableName "Storage account key"  
-    
-    ## Construct the connection string manually
-    $storageAccountConnectionString = "DefaultEndpointsProtocol=https;AccountName=$($deploymentResult.StorageAccountName);AccountKey=$storageAccountKey;EndpointSuffix=core.windows.net"
-    # Validate if the Storage Account Connection String is empty or null
-    ValidateVariableIsNullOrEmpty -variableValue $storageAccountConnectionString -variableName "Storage Account Connection String"
-    
-    ## Assign the connection string to the deployment result object
-    $deploymentResult.StorageAccountConnectionString = $storageAccountConnectionString  
 
     # Check if ResourceGroupName is valid
     ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.ResourceGroupName -variableName "Resource group name"  
@@ -422,12 +401,6 @@ try {
       
     # Get MongoDB connection string
     $deploymentResult.AzCosmosDBConnectionString = az cosmosdb keys list --name $deploymentResult.AzCosmosDBName --resource-group $deploymentResult.ResourceGroupName --type connection-strings --query "connectionStrings[0].connectionString" -o tsv
-    # Get Azure Cognitive Service API Key
-    $deploymentResult.AzCognitiveServiceKey = az cognitiveservices account keys list --name $deploymentResult.AzCognitiveServiceName --resource-group $deploymentResult.ResourceGroupName --query "key1" -o tsv
-    # Get Azure Search Service Admin Key
-    $deploymentResult.AzSearchAdminKey = az search admin-key show --service-name $deploymentResult.AzSearchServiceName --resource-group $deploymentResult.ResourceGroupName --query "primaryKey" -o tsv
-    # Get Azure Open AI Service API Key
-    $deploymentResult.AzOpenAiServiceKey = az cognitiveservices account keys list --name $deploymentResult.AzOpenAiServiceName --resource-group $deploymentResult.ResourceGroupName --query "key1" -o tsv
 
     Write-Host "Secrets have been retrieved successfully." -ForegroundColor Green
 
@@ -440,11 +413,7 @@ try {
     
     $aiServicePlaceholders = @{
         '{gpt-4o-mini-endpoint}' = $deploymentResult.AzOpenAiServiceEndpoint
-        '{gpt-4o-mini-apikey}' = $deploymentResult.AzOpenAiServiceKey
-        '{azureaisearch-apikey}' = $deploymentResult.AzSearchAdminKey
-        '{documentintelligence-apikey}' = $deploymentResult.AzCognitiveServiceKey 
         '{cosmosmongo-connection-string}' = $deploymentResult.AzCosmosDBConnectionString 
-        '{azureblobs-connection-string}' = $deploymentResult.StorageAccountConnectionString 
         '{azureblobs-account}' = $deploymentResult.StorageAccountName
         '{azureaisearch-endpoint}' = $deploymentResult.AzSearchServicEndpoint 
         '{gpt-4o-mini-modelname}' = $deploymentResult.AzGPT4oModelId  
@@ -453,12 +422,7 @@ try {
         '{azureopenaiembedding-endpoint}' = $deploymentResult.AzOpenAiServiceEndpoint
         '{azureopenaitext-endpoint}' = $deploymentResult.AzOpenAiServiceEndpoint
         '{azureopenaitext-deployment}' = $deploymentResult.AzGPT4oModelId 
-        '{gpt-4o-key}' = $deploymentResult.AzOpenAiServiceKey
-        '{textembedding-key}' = $deploymentResult.AzOpenAiServiceKey
-        '{azureopenaiembedding-apikey}' = $deploymentResult.AzOpenAiServiceKey
-        '{azureopenaitext-apikey}' = $deploymentResult.AzOpenAiServiceKey
         '{textembedding-modelname}' = $deploymentResult.AzGPTEmbeddingModelName
-        '{azureaidocintel-apikey}' =  $deploymentResult.AzCognitiveServiceKey 
         '{cosmosmongo-chat-history-collection}' = "ChatHistory"
         '{cosmosmongo-chat-history-database}' = "DPS"
         '{cosmosmongo-document-manager-collection}' = "Documents"
@@ -467,7 +431,6 @@ try {
         '{documentintelligence-endpoint}' = $deploymentResult.AzCognitiveServiceEndpoint 
         '{azureblobs-container}' = "smemory"
         '{azurequeues-account}' = $deploymentResult.StorageAccountName
-        '{azurequeues-connection-string}' = $deploymentResult.StorageAccountConnectionString
         '{gpt-4o-modelname}' = $deploymentResult.AzGPT4oModelName 
         '{azureopenaiembedding-deployment}' = $deploymentResult.AzGPTEmbeddingModelName 
         '{kernelmemory-endpoint}' = "http://kernelmemory-service" 
@@ -477,43 +440,43 @@ try {
     $aiServiceConfigTemplate = Get-Content -Path .\appconfig\aiservice\appconfig.jsonl -Raw
     $aiServiceConfigTemplate = Invoke-PlaceholdersReplacement $aiServiceConfigTemplate $aiServicePlaceholders
 
-    ## Save the updated AI service configuration file
-    $aiServiceConfigPath = ".\appconfig\aiservice\appsettings.dev.jsonl"
-    $aiServiceConfigTemplate | Set-Content -Path $aiServiceConfigPath -Force
-    Write-Host "Knowledge Mining Solution Accelerator Service Application Configuration file has been updated successfully." -ForegroundColor Green
+    # ## Save the updated AI service configuration file
+    # $aiServiceConfigPath = ".\appconfig\aiservice\appsettings.dev.jsonl"
+    # $aiServiceConfigTemplate | Set-Content -Path $aiServiceConfigPath -Force
+    # Write-Host "Knowledge Mining Solution Accelerator Service Application Configuration file has been updated successfully." -ForegroundColor Green
 
-    ## Set error action preference to silently continue
-    $ErrorActionPreference = "SilentlyContinue"
-    ## Get the current script directory dynamically
-    $scriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Definition
+    # ## Set error action preference to silently continue
+    # $ErrorActionPreference = "SilentlyContinue"
+    # ## Get the current script directory dynamically
+    # $scriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
-    ## Construct the relative path to the JSON file
-    $filePath = Join-Path $scriptDirectory ".\appconfig\aiservice\appsettings.dev.jsonl"
+    # ## Construct the relative path to the JSON file
+    # $filePath = Join-Path $scriptDirectory ".\appconfig\aiservice\appsettings.dev.jsonl"
 
-    ## Other variables
-    $appConfigName = $deploymentResult.AzAppConfigName
+    # ## Other variables
+    # $appConfigName = $deploymentResult.AzAppConfigName
 
-    ## Output the file path for verification
-    #write-host "Using file path: $filePath"
+    # ## Output the file path for verification
+    # #write-host "Using file path: $filePath"
 
-    ## Execute the az appconfig kv import command using PowerShell
-    az appconfig kv import `
-        --name $appConfigName `
-        --source file `
-        --path $filePath `
-        --format json `
-        --separator "," `
-        --content-type "application/x-ndjson" `
-        --yes
+    # ## Execute the az appconfig kv import command using PowerShell
+    # az appconfig kv import `
+    #     --name $appConfigName `
+    #     --source file `
+    #     --path $filePath `
+    #     --format json `
+    #     --separator "," `
+    #     --content-type "application/x-ndjson" `
+    #     --yes
 
-    ## Check if the file exists and delete it
-    if (Test-Path $aiServiceConfigPath) {
-        Remove-Item $aiServiceConfigPath -Force
-        #Write-Host "File '$aiServiceConfigPath' has been deleted."
-    } else {
-        Write-Host "File '$aiServiceConfigPath' does not exist."
-    }
-    $ErrorActionPreference = "Continue"
+    # ## Check if the file exists and delete it
+    # if (Test-Path $aiServiceConfigPath) {
+    #     Remove-Item $aiServiceConfigPath -Force
+    #     #Write-Host "File '$aiServiceConfigPath' has been deleted."
+    # } else {
+    #     Write-Host "File '$aiServiceConfigPath' does not exist."
+    # }
+    # $ErrorActionPreference = "Continue"
 
     
     ######################################################################################################################
@@ -646,9 +609,7 @@ try {
      
     # Validate if the FQDN is null or empty
     ValidateVariableIsNullOrEmpty -variableValue $fqdn -variableName "FQDN"    
-        
-    # 7. Assign the role for aks system assigned managed identity to App Configuration Data Reader role with the scope of Resourcegroup
-    Write-Host "Assign the role for aks system assigned managed identity to App Configuration Data Reader role" -ForegroundColor Green
+
     # Ensure that the required fields are not null or empty
     ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.ResourceGroupName -variableName "Resource group name"    
     
@@ -676,6 +637,7 @@ try {
     ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.ResourceGroupId -variableName "ResourceGroupId"    
  
     # Assign the role for aks system assigned managed identity to App Configuration Data Reader role with the scope of Resourcegroup
+    Write-Host "Assign the role for aks system assigned managed identity to App Configuration Data Reader role" -ForegroundColor Green
     az role assignment create --assignee $systemAssignedIdentity --role "App Configuration Data Reader" --scope $deploymentResult.ResourceGroupId
     
     # Assign the role for aks system assigned managed identity to Azure blob storage Data Contributor role with the scope of Storage Account
@@ -702,7 +664,6 @@ try {
     Write-Host "Assign the role for aks system assigned managed identity to App Cognitive Services User role" -ForegroundColor Green
     az role assignment create --assignee $systemAssignedIdentity --role "Cognitive Services User" --scope "/subscriptions/$($deploymentResult.SubscriptionId)/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.CognitiveServices/accounts/$($deploymentResult.AzCognitiveServiceName)"
 
-
     # 8. Update aks nodepools to updated new role
     try {
         Write-Host "Upgrading node pools..." -ForegroundColor Cyan
@@ -711,7 +672,6 @@ try {
             Write-Host "Upgrading node pool: $nodePool" -ForegroundColor Cyan
             Write-Host "Node pool $nodePool upgrade initiated." -ForegroundColor Green
             az aks nodepool upgrade --resource-group $deploymentResult.ResourceGroupName --cluster-name $deploymentResult.AksName --name $nodePool 
-            
         }
     }
     catch {
