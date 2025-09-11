@@ -12,7 +12,7 @@ By default this template will use the environment name as the prefix to prevent 
 | `AZURE_LOCATION`                | string | `<User selects during deployment>`   | Location of the Azure resources. Controls where the infrastructure will be deployed.                |
 | `AZURE_ENV_MODEL_DEPLOYMENT_TYPE` | string | `GlobalStandard` | Defines the deployment type for the AI model (e.g., Standard, GlobalStandard).                     |
 | `AZURE_ENV_MODEL_NAME`          | string | `gpt-4.1`          | Specifies the name of the GPT model to be deployed.                                                |
-| `AZURE_ENV_MODEL_CAPACITY`       | int | `150`      | Sets the GPT model capacity.                                                |
+| `AZURE_ENV_MODEL_CAPACITY`       | int | `100`      | Sets the GPT model capacity.                                                |
 | `AZURE_ENV_MODEL_VERSION`       | string | `2024-08-06`      | Version of the GPT model to be used for deployment.                                                |
 | `AZURE_ENV_EMBEDDING_MODEL_NAME`          | string | text-embedding-3-large          | Sets the name of the embedding model to use.                                                |                        
 | `AZURE_ENV_EMBEDDING_MODEL_VERSION`            | string | text-embedding-3-large          | *(empty)*                                                   |
