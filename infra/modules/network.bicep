@@ -25,7 +25,6 @@ param vmAdminPassword string
 @description('Required. VM size for the Jumpbox VM.')
 param vmSize string
 
-
 // VM Size Notes:
 // 1 B-series VMs (like Standard_B2ms) do not support accelerated networking.
 // 2 Pick a VM size that does support accelerated networking (the usual jump-box candidates):

@@ -23,22 +23,41 @@ var solutionSuffix= toLower(trim(replace(
   ''
 )))
 
+@minLength(1)
+@description('Optional. GPT model deployment type:')
+@allowed([
+  'Standard'
+  'GlobalStandard'
+])
+param gptModelDeploymentType string = 'GlobalStandard'
+
+@minLength(1)
+@description('Optional. Name of the GPT model to deploy:')
+@allowed([
+  'gpt-4.1-mini'
+])
+param gptModelName string = 'gpt-4.1-mini'
+
+@description('Optional. Version of the GPT model to deploy.')
+param gptModelVersion string = '2025-04-14'
+
 @description('Optional. Capacity of the GPT model deployment:')
 @minValue(10)
 param gptModelCapacity int = 150
 
+@minLength(1)
+@description('Optional. Name of the Text Embedding model to deploy:')
+@allowed([
+  'text-embedding-3-large'
+])
+param embeddingModelName string = 'text-embedding-3-large'
+
+@description('Optional. Version of the Text Embedding model to deploy.')
+param embeddingModelVersion string = '1'
+
 @description('Optional. Capacity of the Text Embedding model deployment:')
 @minValue(10)
 param embeddingModelCapacity int = 100
-
-@description('Optional. The tags to apply to all deployed Azure resources.')
-param tags resourceInput<'Microsoft.Resources/resourceGroups@2025-04-01'>.tags = {}
-
-@description('Optional. Enable/Disable usage telemetry for module.')
-param enableTelemetry bool = true
-
-@description('Optional. Enable private networking for applicable resources, aligned with the WAF recommendations. Defaults to false.')
-param enablePrivateNetworking bool = true
 
 @description('Optional: Existing Log Analytics Workspace Resource ID')
 param existingLogAnalyticsWorkspaceId string = ''
@@ -54,8 +73,17 @@ param vmAdminPassword string?
 @description('Optional. Size of the Jumpbox Virtual Machine when created. Set to custom value if enablePrivateNetworking is true.')
 param vmSize string = 'Standard_DS2_v2'
 
+@description('Optional. The tags to apply to all deployed Azure resources.')
+param tags resourceInput<'Microsoft.Resources/resourceGroups@2025-04-01'>.tags = {}
+
+@description('Optional. Enable/Disable usage telemetry for module.')
+param enableTelemetry bool = true
+
+@description('Optional. Enable private networking for applicable resources, aligned with the WAF recommendations. Defaults to false.')
+param enablePrivateNetworking bool = false
+
 @description('Optional. Enable monitoring applicable resources, aligned with the Well Architected Framework recommendations. This setting enables Application Insights and Log Analytics and configures all the resources applicable resources to send logs. Defaults to false.')
-param enableMonitoring bool = true
+param enableMonitoring bool = false
 
 @description('Optional. Enable redundancy for applicable resources, aligned with the Well Architected Framework recommendations. Defaults to false.')
 param enableRedundancy bool = false
@@ -115,16 +143,16 @@ var cosmosDbHaLocation = cosmosDbZoneRedundantHaRegionPairs[resourceGroup().loca
 var useExistingLogAnalytics = !empty(existingLogAnalyticsWorkspaceId)
 
 var gptModelDeployment = {
-  modelName: 'gpt-4.1-mini'
-  deploymentName: 'gpt-4.1-mini'
-  deploymentVersion: '2025-04-14'
+  modelName: gptModelName
+  deploymentName: gptModelName
+  deploymentVersion: gptModelVersion
   deploymentCapacity: gptModelCapacity
 }
 
 var embeddingModelDeployment = {
-  modelName: 'text-embedding-3-large'
-  deploymentName: 'text-embedding-3-large'
-  deploymentVersion: '1'
+  modelName: embeddingModelName
+  deploymentName: embeddingModelName
+  deploymentVersion: embeddingModelVersion
   deploymentCapacity: embeddingModelCapacity
 }
 
@@ -137,7 +165,7 @@ var openAiDeployments = [
       version: gptModelDeployment.deploymentVersion
     }
     sku: {
-      name: 'GlobalStandard'
+      name: gptModelDeploymentType
       capacity: gptModelDeployment.deploymentCapacity
     }
   }
@@ -149,7 +177,7 @@ var openAiDeployments = [
       version: embeddingModelDeployment.deploymentVersion
     }
     sku: {
-      name: 'GlobalStandard'
+      name: gptModelDeploymentType
       capacity: embeddingModelDeployment.deploymentCapacity
     }
   }
@@ -522,7 +550,7 @@ module avmAppConfigUpdated 'br/public:avm/res/app-configuration/configuration-st
               privateDnsZoneGroupConfigs: [
                 {
                   name: 'appconfig-dns-zone-group'
-                  privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.appConfig].outputs.resourceId
+                  privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.appConfig]!.outputs.resourceId
                 }
               ]
             }
@@ -578,7 +606,7 @@ module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = {
                 }
               ]
             }
-            subnetResourceId: network.outputs.subnetPrivateEndpointsResourceId
+            subnetResourceId: network!.outputs.subnetPrivateEndpointsResourceId
             service: 'blob'
           }
           {
@@ -591,7 +619,7 @@ module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = {
                 }
               ]
             }
-            subnetResourceId: network.outputs.subnetPrivateEndpointsResourceId
+            subnetResourceId: network!.outputs.subnetPrivateEndpointsResourceId
             service: 'queue'
           }
         ]
@@ -653,7 +681,7 @@ module avmSearchSearchServices 'br/public:avm/res/search/search-service:0.9.1' =
                 { privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.search]!.outputs.resourceId }
               ]
             }
-            subnetResourceId: network.outputs.subnetPrivateEndpointsResourceId
+            subnetResourceId: network!.outputs.subnetPrivateEndpointsResourceId
           }
         ]
       : []
@@ -687,7 +715,7 @@ module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
       ? [
           {
             name: 'pep-openai-${solutionSuffix}'
-            subnetResourceId: network.outputs.subnetPrivateEndpointsResourceId
+            subnetResourceId: network!.outputs.subnetPrivateEndpointsResourceId
             service: 'account'
             privateDnsZoneGroup: {
               privateDnsZoneGroupConfigs: [
@@ -747,7 +775,7 @@ module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.13.2
       ? [
           {
             name: 'pep-docintel-${solutionSuffix}'
-            subnetResourceId: network.outputs.subnetPrivateEndpointsResourceId
+            subnetResourceId: network!.outputs.subnetPrivateEndpointsResourceId
             service: 'account'
             privateDnsZoneGroup: {
               privateDnsZoneGroupConfigs: [
@@ -801,7 +829,7 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.
         type: 'VirtualMachineScaleSets'
         minCount: 1
         maxCount: 2
-        
+
         // WAF aligned configuration for Private Networking
         enableAutoScaling: true
         scaleSetEvictionPolicy: 'Delete'
@@ -867,8 +895,8 @@ module applicationInsights 'br/public:avm/res/insights/component:0.6.0' = if (en
     disableIpMasking: false
     flowType: 'Bluefield'
     // WAF aligned configuration for Monitoring
-    workspaceResourceId: enableMonitoring ? logAnalyticsWorkspace.outputs.resourceId : ''
-    diagnosticSettings: enableMonitoring ? [{ workspaceResourceId: logAnalyticsWorkspace.outputs.resourceId }] : null
+    workspaceResourceId: enableMonitoring ? logAnalyticsWorkspace!.outputs.resourceId : ''
+    diagnosticSettings: enableMonitoring ? [{ workspaceResourceId: logAnalyticsWorkspace!.outputs.resourceId }] : null
   }
 }
 
@@ -940,12 +968,3 @@ output AZ_GPT_EMBEDDING_MODEL_NAME string = embeddingModelDeployment.modelName
 
 @description('Contains Azure OpenAI Embedding Model Deployment Name.')
 output AZ_GPT_EMBEDDING_MODEL_ID string = embeddingModelDeployment.deploymentName
-
-// @description('The FQDN of the frontend web app service.')
-// output kmServiceEndpoint string = containerAppService.outputs.kmServiceFQDN
-
-// @description('Service Access Key 1.')
-// output kmServiceAccessKey1 string = containerAppService.outputs.kmServiceAccessKey1
-
-// @description('Service Access Key 2.')
-// output kmServiceAccessKey2 string = containerAppService.outputs.kmServiceAccessKey2

@@ -129,10 +129,10 @@ output resourceId string = vm.outputs.resourceId
 output name string = vm.outputs.name
 output location string = vm.outputs.location
 
-output subnetId string = subnetResource.outputs.resourceId
-output subnetName string = subnetResource.outputs.name
-output nsgId string = nsg.outputs.resourceId
-output nsgName string = nsg.outputs.name
+output subnetId string = subnetResource!.outputs.resourceId
+output subnetName string = subnetResource!.outputs.name
+output nsgId string = nsg!.outputs.resourceId
+output nsgName string = nsg!.outputs.name
 
 @export()
 @description('Custom type definition for establishing Jumpbox Virtual Machine and its associated resources.')

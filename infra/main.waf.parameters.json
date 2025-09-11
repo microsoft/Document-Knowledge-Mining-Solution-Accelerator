@@ -32,13 +32,28 @@
     "existingLogAnalyticsWorkspaceId": {
       "value": "${AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID}"
     },
-    "enableTelemetry": {
-      "value": "${AZURE_ENV_ENABLE_TELEMETRY}"
-    },
     "tags": {
       "value": {
         "solutionName": "${AZURE_ENV_NAME}"
       }
+    },
+    "vmAdminUsername": {
+      "value": "${AZURE_ENV_VM_ADMIN_USERNAME}"
+    },
+    "vmAdminPassword": {
+      "value": "${AZURE_ENV_VM_ADMIN_PASSWORD}"
+    },
+    "enableTelemetry": {
+      "value": "${AZURE_ENV_ENABLE_TELEMETRY}"
+    },
+    "enableMonitoring": {
+      "value": true
+    },
+    "enablePrivateNetworking": {
+      "value": true
+    },
+    "enableScalability": {
+      "value": true
     }
   }
 }
