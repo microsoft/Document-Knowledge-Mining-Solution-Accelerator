@@ -15,7 +15,7 @@ By default this template will use the environment name as the prefix to prevent 
 | `AZURE_ENV_MODEL_CAPACITY`       | int | `100`      | Sets the GPT model capacity.                                                |
 | `AZURE_ENV_MODEL_VERSION`       | string | `2024-08-06`      | Version of the GPT model to be used for deployment.                                                |
 | `AZURE_ENV_EMBEDDING_MODEL_NAME`          | string | text-embedding-3-large          | Sets the name of the embedding model to use.                                                |                        
-| `AZURE_ENV_EMBEDDING_MODEL_VERSION`            | string | text-embedding-3-large          | *(empty)*                                                   |
+| `AZURE_ENV_EMBEDDING_MODEL_VERSION`            | string | `200`          | *(empty)*                                                   |
 | `AZURE_ENV_EMBEDDING_MODEL_CAPACITY`            | string | Configure capacity for embedding models (in thousands).         | Set the capacity for embedding models (in thousands).                                                   |
 | `AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID` | string  | Guide to get your [Existing Workspace ID](/docs/re-use-log-analytics.md) | Set this if you want to reuse an existing Log Analytics Workspace instead of creating a new one.     |
 | `AZURE_ENV_VM_ADMIN_USERNAME`  | string | `take(newGuid(), 20)`               | The administrator username for the virtual machine.         |
