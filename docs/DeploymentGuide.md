@@ -42,7 +42,70 @@
    <br>
    <img src="./images/deployment/Subscription_ResourceProvider.png" alt="ResourceProvider" width="900">
 
-## Deployment
+## Deployment Options & Steps
+
+### Sandbox or WAF Aligned Deployment Options
+
+The [`infra`](../infra) folder of the Multi Agent Solution Accelerator contains the [`main.bicep`](../infra/main.bicep) Bicep script, which defines all Azure infrastructure components for this solution.
+
+By default, the `azd up` command uses the [`main.parameters.json`](../infra/main.parameters.json) file to deploy the solution. This file is pre-configured for a **sandbox environment** — ideal for development and proof-of-concept scenarios, with minimal security and cost controls for rapid iteration.
+
+For **production deployments**, the repository also provides [`main.waf.parameters.json`](../infra/main.waf.parameters.json), which applies a [Well-Architected Framework (WAF) aligned](https://learn.microsoft.com/en-us/azure/well-architected/) configuration. This option enables additional Azure best practices for reliability, security, cost optimization, operational excellence, and performance efficiency, such as:
+
+  - Enhanced network security (e.g., Network protection with private endpoints)
+  - Stricter access controls and managed identities
+  - Logging, monitoring, and diagnostics enabled by default
+  - Resource tagging and cost management recommendations
+
+**How to choose your deployment configuration:**
+
+* Use the default `main.parameters.json` file for a **sandbox/dev environment**
+* For a **WAF-aligned, production-ready deployment**, copy the contents of `main.waf.parameters.json` into `main.parameters.json` before running `azd up`
+
+---
+
+### VM Credentials Configuration
+
+By default, the solution sets the VM administrator username and password from environment variables.
+If you do not configure these values, a randomly generated GUID will be used for both the username and password.
+
+To set your own VM credentials before deployment, use:
+
+```sh
+azd env set AZURE_ENV_VM_ADMIN_USERNAME <your-username>
+azd env set AZURE_ENV_VM_ADMIN_PASSWORD <your-password>
+```
+
+> [!TIP]
+> Always review and adjust parameter values (such as region, capacity, security settings and log analytics workspace configuration) to match your organization’s requirements before deploying. For production, ensure you have sufficient quota and follow the principle of least privilege for all identities and role assignments.
+
+
+> [!IMPORTANT]
+> The WAF-aligned configuration is under active development. More Azure Well-Architected recommendations will be added in future updates.
+
+## Deployment Steps
+
+Consider the following settings during your deployment to modify specific settings:
+
+<details>
+  <summary><b>Configurable Deployment Settings</b></summary>
+
+When you start the deployment, most parameters will have **default values**, but you can update the following settings [here](../docs/CustomizingAzdParameters.md):
+
+| **Setting**                    | **Description**                                                                      | **Default value** |
+| ------------------------------ | ------------------------------------------------------------------------------------ | ----------------- |
+| **Environment Name**           | Used as a prefix for all resource names to ensure uniqueness across environments.    | dkm             |
+| **Azure Region**               | Location of the Azure resources. Controls where the infrastructure will be deployed. | australiaeast     |
+| **Model Deployment Type**      | Defines the deployment type for the AI model (e.g., Standard, GlobalStandard).      | GlobalStandard    |
+| **GPT Model Name**             | Specifies the name of the GPT model to be deployed.                                 | gpt-4.1            |
+| **GPT Model Version**          | Version of the GPT model to be used for deployment.                                 | 2024-08-06        |
+| **GPT Model Capacity**          | Sets the GPT model capacity.                                 | 100K        |
+| **Embedding Model**                         | Default: **text-embedding-ada-002**.                                                                      | text-embedding-3-large |
+| **Embedding Model Capacity**                | Set the capacity for **embedding models** (in thousands).                                                 | 200k                    |
+| **Enable Telemetry**           | Enables telemetry for monitoring and diagnostics.                                    | true              |
+| **Existing Log Analytics Workspace**        | To reuse an existing Log Analytics Workspace ID instead of creating a new one.              | *(none)*          |
+
+</details>
 
 ### Deploying with AZD
 
@@ -83,9 +146,7 @@ Once you've opened the project in [Codespaces](#github-codespaces), [Dev Contain
     -- This deployment will take *7-10 minutes* to provision the resources in your account and set up the solution with sample data.
     - If you encounter an error or timeout during deployment, changing the location may help, as there could be availability constraints for the resources.
 
-6. Once the deployment has completed successfully, open the [Azure Portal](https://portal.azure.com/), go to the deployed resource group, find the App Service, and get the app URL from `Default domain`.
-
-7. If you are done trying out the application, you can delete the resources by running `azd down`.
+6. If you are done trying out the application, you can delete the resources by running `azd down`.
 
 ### Post Deployment Script:
 
@@ -93,13 +154,11 @@ The post deployment process is very straightforward and simplified via a single 
 
 ### Automated Deployment Steps:
 1. Deploy Azure resources.
-2. Get secret information from Azure resources.
-3. Update application configuration files with secrets.
-4. Set Application Configuration in Azure App Configuration.
-4. Compile application, build image, and push to Azure Container Registry.
-5. Configure Kubernetes cluster infrastructure.
-6. Update Kubernetes configuration files.
-7. Deploy certificates, ingress controller and then application images from Azure Container Registry.
+2. Configure Kubernetes Infrastructure.
+3. Update Kubernetes configuration files with the FQDN, Container Image Path and Email address for the certificate management.
+4. Configure AKS (deploy Cert Manager, Ingress Controller) and Deploy Images on the kubernetes cluster.
+5. Docker build and push container images to Azure Container Registry.
+6. Display the deployment result and following instructions.
 
 Open PowerShell, change directory where you code cloned, then run the deploy script:  
 
