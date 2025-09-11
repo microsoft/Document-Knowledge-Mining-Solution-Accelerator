@@ -56,6 +56,48 @@ The automated deployment process is very straightforward and simplified via a si
 6. Update Kubernetes configuration files.
 7. Deploy certificates, ingress controller and then application images from Azure Container Registry.
 
+### Deploying with AZD
+
+Once you've opened the project in [Codespaces](#github-codespaces), [Dev Containers](#vs-code-dev-containers), or [locally](#local-environment), you can deploy it to Azure by following these steps:
+
+1. Clone the repository or download the project code via command-line:
+
+    ```cmd
+    git clone https://github.com/microsoft/Document-Knowledge-Mining-Solution-Accelerator
+    ```
+
+    Open the cloned repository in Visual Studio Code and connect to the development container.
+
+    ```cmd
+    code .
+    ```
+
+2. Login to Azure:
+
+    ```shell
+    azd auth login
+    ```
+
+    #### To authenticate with Azure Developer CLI (`azd`), use the following command with your **Tenant ID**:
+
+    ```sh
+    azd auth login --tenant-id <tenant-id>
+    ```
+
+3. Provision and deploy all the resources:
+
+    ```shell
+    azd up
+    ```
+
+4. Provide an `azd` environment name (e.g., "ckmapp").
+5. Select a subscription from your Azure account and choose a location that has quota for all the resources. 
+    -- This deployment will take *7-10 minutes* to provision the resources in your account and set up the solution with sample data.
+    - If you encounter an error or timeout during deployment, changing the location may help, as there could be availability constraints for the resources.
+
+6. Once the deployment has completed successfully, open the [Azure Portal](https://portal.azure.com/), go to the deployed resource group, find the App Service, and get the app URL from `Default domain`.
+
+7. If you are done trying out the application, you can delete the resources by running `azd down`.
 
 ### Execute Deployment Script:
 Open PowerShell, change directory where you code cloned, then run the deploy script:  
@@ -136,4 +178,10 @@ Execute uploadfiles.ps1 file with **-EndpointUrl** parameter as URL in console m
 
 ```
 .\uploadfiles.ps1 -EndpointUrl https://kmgs<your dns name>.<datacenter>.cloudapp.azure.com
+```
+
+If you run into issue with PowerShell script file not being digitally signed, you can execute below command:
+
+```
+powershell.exe -ExecutionPolicy Bypass -File ".\uploadfiles.ps1" -EndpointUrl https://kmgs<your dns name>.<datacenter>.cloudapp.azure.com
 ```
