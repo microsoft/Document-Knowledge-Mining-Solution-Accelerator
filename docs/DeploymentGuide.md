@@ -44,18 +44,6 @@
 
 ## Deployment
 
-The automated deployment process is very straightforward and simplified via a single [deployment script](../Deployment/resourcedeployment.ps1) that completes in approximately 10-15 minutes:
-
-### Automated Deployment Steps:
-1. Deploy Azure resources.
-2. Get secret information from Azure resources.
-3. Update application configuration files with secrets.
-4. Set Application Configuration in Azure App Configuration.
-4. Compile application, build image, and push to Azure Container Registry.
-5. Configure Kubernetes cluster infrastructure.
-6. Update Kubernetes configuration files.
-7. Deploy certificates, ingress controller and then application images from Azure Container Registry.
-
 ### Deploying with AZD
 
 Once you've opened the project in [Codespaces](#github-codespaces), [Dev Containers](#vs-code-dev-containers), or [locally](#local-environment), you can deploy it to Azure by following these steps:
@@ -99,7 +87,20 @@ Once you've opened the project in [Codespaces](#github-codespaces), [Dev Contain
 
 7. If you are done trying out the application, you can delete the resources by running `azd down`.
 
-### Execute Deployment Script:
+### Post Deployment Script:
+
+The post deployment process is very straightforward and simplified via a single [deployment script](../Deployment/resourcedeployment.ps1) that completes in approximately 20-30 minutes:
+
+### Automated Deployment Steps:
+1. Deploy Azure resources.
+2. Get secret information from Azure resources.
+3. Update application configuration files with secrets.
+4. Set Application Configuration in Azure App Configuration.
+4. Compile application, build image, and push to Azure Container Registry.
+5. Configure Kubernetes cluster infrastructure.
+6. Update Kubernetes configuration files.
+7. Deploy certificates, ingress controller and then application images from Azure Container Registry.
+
 Open PowerShell, change directory where you code cloned, then run the deploy script:  
 
 ```
