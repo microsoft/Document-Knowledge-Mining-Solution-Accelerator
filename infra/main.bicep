@@ -895,8 +895,8 @@ module applicationInsights 'br/public:avm/res/insights/component:0.6.0' = if (en
     disableIpMasking: false
     flowType: 'Bluefield'
     // WAF aligned configuration for Monitoring
-    workspaceResourceId: enableMonitoring ? logAnalyticsWorkspace!.outputs.resourceId : ''
-    diagnosticSettings: enableMonitoring ? [{ workspaceResourceId: logAnalyticsWorkspace!.outputs.resourceId }] : null
+    workspaceResourceId: enableMonitoring ? logAnalyticsWorkspaceResourceId : ''
+    diagnosticSettings: enableMonitoring ? [{ workspaceResourceId: logAnalyticsWorkspaceResourceId }] : null
   }
 }
 
