@@ -109,7 +109,7 @@ When you start the deployment, most parameters will have **default values**, but
 
 ### Deploying with AZD
 
-Once you've opened the project in [Codespaces](#github-codespaces), [Dev Containers](#vs-code-dev-containers), or [locally](#local-environment), you can deploy it to Azure by following these steps:
+Once you've opened the project [locally](#local-environment), you can deploy it to Azure by following these steps:
 
 1. Clone the repository or download the project code via command-line:
 
@@ -180,7 +180,9 @@ You will be prompted for the following parameters with this Screen :
 1. **Email** - used for issuing certificates in Kubernetes clusters from the [Let's Encrypt](https://letsencrypt.org/) service. Email address should be valid.  
 
 <img src="./images/deployment/Deployment_Login_02.png" width="900" alt-text="Login">
+
 2. You will be prompted to Login, Select a account and proceed to Login.
+
 3. **GO !** - Post Deployment Script executes Azure Infrastructure configuration, Application code compile and publish into Kubernetes Cluster.
 
 ### Manual Deployment Steps:
