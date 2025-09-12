@@ -23,6 +23,18 @@ var resourceGroupLocation = resourceGroup().location
 // Load the abbrevations file required to name the azure resources.
 var abbrs = loadJsonContent('./abbreviations.json')
 
+@description('Optional created by user name')
+param createdBy string
+
+resource resourceGroupTags 'Microsoft.Resources/tags@2021-04-01' = {
+  name: 'default'
+  properties: {
+    tags: {
+      TemplateName: 'DKM'
+      CreatedBy: createdBy
+    }
+  }
+}
 
 // Create a storage account
 module gs_storageaccount 'bicep/azurestorageaccount.bicep' = {
@@ -201,4 +213,6 @@ output gs_containerregistry_endpoint string = gs_containerregistry.outputs.acrEn
 
 //return resourcegroup resource ID
 output gs_resourcegroup_id string = resourceGroup().id
+
+output createdByOutput string = createdBy
 

@@ -74,7 +74,8 @@ function ValidateVariableIsNullOrEmpty {
 function PromptForParameters {
     param(
         [string]$email
-    )
+
+)
 
     Clear-Host
 
@@ -109,7 +110,7 @@ function LoginAzure([string]$tenantId, [string]$subscriptionID) {
         az login --service-principal `
             --username $env:AZURE_CLIENT_ID `
             --password $env:AZURE_CLIENT_SECRET `
-            --tenant $env:AZURE_TENANT_ID
+            --tenant $env:AZURE_TENANT_ID `
         Write-Host "CI deployment mode"
     }
     else{
@@ -125,7 +126,7 @@ function LoginAzure([string]$tenantId, [string]$subscriptionID) {
         Write-Host "manual deployment mode"
     }
     az account set --subscription $subscriptionID
-    Write-Host "Switched subscription to '$subscriptionID' `r`n" -ForegroundColor Yellow
+    Write-Host "Switched subscription to '$subscriptionID' `r`n" -ForegroundColor Yellow  
 }
 
 function DisplayResult([DeploymentResult]$displayResult) {
