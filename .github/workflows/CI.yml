@@ -202,8 +202,7 @@ jobs:
                 enableMonitoring=false \
                 enableTelemetry=true \
                 enableRedundancy=false \
-                enableScalability=false \
-                createdBy="Pipeline"
+                enableScalability=false 
 
       - name: Generate Environment Name
         id: generate_environment_name
