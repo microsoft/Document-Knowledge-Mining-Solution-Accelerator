@@ -25,7 +25,6 @@ param vmAdminPassword string
 @description('Required. VM size for the Jumpbox VM.')
 param vmSize string
 
-
 // VM Size Notes:
 // 1 B-series VMs (like Standard_B2ms) do not support accelerated networking.
 // 2 Pick a VM size that does support accelerated networking (the usual jump-box candidates):
@@ -90,7 +89,20 @@ module network 'network/main.bicep' = {
                 sourcePortRange: '*'
                 destinationPortRange: '443'
                 sourceAddressPrefixes: ['0.0.0.0/0']
-                destinationAddressPrefixes: ['10.0.0.0/23']
+                destinationAddressPrefix: '*'
+              }
+            }
+            {
+              name: 'AllowHttpInbound'
+              properties: {
+                access: 'Allow'
+                direction: 'Inbound'
+                priority: 110
+                protocol: 'Tcp'
+                sourcePortRange: '*'
+                destinationPortRange: '80'
+                sourceAddressPrefixes: ['0.0.0.0/0']
+                destinationAddressPrefix: '*'
               }
             }
             {
@@ -121,7 +133,6 @@ module network 'network/main.bicep' = {
             }
           ]
         }
-        delegation: 'Microsoft.App/environments'
       }
       {
         name: 'peps'

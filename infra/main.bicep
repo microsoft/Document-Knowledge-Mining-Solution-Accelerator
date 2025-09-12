@@ -23,32 +23,41 @@ var solutionSuffix= toLower(trim(replace(
   ''
 )))
 
-@description('''
-gpt-35-turbo-16k deployment model\'s Tokens-Per-Minute (TPM) capacity, measured in thousands.
-The default capacity is 30,000 TPM. 
-For model limits specific to your region, refer to the documentation at https://learn.microsoft.com/azure/ai-services/openai/concepts/models#standard-deployment-model-quota.
-''')
-@minValue(1)
-@maxValue(40)
-param chatGptDeploymentCapacity int = 30
+@minLength(1)
+@description('Optional. GPT model deployment type:')
+@allowed([
+  'Standard'
+  'GlobalStandard'
+])
+param gptModelDeploymentType string = 'GlobalStandard'
 
-@description('''
-text-embedding-ada-002 deployment model\'s Tokens-Per-Minute (TPM) capacity, measured in thousands.
-The default capacity is 30,000 TPM.
-For model limits specific to your region, refer to the documentation at https://learn.microsoft.com/azure/ai-services/openai/concepts/models#standard-deployment-model-quota.
-''')
-@minValue(1)
-@maxValue(40)
-param embeddingDeploymentCapacity int = 1
+@minLength(1)
+@description('Optional. Name of the GPT model to deploy:')
+@allowed([
+  'gpt-4.1-mini'
+])
+param gptModelName string = 'gpt-4.1-mini'
 
-@description('Optional. The tags to apply to all deployed Azure resources.')
-param tags resourceInput<'Microsoft.Resources/resourceGroups@2025-04-01'>.tags = {}
+@description('Optional. Version of the GPT model to deploy.')
+param gptModelVersion string = '2025-04-14'
 
-@description('Optional. Enable/Disable usage telemetry for module.')
-param enableTelemetry bool = true
+@description('Optional. Capacity of the GPT model deployment:')
+@minValue(10)
+param gptModelCapacity int = 100
 
-@description('Optional. Enable private networking for applicable resources, aligned with the WAF recommendations. Defaults to false.')
-param enablePrivateNetworking bool = false
+@minLength(1)
+@description('Optional. Name of the Text Embedding model to deploy:')
+@allowed([
+  'text-embedding-3-large'
+])
+param embeddingModelName string = 'text-embedding-3-large'
+
+@description('Optional. Version of the Text Embedding model to deploy.')
+param embeddingModelVersion string = '1'
+
+@description('Optional. Capacity of the Text Embedding model deployment:')
+@minValue(10)
+param embeddingModelCapacity int = 100
 
 @description('Optional: Existing Log Analytics Workspace Resource ID')
 param existingLogAnalyticsWorkspaceId string = ''
@@ -64,8 +73,17 @@ param vmAdminPassword string?
 @description('Optional. Size of the Jumpbox Virtual Machine when created. Set to custom value if enablePrivateNetworking is true.')
 param vmSize string = 'Standard_DS2_v2'
 
+@description('Optional. The tags to apply to all deployed Azure resources.')
+param tags resourceInput<'Microsoft.Resources/resourceGroups@2025-04-01'>.tags = {}
+
+@description('Optional. Enable/Disable usage telemetry for module.')
+param enableTelemetry bool = true
+
+@description('Optional. Enable private networking for applicable resources, aligned with the WAF recommendations. Defaults to false.')
+param enablePrivateNetworking bool = false
+
 @description('Optional. Enable monitoring applicable resources, aligned with the Well Architected Framework recommendations. This setting enables Application Insights and Log Analytics and configures all the resources applicable resources to send logs. Defaults to false.')
-param enableMonitoring bool = true
+param enableMonitoring bool = false
 
 @description('Optional. Enable redundancy for applicable resources, aligned with the Well Architected Framework recommendations. Defaults to false.')
 param enableRedundancy bool = false
@@ -73,18 +91,17 @@ param enableRedundancy bool = false
 @description('Optional. Enable scalability for applicable resources, aligned with the Well Architected Framework recommendations. Defaults to false.')
 param enableScalability bool = false
 
-@description('Optional. Enable purge protection for the Key Vault')
-param enablePurgeProtection bool = false
-
-@minLength(1)
-@description('Optional. Name of the Text Embedding model to deploy:')
-@allowed([
-  'text-embedding-ada-002'
-])
-param embeddingModel string = 'text-embedding-ada-002'
-
-@description('Optional. Contains Azure GPT 40 Model Name.')
-param azureGpt40ModelName string = ''
+@metadata({
+  azd: {
+    type: 'location'
+    usageName: [
+      'OpenAI.GlobalStandard.gpt4.1-mini,150'
+      'OpenAI.GlobalStandard.text-embedding-3-large,100'
+    ]
+  }
+})
+@description('Required. Location for AI Foundry deployment. This is the location where the AI Foundry resources will be deployed.')
+param aiDeploymentsLocation string
 
 var solutionLocation = empty(location) ? resourceGroup().location : location
 
@@ -105,88 +122,90 @@ var replicaRegionPairs = {
 }
 var replicaLocation = replicaRegionPairs[solutionLocation]
 
-@description('Optional. The Container Registry hostname where the docker images for the container app are located.')
-param containerRegistryHostname string = 'biabcontainerreg.azurecr.io'
+// Region pairs list based on article in [Azure Database for MySQL Flexible Server - Azure Regions](https://learn.microsoft.com/azure/mysql/flexible-server/overview#azure-regions) for supported high availability regions for CosmosDB.
+var cosmosDbZoneRedundantHaRegionPairs = {
+  australiaeast: 'uksouth' //'southeastasia'
+  centralus: 'eastus2'
+  eastasia: 'southeastasia'
+  eastus: 'centralus'
+  eastus2: 'centralus'
+  japaneast: 'australiaeast'
+  northeurope: 'westeurope'
+  southeastasia: 'eastasia'
+  uksouth: 'westeurope'
+  westeurope: 'northeurope'
+}
 
-@description('Optional. The Container Image Name to deploy on the container app.')
-param containerImageName string = 'macaebackend'
-
-@description('Optional. The Container Image Tag to deploy on the container app.')
-param containerImageTag string = 'latest_2025-07-22_895'
+// Paired location calculated based on 'location' parameter. This location will be used by applicable resources if `enableScalability` is set to `true`
+var cosmosDbHaLocation = cosmosDbZoneRedundantHaRegionPairs[resourceGroup().location]
 
 // Extracts subscription, resource group, and workspace name from the resource ID when using an existing Log Analytics workspace
 var useExistingLogAnalytics = !empty(existingLogAnalyticsWorkspaceId)
 
-var chatGpt = {
-  modelName: 'gpt-4.1-mini'
-  deploymentName: 'gpt-4.1-mini'
-  deploymentVersion: '2025-04-14'
-  deploymentCapacity: chatGptDeploymentCapacity
+var gptModelDeployment = {
+  modelName: gptModelName
+  deploymentName: gptModelName
+  deploymentVersion: gptModelVersion
+  deploymentCapacity: gptModelCapacity
 }
 
-var embedding = {
-  modelName: 'text-embedding-3-large'
-  deploymentName: 'text-embedding-3-large'
-  deploymentVersion: '1'
-  deploymentCapacity: embeddingDeploymentCapacity
+var embeddingModelDeployment = {
+  modelName: embeddingModelName
+  deploymentName: embeddingModelName
+  deploymentVersion: embeddingModelVersion
+  deploymentCapacity: embeddingModelCapacity
 }
 
 var openAiDeployments = [
   {
-    name: chatGpt.deploymentName
+    name: gptModelDeployment.deploymentName
     model: {
       format: 'OpenAI'
-      name: chatGpt.modelName
-      version: chatGpt.deploymentVersion
+      name: gptModelDeployment.modelName
+      version: gptModelDeployment.deploymentVersion
     }
     sku: {
-      name: 'GlobalStandard'
-      capacity: chatGpt.deploymentCapacity
+      name: gptModelDeploymentType
+      capacity: gptModelDeployment.deploymentCapacity
     }
   }
   {
-    name: embedding.deploymentName
+    name: embeddingModelDeployment.deploymentName
     model: {
       format: 'OpenAI'
-      name: embedding.modelName
-      version: embedding.deploymentVersion
+      name: embeddingModelDeployment.modelName
+      version: embeddingModelDeployment.deploymentVersion
     }
     sku: {
-      name: 'GlobalStandard'
-      capacity: embedding.deploymentCapacity
+      name: gptModelDeploymentType
+      capacity: embeddingModelDeployment.deploymentCapacity
     }
   }
 ]
 
 // ========== Private DNS Zones ========== //
 var privateDnsZones = [
+  'privatelink.mongo.cosmos.azure.com'
+  'privatelink.search.windows.net'
   'privatelink.cognitiveservices.azure.com'
   'privatelink.openai.azure.com'
-  'privatelink.services.ai.azure.com' // Todo: to be deleted
   'privatelink.blob.${environment().suffixes.storage}'
   'privatelink.queue.${environment().suffixes.storage}'
-  'privatelink.file.${environment().suffixes.storage}' // Todo: to be deleted
   'privatelink.api.azureml.ms'
-  'privatelink.mongo.cosmos.azure.com'
   'privatelink.azconfig.io'
-  'privatelink.vaultcore.azure.net' // Todo: to be deleted
   'privatelink.azurecr.io' // Todo: to be deleted
-  'privatelink.search.windows.net'
 ]
 // DNS Zone Index Constants
 var dnsZoneIndex = {
-  cognitiveServices: 0
-  openAI: 1
-  aiServices: 2
-  storageBlob: 3
-  storageQueue: 4
-  storageFile: 5
+  cosmosDB: 0
+  search: 1
+  cognitiveServices: 2
+  openAI: 3
+  storageBlob: 4
+  storageQueue: 5
   aiFoundry: 6
-  cosmosDB: 7
-  appConfig: 8
-  keyVault: 9
-  containerRegistry: 10
-  search: 11
+  appConfig: 7
+  containerRegistry: 8
 }
 @batchSize(5)
 module avmPrivateDnsZones 'br/public:avm/res/network/private-dns-zone:0.7.1' = [
@@ -200,18 +219,6 @@ module avmPrivateDnsZones 'br/public:avm/res/network/private-dns-zone:0.7.1' = [
     }
   }
 ]
-
-@metadata({
-  azd: {
-    type: 'location'
-    usageName: [
-      'OpenAI.GlobalStandard.gpt-4o-mini,150'
-      'OpenAI.GlobalStandard.text-embedding-ada-002,80'
-    ]
-  }
-})
-@description('Required. Location for AI Foundry deployment. This is the location where the AI Foundry resources will be deployed.')
-param aiDeploymentsLocation string
 
 // ========== Log Analytics Workspace ========== //
 // WAF best practices for Log Analytics: https://learn.microsoft.com/en-us/azure/well-architected/service-guides/azure-log-analytics
@@ -277,6 +284,7 @@ module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0
 }
 var logAnalyticsWorkspaceResourceId = useExistingLogAnalytics ? existingLogAnalyticsWorkspaceId : logAnalyticsWorkspace!.outputs.resourceId
 
+// ========== Network Module ========== //
 module network 'modules/network.bicep' = if (enablePrivateNetworking) {
   name: take('network-${solutionSuffix}-deployment', 64)
   params: {
@@ -339,16 +347,11 @@ module avmCosmosDB 'br/public:avm/res/document-db/database-account:0.15.0' = {
     tags: tags
     enableTelemetry: enableTelemetry
     databaseAccountOfferType: 'Standard'
-    automaticFailover: false
     serverVersion: '7.0'
-    capabilitiesToAdd: [
-      'EnableMongo'
-    ]
     enableAnalyticalStorage: true
     defaultConsistencyLevel: 'Session'
     maxIntervalInSeconds: 5
     maxStalenessPrefix: 100
-    zoneRedundant: false
 
     // WAF related parameters
     networkRestrictions: {
@@ -373,7 +376,34 @@ module avmCosmosDB 'br/public:avm/res/document-db/database-account:0.15.0' = {
           }
         ]
       : []
-  }
+      // WAF aligned configuration for Redundancy
+      zoneRedundant: enableRedundancy ? true : false
+      capabilitiesToAdd: [
+        'EnableMongo'
+      ]
+      //capabilitiesToAdd: enableRedundancy ? null : ['EnableServerless']
+      automaticFailover: enableRedundancy ? true : false
+      failoverLocations: enableRedundancy
+      ? [
+          {
+            failoverPriority: 0
+            isZoneRedundant: true
+            locationName: solutionLocation
+          }
+          {
+            failoverPriority: 1
+            isZoneRedundant: true
+            locationName: cosmosDbHaLocation
+          }
+        ]
+      : [
+          {
+            locationName: solutionLocation
+            failoverPriority: 0
+            isZoneRedundant: enableRedundancy
+          }
+        ]
+    }
 }
 
 // ========== App Configuration store ========== //
@@ -403,7 +433,7 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
       }
       {
         name: 'Application:AIServices:GPT-4o-mini:ModelName'
-        value: chatGpt.modelName
+        value: gptModelDeployment.modelName
       }
       {
         name: 'Application:Services:KernelMemory:Endpoint'
@@ -467,7 +497,7 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
       }
       {
         name: 'KernelMemory:Services:AzureOpenAIEmbedding:Deployment'
-        value: embedding.deploymentName
+        value: embeddingModelDeployment.deploymentName
       }
       {
         name: 'KernelMemory:Services:AzureOpenAIEmbedding:Endpoint'
@@ -479,7 +509,7 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
       }
       {
         name: 'KernelMemory:Services:AzureOpenAIText:Deployment'
-        value: chatGpt.deploymentName
+        value: gptModelDeployment.deploymentName
       }
       {
         name: 'KernelMemory:Services:AzureOpenAIText:Endpoint'
@@ -494,6 +524,22 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
         value: 'AzureIdentity'
       }
     ]
+
+    publicNetworkAccess: 'Enabled'
+  }
+}
+
+module avmAppConfigUpdated 'br/public:avm/res/app-configuration/configuration-store:0.6.3' = if(enablePrivateNetworking) {
+  name: take('avm.res.app-configuration.configuration-store-update.${appConfigName}', 64)
+  params: {
+    name: appConfigName
+    location: solutionLocation
+    managedIdentities: { systemAssigned: true }
+    sku: 'Standard'
+    enableTelemetry: enableTelemetry
+    tags: tags
+    disableLocalAuth: true
+    
     // WAF aligned networking
     publicNetworkAccess: enablePrivateNetworking ? 'Disabled' : 'Enabled'
     privateEndpoints: enablePrivateNetworking
@@ -504,7 +550,7 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
               privateDnsZoneGroupConfigs: [
                 {
                   name: 'appconfig-dns-zone-group'
-                  privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.appConfig].outputs.resourceId
+                  privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.appConfig]!.outputs.resourceId
                 }
               ]
             }
@@ -513,10 +559,12 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
         ]
       : []
   }
+  dependsOn: [
+    avmAppConfig
+  ]
 }
 
 // ========== Storage account module ========== //
-
 var storageAccountName = 'st${solutionSuffix}'
 module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = {
   name: take('avm.res.storage.storage-account.${storageAccountName}', 64)
@@ -558,7 +606,7 @@ module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = {
                 }
               ]
             }
-            subnetResourceId: network.outputs.subnetPrivateEndpointsResourceId
+            subnetResourceId: network!.outputs.subnetPrivateEndpointsResourceId
             service: 'blob'
           }
           {
@@ -571,7 +619,7 @@ module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = {
                 }
               ]
             }
-            subnetResourceId: network.outputs.subnetPrivateEndpointsResourceId
+            subnetResourceId: network!.outputs.subnetPrivateEndpointsResourceId
             service: 'queue'
           }
         ]
@@ -592,9 +640,6 @@ module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = {
 
 // ========== AI Foundry: AI Search ========== //
 var aiSearchName = 'srch-${solutionSuffix}'
-// var aiSearchConnectionName = 'myCon-${solutionSuffix}'
-// var varKvSecretNameAzureSearchKey = 'AZURE-SEARCH-KEY'
-// AI Foundry: AI Search
 module avmSearchSearchServices 'br/public:avm/res/search/search-service:0.9.1' = {
   name: take('avm.res.cognitive-search-services.${aiSearchName}', 64)
   params: {
@@ -636,21 +681,20 @@ module avmSearchSearchServices 'br/public:avm/res/search/search-service:0.9.1' =
                 { privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.search]!.outputs.resourceId }
               ]
             }
-            subnetResourceId: network.outputs.subnetPrivateEndpointsResourceId
+            subnetResourceId: network!.outputs.subnetPrivateEndpointsResourceId
           }
         ]
       : []
   }
 }
 
-// // ========== Cognitive Services - OpenAI module ========== //
-
+// ========== Cognitive Services - OpenAI module ========== //
 var openAiAccountName = 'oai-${solutionSuffix}'
 module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
   name: take('avm.res.cognitiveservices.account.${openAiAccountName}', 64)
   params: {
     name: openAiAccountName
-    location: solutionLocation
+    location: aiDeploymentsLocation
     kind: 'OpenAI'
     sku: 'S0'
     tags: tags
@@ -671,7 +715,7 @@ module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
       ? [
           {
             name: 'pep-openai-${solutionSuffix}'
-            subnetResourceId: network.outputs.subnetPrivateEndpointsResourceId
+            subnetResourceId: network!.outputs.subnetPrivateEndpointsResourceId
             service: 'account'
             privateDnsZoneGroup: {
               privateDnsZoneGroupConfigs: [
@@ -731,7 +775,7 @@ module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.13.2
       ? [
           {
             name: 'pep-docintel-${solutionSuffix}'
-            subnetResourceId: network.outputs.subnetPrivateEndpointsResourceId
+            subnetResourceId: network!.outputs.subnetPrivateEndpointsResourceId
             service: 'account'
             privateDnsZoneGroup: {
               privateDnsZoneGroupConfigs: [
@@ -771,10 +815,10 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.
     publicNetworkAccess: 'Enabled'
     managedIdentities: {
       systemAssigned: true
-      // userAssignedResourceIds: [
-      //   userAssignedIdentity.outputs.resourceId
-      // ]
     }
+    serviceCidr: '10.20.0.0/16'
+    dnsServiceIP: '10.20.0.10'
+    enablePrivateCluster: false
     primaryAgentPoolProfiles: [
       {
         name: 'agentpool'
@@ -783,8 +827,50 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.
         osType: 'Linux'
         mode: 'System'
         type: 'VirtualMachineScaleSets'
+        minCount: 1
+        maxCount: 2
+
+        // WAF aligned configuration for Private Networking
+        enableAutoScaling: true
+        scaleSetEvictionPolicy: 'Delete'
+        scaleSetPriority: 'Regular'
+        vnetSubnetResourceId: enablePrivateNetworking ? network!.outputs.subnetWebResourceId : null
       }
     ]
+    autoNodeOsUpgradeProfileUpgradeChannel: 'Unmanaged'
+    autoUpgradeProfileUpgradeChannel: 'stable'
+    enableAzureDefender: enablePrivateNetworking
+    networkPlugin: 'azure'
+    networkPolicy: 'azure'
+    omsAgentEnabled: true
+    // WAF aligned configuration for Monitoring
+    diagnosticSettings: enableMonitoring ? [
+      {
+        logCategoriesAndGroups: [
+          {
+            category: 'kube-apiserver'
+          }
+          {
+            category: 'kube-controller-manager'
+          }
+          {
+            category: 'kube-scheduler'
+          }
+          {
+            category: 'cluster-autoscaler'
+          }
+        ]
+        metricCategories: [
+          {
+            category: 'AllMetrics'
+          }
+        ] 
+        name: 'customSetting'
+        workspaceResourceId: logAnalyticsWorkspaceResourceId
+      }
+    ] :  []
+    monitoringWorkspaceResourceId: enableMonitoring ? logAnalyticsWorkspaceResourceId : null
+
     roleAssignments: [
       {
         principalId: userAssignedIdentity.outputs.principalId
@@ -792,9 +878,6 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.
         principalType: 'ServicePrincipal'
       }
     ]
-    // WAF aligned configuration for Monitoring
-    monitoringWorkspaceResourceId: enableMonitoring ? logAnalyticsWorkspaceResourceId : null
-    // WAF aligned configuration for Private Networking
   }
 }
 
@@ -812,14 +895,15 @@ module applicationInsights 'br/public:avm/res/insights/component:0.6.0' = if (en
     disableIpMasking: false
     flowType: 'Bluefield'
     // WAF aligned configuration for Monitoring
-    workspaceResourceId: enableMonitoring ? logAnalyticsWorkspace.outputs.resourceId : ''
-    diagnosticSettings: enableMonitoring ? [{ workspaceResourceId: logAnalyticsWorkspace.outputs.resourceId }] : null
+    workspaceResourceId: enableMonitoring ? logAnalyticsWorkspaceResourceId : ''
+    diagnosticSettings: enableMonitoring ? [{ workspaceResourceId: logAnalyticsWorkspaceResourceId }] : null
   }
 }
 
 /* 
   Outputs
 */
+@description('Contains Azure Tenant ID.')
 output AZURE_TENANT_ID string = subscription().tenantId
 
 @description('Contains Solution Name.')
@@ -831,13 +915,16 @@ output RESOURCE_GROUP_NAME string = resourceGroup().name
 @description('Contains Resource Group Location.')
 output RESOURCE_GROUP_LOCATION string = solutionLocation
 
+@description('Contains Resource Group ID.')
 output AZURE_RESOURCE_GROUP_ID string = resourceGroup().id
 
+@description('Contains Azure App Configuration Name.')
 output AZURE_APP_CONFIG_NAME string = avmAppConfig.outputs.name
 
+@description('Contains Azure App Configuration Endpoint.')
 output AZURE_APP_CONFIG_ENDPOINT string = avmAppConfig.outputs.endpoint
 
-@description('Contains Resource Group Name.')
+@description('Contains Storage Account Name.')
 output STORAGE_ACCOUNT_NAME string = avmStorageAccount.outputs.name
 
 @description('Contains Cosmos DB Name.')
@@ -852,16 +939,16 @@ output AZURE_COGNITIVE_SERVICE_ENDPOINT string = documentIntelligence.outputs.en
 @description('Contains Azure Search Service Name.')
 output AZURE_SEARCH_SERVICE_NAME string = avmSearchSearchServices.outputs.name
 
-@description('Contains Azure Search Service Name.')
+@description('Contains Azure AKS Name.')
 output AZURE_AKS_NAME string = managedCluster.outputs.name
 
-@description('Contains Azure Search Service Name.')
+@description('Contains Azure AKS Managed Identity ID.')
 output AZURE_AKS_MI_ID string = managedCluster.outputs.systemAssignedMIPrincipalId
 
-@description('Contains Azure Search Service Name.')
+@description('Contains Azure Container Registry Name.')
 output AZURE_CONTAINER_REGISTRY_NAME string = avmContainerRegistry.outputs.name
 
-@description('Contains Azure OpenAI Search Service Name.')
+@description('Contains Azure OpenAI Service Name.')
 output AZURE_OPENAI_SERVICE_NAME string = avmOpenAi.outputs.name
 
 @description('Contains Azure OpenAI Service Endpoint.')
@@ -870,23 +957,14 @@ output AZURE_OPENAI_SERVICE_ENDPOINT string = avmOpenAi.outputs.endpoint
 @description('Contains Azure Search Service Endpoint.')
 output AZ_SEARCH_SERVICE_ENDPOINT string = avmSearchSearchServices.outputs.name
 
-@description('Contains Azure GPT40 Model ID.')
-output AZ_GPT4O_MODEL_ID string = chatGpt.deploymentName
+@description('Contains Azure GPT-4o Model Deployment Name.')
+output AZ_GPT4O_MODEL_ID string = gptModelDeployment.deploymentName
 
-@description('Contains Azure OpenAI embedding model name.')
-output AZ_GPT4O_MODEL_NAME string = chatGpt.modelName
+@description('Contains Azure GPT-4o Model Name.')
+output AZ_GPT4O_MODEL_NAME string = gptModelDeployment.modelName
 
-@description('Contains Azure OpenAI embedding model name.')
-output AZ_GPT_EMBEDDING_MODEL_NAME string = embedding.modelName
+@description('Contains Azure OpenAI Embedding Model Name.')
+output AZ_GPT_EMBEDDING_MODEL_NAME string = embeddingModelDeployment.modelName
 
-@description('Contains Azure OpenAI embedding model name.')
-output AZ_GPT_EMBEDDING_MODEL_ID string = embedding.deploymentName
-
-// @description('The FQDN of the frontend web app service.')
-// output kmServiceEndpoint string = containerAppService.outputs.kmServiceFQDN
-
-// @description('Service Access Key 1.')
-// output kmServiceAccessKey1 string = containerAppService.outputs.kmServiceAccessKey1
-
-// @description('Service Access Key 2.')
-// output kmServiceAccessKey2 string = containerAppService.outputs.kmServiceAccessKey2
+@description('Contains Azure OpenAI Embedding Model Deployment Name.')
+output AZ_GPT_EMBEDDING_MODEL_ID string = embeddingModelDeployment.deploymentName

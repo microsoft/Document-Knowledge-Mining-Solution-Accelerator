@@ -129,37 +129,23 @@ function LoginAzure([string]$tenantId, [string]$subscriptionID) {
 }
 
 function DisplayResult([DeploymentResult]$displayResult) {
-    $resourcegroupName = $displayResult.ResourceGroupName
-    # $solutionPrefix = $displayResult.S
-
-    $storageAccountName = $displayResult.StorageAccountName
-    $azsearchServiceName = $displayResult.AzSearchServiceName
-    $aksName = $displayResult.AksName
-
-    $containerRegistryName = $displayResult.ContainerRegistryName
-    $azcognitiveserviceName = $displayResult.AzCognitiveServiceName
-    $azopenaiServiceName = $displayResult.AzOpenAIServiceName
-    $azcosmosDBName = $displayResult.AzCosmosDBName
-    $azappConfigEndpoint = $displayResult.AzAppConfigEndpoint
-
-    # Display banner
     Write-Host "********************************************************************************" -ForegroundColor Blue
     Write-Host "*                 Deployed Azure Resources Information                         *" -ForegroundColor Blue
     Write-Host "********************************************************************************" -ForegroundColor Blue
-    Write-Host "* Tenant Id: " -ForegroundColor Yellow -NoNewline; Write-Host "$tenantId" -ForegroundColor Green
-    Write-Host "* Subscription Id: " -ForegroundColor Yellow -NoNewline; Write-Host "$subscriptionID" -ForegroundColor Green
-    Write-Host "* Knowledge Mining Digital Asset resource group: " -ForegroundColor Yellow -NoNewline; Write-Host "$resourcegroupName" -ForegroundColor Green
-    Write-Host "* Azure Kubernetes Account " -ForegroundColor Yellow -NoNewline; Write-Host "$aksName" -ForegroundColor Green
-    Write-Host "* Azure Container Registry " -ForegroundColor Yellow -NoNewline; Write-Host "$containerRegistryName" -ForegroundColor Green
-    Write-Host "* Azure Search Service " -ForegroundColor Yellow -NoNewline; Write-Host "$azsearchServiceName" -ForegroundColor Green
-    Write-Host "* Azure Open AI Service " -ForegroundColor Yellow -NoNewline; Write-Host "$azopenaiServiceName" -ForegroundColor Green
-    Write-Host "* Azure Cognitive Service " -ForegroundColor Yellow -NoNewline; Write-Host "$azcognitiveserviceName" -ForegroundColor Green
-    Write-Host "* Azure Storage Account " -ForegroundColor Yellow -NoNewline; Write-Host "$storageAccountName" -ForegroundColor Green
-    Write-Host "* Azure Cosmos DB " -ForegroundColor Yellow -NoNewline; Write-Host "$azcosmosDBName" -ForegroundColor Green
-    Write-Host "* Azure App Configuration Endpoint " -ForegroundColor Yellow -NoNewline; Write-Host "$azappConfigEndpoint" -ForegroundColor Green
-    Write-Output "rg_name=$resourcegroupName" >> $Env:GITHUB_ENV
+    Write-Host "* Tenant Id: " -ForegroundColor Yellow -NoNewline; Write-Host "$($displayResult.TenantId)" -ForegroundColor Green
+    Write-Host "* Subscription Id: " -ForegroundColor Yellow -NoNewline; Write-Host "$($displayResult.SubscriptionId)" -ForegroundColor Green
+    Write-Host "* Knowledge Mining Digital Asset resource group: " -ForegroundColor Yellow -NoNewline; Write-Host "$($displayResult.ResourceGroupName)" -ForegroundColor Green
+    Write-Host "* Azure Kubernetes Account " -ForegroundColor Yellow -NoNewline; Write-Host "$($displayResult.AksName)" -ForegroundColor Green
+    Write-Host "* Azure Container Registry " -ForegroundColor Yellow -NoNewline; Write-Host "$($displayResult.AzContainerRegistryName)" -ForegroundColor Green
+    Write-Host "* Azure Search Service " -ForegroundColor Yellow -NoNewline; Write-Host "$($displayResult.AzSearchServiceName)" -ForegroundColor Green
+    Write-Host "* Azure Open AI Service " -ForegroundColor Yellow -NoNewline; Write-Host "$($displayResult.AzOpenAIServiceName)" -ForegroundColor Green
+    Write-Host "* Azure Cognitive Service " -ForegroundColor Yellow -NoNewline; Write-Host "$($displayResult.AzCognitiveServiceName)" -ForegroundColor Green
+    Write-Host "* Azure Storage Account " -ForegroundColor Yellow -NoNewline; Write-Host "$($displayResult.StorageAccountName)" -ForegroundColor Green
+    Write-Host "* Azure Cosmos DB " -ForegroundColor Yellow -NoNewline; Write-Host "$($displayResult.AzCosmosDBName)" -ForegroundColor Green
+    Write-Host "* Azure App Configuration Endpoint " -ForegroundColor Yellow -NoNewline; Write-Host "$($displayResult.AzAppConfigEndpoint)" -ForegroundColor Green
+    Write-Output "rg_name=$($displayResult.ResourceGroupName)" >> $Env:GITHUB_ENV
 
-    Write-Output "SOLUTION_PREFIX=$solutionPrefix" >> $Env:GITHUB_ENV
+    Write-Output "SOLUTION_PREFIX=$($displayResult.SolutionPrefix)" >> $Env:GITHUB_ENV
 }
 
 # Function to replace placeholders in a template with actual values
@@ -372,15 +358,12 @@ try {
     # Map the deployment result to DeploymentResult object from .env file
     $deploymentResult.MapResult()
 
+    LoginAzure $deploymentResult.TenantId $deploymentResult.SubscriptionId
+
     # Display the deployment result
     DisplayResult($deploymentResult)
 
-    LoginAzure $deploymentResult.TenantId $deploymentResult.SubscriptionId
-
-    ###############################################################
-    # Step 2 : Validate deloyment result
-    Show-Banner -Title "Step 2 : Validate deloyment result"
-    ###############################################################
+    # Step 1.2 Validate the deployment result
     # Validate if the Storage Account Name is empty or null    
     ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.StorageAccountName -variableName "Storage Account Name"
 
@@ -402,13 +385,9 @@ try {
     # Get MongoDB connection string
     $deploymentResult.AzCosmosDBConnectionString = az cosmosdb keys list --name $deploymentResult.AzCosmosDBName --resource-group $deploymentResult.ResourceGroupName --type connection-strings --query "connectionStrings[0].connectionString" -o tsv
 
-    Write-Host "Secrets have been retrieved successfully." -ForegroundColor Green
+    Write-Host "Validation Completed" -ForegroundColor Green
 
-    ######################################################################################################################
-    # Step 3 : Update App Configuration files with Secrets and information for AI Service and Kernel Memory Service.
-    Show-Banner -Title "Step 3 : Update App Configuration files with Secrets and information for AI Service and Kernel Memory Service."
-    ######################################################################################################################
-    # Step 3-1 Loading aiservice's configution file template then replace the placeholder with the actual values
+    # Step 1-3 Loading aiservice's configution file template then replace the placeholder with the actual values
     # Define the placeholders and their corresponding values for AI service configuration
     
     $aiServicePlaceholders = @{
@@ -440,48 +419,11 @@ try {
     $aiServiceConfigTemplate = Get-Content -Path .\appconfig\aiservice\appconfig.jsonl -Raw
     $aiServiceConfigTemplate = Invoke-PlaceholdersReplacement $aiServiceConfigTemplate $aiServicePlaceholders
 
-    # ## Save the updated AI service configuration file
-    # $aiServiceConfigPath = ".\appconfig\aiservice\appsettings.dev.jsonl"
-    # $aiServiceConfigTemplate | Set-Content -Path $aiServiceConfigPath -Force
-    # Write-Host "Knowledge Mining Solution Accelerator Service Application Configuration file has been updated successfully." -ForegroundColor Green
-
-    # ## Set error action preference to silently continue
-    # $ErrorActionPreference = "SilentlyContinue"
-    # ## Get the current script directory dynamically
-    # $scriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Definition
-
-    # ## Construct the relative path to the JSON file
-    # $filePath = Join-Path $scriptDirectory ".\appconfig\aiservice\appsettings.dev.jsonl"
-
-    # ## Other variables
-    # $appConfigName = $deploymentResult.AzAppConfigName
-
-    # ## Output the file path for verification
-    # #write-host "Using file path: $filePath"
-
-    # ## Execute the az appconfig kv import command using PowerShell
-    # az appconfig kv import `
-    #     --name $appConfigName `
-    #     --source file `
-    #     --path $filePath `
-    #     --format json `
-    #     --separator "," `
-    #     --content-type "application/x-ndjson" `
-    #     --yes
-
-    # ## Check if the file exists and delete it
-    # if (Test-Path $aiServiceConfigPath) {
-    #     Remove-Item $aiServiceConfigPath -Force
-    #     #Write-Host "File '$aiServiceConfigPath' has been deleted."
-    # } else {
-    #     Write-Host "File '$aiServiceConfigPath' does not exist."
-    # }
-    # $ErrorActionPreference = "Continue"
-
+    Write-Host "Update Configuration files Completed." -ForegroundColor Green
     
     ######################################################################################################################
-    # Step 4 : Configure Kubernetes Infrastructure
-    Show-Banner -Title "Step 4 : Configure Kubernetes Infrastructure"
+    # Step 2 : Configure Kubernetes Infrastructure
+    Show-Banner -Title "Step 2 : Configure Kubernetes Infrastructure"
     ######################################################################################################################
     # 0. Attach Container Registry to AKS
     Write-Host "Attach Container Registry to AKS" -ForegroundColor Green
@@ -534,7 +476,6 @@ try {
         failureBanner
         exit 1
     }
-
 
     # 2.Connect to AKS cluster
     try {
@@ -684,18 +625,18 @@ try {
     }
 
     #########################################################################################################################################
-    # Step 5 : Update Kubernetes configuration files with the FQDN, Container Image Path and Email address for the certificate management
-    #Write-Host "Step 5 : Update Kubernetes yaml files with Container Image Path and Email address for the certificate management" -ForegroundColor Yellow
-    Show-Banner -Title "Step 5 : Update Kubernetes yaml files with Container Image Path and Email address for the certificate management"
+    # Step 3 : Update Kubernetes configuration files with the FQDN, Container Image Path and Email address for the certificate management
+    #Write-Host "Step 3 : Update Kubernetes yaml files with Container Image Path and Email address for the certificate management" -ForegroundColor Yellow
+    Show-Banner -Title "Step 3 : Update Kubernetes yaml files with Container Image Path and Email address for the certificate management"
     #########################################################################################################################################
 
-    # 5.1 Update deploy.certclusterissuer.yaml.template file and save as deploy.certclusterissuer.yaml
+    # 3.1 Update deploy.certclusterissuer.yaml.template file and save as deploy.certclusterissuer.yaml
     $certManagerTemplate = Get-Content -Path .\kubernetes\deploy.certclusterissuer.yaml.template -Raw
     $certManagerTemplate = $certManagerTemplate -replace '{{ your-email }}', $email
     $certManagerPath = ".\kubernetes\deploy.certclusterissuer.yaml"
     $certManagerTemplate | Set-Content -Path $certManagerPath -Force
 
-    # 5.2 Update deploy.ingress.yaml.template file and save as deploy.ingress.yaml
+    # 3.2 Update deploy.ingress.yaml.template file and save as deploy.ingress.yaml
     # webfront / apibackend
     $ingressPlaceholders = @{
         '{{ fqdn }}' = $fqdn
@@ -708,7 +649,7 @@ try {
     Write-Host "Ingress Controller configuration file have been updated successfully." -ForegroundColor Green
 
 
-    # 5.3 Update deploy.deployment.yaml.template file and save as deploy.deployment.yaml
+    # 3.3 Update deploy.deployment.yaml.template file and save as deploy.deployment.yaml
     # Validate AzContainerRegistryName IsNull Or Empty.
     ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.AzContainerRegistryName -variableName "Azure Container Registry Name"
 
@@ -737,9 +678,9 @@ try {
     $deployment | Set-Content -Path $deploymentPath -Force
 
     ########################################################################################################################################################
-    # Step 6 : Configure AKS (deploy Cert Manager, Ingress Controller) and Deploy Images on the kubernetes cluster
-    #Write-Host "Step 6 : Configure AKS (deploy Cert Manager) and Deploy Images on the kubernetes cluster" -ForegroundColor Yellow
-    Show-Banner -Title "Step 6 : Configure AKS (deploy Cert Manager) and Deploy Images on the kubernetes cluster"
+    # Step 4 : Configure AKS (deploy Cert Manager, Ingress Controller) and Deploy Images on the kubernetes cluster
+    #Write-Host "Step 4 : Configure AKS (deploy Cert Manager) and Deploy Images on the kubernetes cluster" -ForegroundColor Yellow
+    Show-Banner -Title "Step 4 : Configure AKS (deploy Cert Manager) and Deploy Images on the kubernetes cluster"
     ########################################################################################################################################################
     function Wait-ForCertManager {
         Write-Host "Waiting for Cert-Manager to be ready..." -ForegroundColor Cyan
@@ -756,7 +697,7 @@ try {
     }
     
     Write-Host "Deploying Cert Manager" -ForegroundColor Green
-    # 6.1. Install Cert Manager and nginx ingress controller in Kubernetes for SSL/TLS certificate
+    # 4.1. Install Cert Manager and nginx ingress controller in Kubernetes for SSL/TLS certificate
     # Install Cert-Manager
     Write-Host "Deploying...." -ForegroundColor Green
     helm repo add jetstack https://charts.jetstack.io --force-update
@@ -823,8 +764,8 @@ try {
     Copy-Item -Path $frontAppConfigPath -Destination "..\App\frontend-app\.env" -Force
 
     ######################################################################################################################
-    # Step 7 : docker build and push container images to Azure Container Registry
-    Show-Banner -Title "Step 7 : docker build and push container images to Azure Container Registry"
+    # Step 5 : docker build and push container images to Azure Container Registry
+    Show-Banner -Title "Step 5 : docker build and push container images to Azure Container Registry"
     ######################################################################################################################
     # $acrNamespace = "kmgs"
     # $acrAIServiceTag = "$($deploymentResult.AzContainerRegistryName).azurecr.io/$acrNamespace/aiservice"
@@ -853,16 +794,16 @@ try {
 
     #======================================================================================================================================================================
 
-    # 7.2. Deploy ClusterIssuer in Kubernetes for SSL/TLS certificate
+    # 5.2. Deploy ClusterIssuer in Kubernetes for SSL/TLS certificate
     kubectl apply -f "./kubernetes/deploy.certclusterissuer.yaml"
 
-    # 7.3. Deploy Deployment in Kubernetes
+    # 5.3. Deploy Deployment in Kubernetes
     kubectl apply -f "./kubernetes/deploy.deployment.yaml" -n $kubenamespace
 
-    # 7.4. Deploy Services in Kubernetes
+    # 5.4. Deploy Services in Kubernetes
     kubectl apply -f "./kubernetes/deploy.service.yaml" -n $kubenamespace
 
-    # 7.5. Deploy Ingress Controller in Kubernetes for external access
+    # 5.5. Deploy Ingress Controller in Kubernetes for external access
     kubectl apply -f "./kubernetes/deploy.ingress.yaml" -n $kubenamespace
 
     # #####################################################################
@@ -874,7 +815,7 @@ try {
 
 
     #####################################################################
-    # Step 8 : Display the deployment result and following instructions
+    # Step 6 : Display the deployment result and following instructions
     #####################################################################
     #Write-Host "Deployment has been completed successfully." -ForegroundColor Green
     successBanner

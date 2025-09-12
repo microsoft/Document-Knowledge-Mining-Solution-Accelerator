@@ -92,7 +92,7 @@ output subnets subnetOutputType[] = [
     name: subnet.name
     resourceId: virtualNetwork.outputs.subnetResourceIds[i]
     nsgName: !empty(subnet.?networkSecurityGroup) ? subnet.?networkSecurityGroup.name : null
-    nsgResourceId: !empty(subnet.?networkSecurityGroup) ? nsgs[i].outputs.resourceId : null
+    nsgResourceId: !empty(subnet.?networkSecurityGroup) ? nsgs[i]!.outputs.resourceId : null
   }
 ]
 
