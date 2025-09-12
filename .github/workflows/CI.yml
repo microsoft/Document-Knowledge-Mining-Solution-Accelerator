@@ -156,7 +156,7 @@ jobs:
         run: |
           az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
           az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          
+
       - name: Check and Create Resource Group
         id: check_create_rg
         run: |
@@ -175,7 +175,7 @@ jobs:
         id: generate_solution_prefix
         run: |
           set -e
-          COMMON_PART="psldg"
+          COMMON_PART="psldkm"
           TIMESTAMP=$(date +%s)  
           UPDATED_TIMESTAMP=$(echo $TIMESTAMP | tail -c 6) 
           UNIQUE_SOLUTION_PREFIX="${COMMON_PART}${UPDATED_TIMESTAMP}"
@@ -192,14 +192,14 @@ jobs:
             --template-file infra/main.bicep \
             --parameters \
                 solutionName="${{ env.SOLUTION_PREFIX }}" \
-                secondaryLocation="australiaeast" \
-                deploymentType="GlobalStandard" \
+                location=${{ env.AZURE_LOCATION }} \
                 gptModelName="gpt-4.1" \
-                azureOpenaiAPIVersion="2025-01-01-preview" \
-                gptDeploymentCapacity=${{ env.GPT_MIN_CAPACITY }} \
-                embeddingModel="text-embedding-3-large" \
-                embeddingDeploymentCapacity=${{ env.TEXT_EMBEDDING_MIN_CAPACITY }} \
-                azureAiServiceLocation=${{ env.AZURE_LOCATION }} \
+                gptModelCapacity=${{ env.GPT_CAPACITY }} \
+                gptModelVersion="2025-01-01-preview" \
+                embeddingModelName="text-embedding-3-large" \
+                embeddingModelCapacity=${{ env.TEXT_EMBEDDING_CAPACITY }} \
+                enableMonitoring=true \
+                enableTelemetry=true \
                 createdBy="Pipeline"
 
       - name: Generate Environment Name
