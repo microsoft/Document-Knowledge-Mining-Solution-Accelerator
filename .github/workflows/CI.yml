@@ -137,6 +137,11 @@ jobs:
       - name: Install Bicep CLI
         run: az bicep install
 
+      - name: Install Azure Developer CLI
+        run: |
+          curl -fsSL https://aka.ms/install-azd.sh | bash
+        shell: bash
+        
       - name: Set Deployment Region
         run: |
           echo "Selected Region: $VALID_REGION"
