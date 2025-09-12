@@ -6,8 +6,8 @@
 
 ## Contents
 * [Prerequisites](#prerequisites)
-* [Regional Availability](#regional-availability)
-* [Deployment](#deployment)
+* [Deployment Options](#deployment-options--steps)
+* [Deployment](#deployment-steps)
 * [Next Steps](#next-steps)
 
 ## Prerequisites
@@ -42,37 +42,123 @@
    <br>
    <img src="./images/deployment/Subscription_ResourceProvider.png" alt="ResourceProvider" width="900">
 
+## Deployment Options & Steps
 
-## Regional Availability
+### Sandbox or WAF Aligned Deployment Options
 
-*Due to model availability within various data center regions, the following services have been hard-coded to specific regions.*
+The [`infra`](../infra) folder of the Multi Agent Solution Accelerator contains the [`main.bicep`](../infra/main.bicep) Bicep script, which defines all Azure infrastructure components for this solution.
 
-* **Azure Open AI (GPT 4o mini):**<br>
-The solution relies on `GPT-4o mini` and `text-embedding-3-large` models which are all currently available in the 'WestUS3', 'EastUS', 'EastUS2', 'SwedenCentral' region.  
-Please check the
-[model summary table and region availability](https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models#embeddings) if needed.
+By default, the `azd up` command uses the [`main.parameters.json`](../infra/main.parameters.json) file to deploy the solution. This file is pre-configured for a **sandbox environment** — ideal for development and proof-of-concept scenarios, with minimal security and cost controls for rapid iteration.
 
-* **Azure AI Document Intelligence (East US):**<br>
-The solution relies on a `2023-10-31-preview` or later that is currently available in `East US` region.  
-The deployment region for this model is fixed in 'East US'
+For **production deployments**, the repository also provides [`main.waf.parameters.json`](../infra/main.waf.parameters.json), which applies a [Well-Architected Framework (WAF) aligned](https://learn.microsoft.com/en-us/azure/well-architected/) configuration. This option enables additional Azure best practices for reliability, security, cost optimization, operational excellence, and performance efficiency, such as:
+
+  - Enhanced network security (e.g., Network protection with private endpoints)
+  - Stricter access controls and managed identities
+  - Logging, monitoring, and diagnostics enabled by default
+  - Resource tagging and cost management recommendations
+
+**How to choose your deployment configuration:**
+
+* Use the default `main.parameters.json` file for a **sandbox/dev environment**
+* For a **WAF-aligned, production-ready deployment**, copy the contents of `main.waf.parameters.json` into `main.parameters.json` before running `azd up`
+
+---
+
+### VM Credentials Configuration
+
+By default, the solution sets the VM administrator username and password from environment variables.
+If you do not configure these values, a randomly generated GUID will be used for both the username and password.
+
+To set your own VM credentials before deployment, use:
+
+```sh
+azd env set AZURE_ENV_VM_ADMIN_USERNAME <your-username>
+azd env set AZURE_ENV_VM_ADMIN_PASSWORD <your-password>
+```
+
+> [!TIP]
+> Always review and adjust parameter values (such as region, capacity, security settings and log analytics workspace configuration) to match your organization’s requirements before deploying. For production, ensure you have sufficient quota and follow the principle of least privilege for all identities and role assignments.
 
 
-## Deployment
+> [!IMPORTANT]
+> The WAF-aligned configuration is under active development. More Azure Well-Architected recommendations will be added in future updates.
 
-The automated deployment process is very straightforward and simplified via a single [deployment script](../Deployment/resourcedeployment.ps1) that completes in approximately 10-15 minutes:
+## Deployment Steps
+
+Consider the following settings during your deployment to modify specific settings:
+
+<details>
+  <summary><b>Configurable Deployment Settings</b></summary>
+
+When you start the deployment, most parameters will have **default values**, but you can update the following settings [here](../docs/CustomizingAzdParameters.md):
+
+| **Setting**                    | **Description**                                                                      | **Default value** |
+| ------------------------------ | ------------------------------------------------------------------------------------ | ----------------- |
+| **Environment Name**           | Used as a prefix for all resource names to ensure uniqueness across environments.    | dkm             |
+| **Azure Region**               | Location of the Azure resources. Controls where the infrastructure will be deployed. | australiaeast     |
+| **Model Deployment Type**      | Defines the deployment type for the AI model (e.g., Standard, GlobalStandard).      | GlobalStandard    |
+| **GPT Model Name**             | Specifies the name of the GPT model to be deployed.                                 | gpt-4.1            |
+| **GPT Model Version**          | Version of the GPT model to be used for deployment.                                 | 2024-08-06        |
+| **GPT Model Capacity**          | Sets the GPT model capacity.                                 | 100K        |
+| **Embedding Model**                         | Sets the embedding model.                                                                      | text-embedding-3-large |
+| **Embedding Model Capacity**                | Set the capacity for **embedding models** (in thousands).                                                 | 100k                    |
+| **Enable Telemetry**           | Enables telemetry for monitoring and diagnostics.                                    | true              |
+| **Existing Log Analytics Workspace**        | To reuse an existing Log Analytics Workspace ID instead of creating a new one.              | *(none)*          |
+
+</details>
+
+### Deploying with AZD
+
+Once you've opened the project [locally](#local-environment), you can deploy it to Azure by following these steps:
+
+1. Clone the repository or download the project code via command-line:
+
+    ```cmd
+    git clone https://github.com/microsoft/Document-Knowledge-Mining-Solution-Accelerator
+    ```
+
+    Open the cloned repository in Visual Studio Code and connect to the development container.
+
+    ```cmd
+    code .
+    ```
+
+2. Login to Azure:
+
+    ```shell
+    azd auth login
+    ```
+
+    #### To authenticate with Azure Developer CLI (`azd`), use the following command with your **Tenant ID**:
+
+    ```sh
+    azd auth login --tenant-id <tenant-id>
+    ```
+
+3. Provision and deploy all the resources:
+
+    ```shell
+    azd up
+    ```
+
+4. Provide an `azd` environment name (e.g., "ckmapp").
+5. Select a subscription from your Azure account and choose a location that has quota for all the resources. 
+    -- This deployment will take *7-10 minutes* to provision the resources in your account and set up the solution with sample data.
+    - If you encounter an error or timeout during deployment, changing the location may help, as there could be availability constraints for the resources.
+
+6. If you are done trying out the application, you can delete the resources by running `azd down`.
+
+### Post Deployment Script:
+
+The post deployment process is very straightforward and simplified via a single [deployment script](../Deployment/resourcedeployment.ps1) that completes in approximately 20-30 minutes:
 
 ### Automated Deployment Steps:
-1. Deploy Azure resources.
-2. Get secret information from Azure resources.
-3. Update application configuration files with secrets.
-4. Set Application Configuration in Azure App Configuration.
-4. Compile application, build image, and push to Azure Container Registry.
-5. Configure Kubernetes cluster infrastructure.
-6. Update Kubernetes configuration files.
-7. Deploy certificates, ingress controller and then application images from Azure Container Registry.
+1. Configure Kubernetes Infrastructure.
+2. Update Kubernetes configuration files with the FQDN, Container Image Path and Email address for the certificate management.
+3. Configure AKS (deploy Cert Manager, Ingress Controller) and Deploy Images on the kubernetes cluster.
+4. Docker build and push container images to Azure Container Registry.
+5. Display the deployment result and following instructions.
 
-
-### Execute Deployment Script:
 Open PowerShell, change directory where you code cloned, then run the deploy script:  
 
 ```
@@ -89,63 +175,15 @@ powershell.exe -ExecutionPolicy Bypass -File ".\resourcedeployment.ps1"
 ```
 
 You will be prompted for the following parameters with this Screen :  
-<img src="./images/deployment/Deployment_Screen01.png" width="900" alt-text="Input Parameters">
+<img src="./images/deployment/Deployment_Input_Param_01.png" width="900" alt-text="Input Parameters">
 
-1. **Tenant ID** - The Azure Active Directory (AAD) tenant ID. This is used for authenticating against Azure resources. Copy this from the Azure portal.
-Example: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+1. **Email** - used for issuing certificates in Kubernetes clusters from the [Let's Encrypt](https://letsencrypt.org/) service. Email address should be valid.  
 
-2. **Subscription ID** - The Azure subscription ID where resources will be deployed.
-Copy this from the Azure portal.
+<img src="./images/deployment/Deployment_Login_02.png" width="900" alt-text="Login">
 
-3. **Environment Name** - A unique environment name (e.g., dev, test, prod).
-This is used to scope resource names and group deployments logically.
+2. You will be prompted to Login, Select a account and proceed to Login.
 
-4. **Resource Group Name** - The Azure resource group to deploy resources into.
-You may either:
-
-   - Specify an existing resource group to reuse it, [see below](#configuring-a-new-or-existing-resource-group) for more details, or
-   - Leave blank to auto-generate a new name.
-
-5. **Location** - Azure data center where resources will be deployed.
-
-    * Please [check Azure resource availability and note hardcoded regions](#regional-availability). The following locations are currently supported: 
-    
-    ```
-    'EastUS', 'EastUS2', 'WestUS', 'WestUS2', 'WestUS3', 'CentralUS', 'NorthCentralUS', 'SouthCentralUS','WestEurope', 'NorthEurope', 'SoutheastAsia', 'EastAsia', 'JapanEast', 'JapanWest', 'AustraliaEast', 'AustraliaSoutheast', 'CentralIndia', 'SouthIndia', 'CanadaCentral','CanadaEast', 'UKSouth', 'UKWest', 'FranceCentral', 'FranceSouth', 'KoreaCentral','KoreaSouth', 'GermanyWestCentral', 'GermanyNorth', 'NorwayWest', 'NorwayEast', 'SwitzerlandNorth', 'SwitzerlandWest', 'UAENorth', 'UAECentral', 'SouthAfricaNorth','SouthAfricaWest', 'BrazilSouth','BrazilSoutheast', 'QatarCentral', 'ChinaNorth', 'ChinaEast', 'ChinaNorth2', 'ChinaEast2'
-    ```
-6. **ModelLocation** - Azure data center where GPT model will be deployed.  
-    The following locations are currently available :
-    ```
-    'WestUS3', 'EastUS', 'EastUS2', 'SwedenCentral'
-    ```
-
-7. **Email** - used for issuing certificates in Kubernetes clusters from the [Let's Encrypt](https://letsencrypt.org/) service. Email address should be valid.  
-
-8. **GO !** - Deployment Script executes Azure deployment, Azure Infrastructure configuration, Application code compile and publish into Kubernetes Cluster.
-
-## Configuring a New or Existing Resource Group
-
-➕ Creating a New Resource Group
-
-You have two options:
-
-- Manually specify a resource group name (e.g., rg-myproject-dev)
-
-- Leave the input field blank — a new name will be auto-generated by the script
-
-🔁 Using an Existing Resource Group
-
-If reusing an existing Azure Resource Group:
-
-- Provide the exact name of the existing resource group
-
-- Ensure the environment name matches the original environment used for that resource group
-
-  ⚠️ After deployment, please restart the AKS (Kubernetes) service to ensure updated configurations are applied when using a reused resource group.
-
-
-
-<!-- 1. **Data File Upload and Processing**  - Once the deployment finished, The Sample Data File upload and Document processing starts. -->
+3. **GO !** - Post Deployment Script executes Azure Infrastructure configuration, Application code compile and publish into Kubernetes Cluster.
 
 ### Manual Deployment Steps:
 **Create Content Filter** - Please follow below steps
@@ -177,7 +215,7 @@ Don't miss this Url information. This is the application's endpoint URL and it s
 
 | Model Name             | TPM Threshold |
 |------------------------|---------------|
-| GPT-4o-mini            | 100K TPM      |
+| GPT-4.1-mini           | 100K TPM      |
 | text-embedding-3-large | 200K TPM      |
 
 
@@ -200,4 +238,10 @@ Execute uploadfiles.ps1 file with **-EndpointUrl** parameter as URL in console m
 
 ```
 .\uploadfiles.ps1 -EndpointUrl https://kmgs<your dns name>.<datacenter>.cloudapp.azure.com
+```
+
+If you run into issue with PowerShell script file not being digitally signed, you can execute below command:
+
+```
+powershell.exe -ExecutionPolicy Bypass -File ".\uploadfiles.ps1" -EndpointUrl https://kmgs<your dns name>.<datacenter>.cloudapp.azure.com
 ```
