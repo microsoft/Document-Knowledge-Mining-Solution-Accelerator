@@ -6,8 +6,8 @@
 
 ## Contents
 * [Prerequisites](#prerequisites)
-* [Regional Availability](#regional-availability)
-* [Deployment](#deployment)
+* [Deployment Options](#deployment-options--steps)
+* [Deployment](#deployment-steps)
 * [Next Steps](#next-steps)
 
 ## Prerequisites
@@ -153,12 +153,11 @@ Once you've opened the project in [Codespaces](#github-codespaces), [Dev Contain
 The post deployment process is very straightforward and simplified via a single [deployment script](../Deployment/resourcedeployment.ps1) that completes in approximately 20-30 minutes:
 
 ### Automated Deployment Steps:
-1. Deploy Azure resources.
-2. Configure Kubernetes Infrastructure.
-3. Update Kubernetes configuration files with the FQDN, Container Image Path and Email address for the certificate management.
-4. Configure AKS (deploy Cert Manager, Ingress Controller) and Deploy Images on the kubernetes cluster.
-5. Docker build and push container images to Azure Container Registry.
-6. Display the deployment result and following instructions.
+1. Configure Kubernetes Infrastructure.
+2. Update Kubernetes configuration files with the FQDN, Container Image Path and Email address for the certificate management.
+3. Configure AKS (deploy Cert Manager, Ingress Controller) and Deploy Images on the kubernetes cluster.
+4. Docker build and push container images to Azure Container Registry.
+5. Display the deployment result and following instructions.
 
 Open PowerShell, change directory where you code cloned, then run the deploy script:  
 
@@ -180,10 +179,9 @@ You will be prompted for the following parameters with this Screen :
 
 1. **Email** - used for issuing certificates in Kubernetes clusters from the [Let's Encrypt](https://letsencrypt.org/) service. Email address should be valid.  
 
+<img src="./images/deployment/Deployment_Login_02.png" width="900" alt-text="Login">
 2. You will be prompted to Login, Select a account and proceed to Login.
 3. **GO !** - Post Deployment Script executes Azure Infrastructure configuration, Application code compile and publish into Kubernetes Cluster.
-
-<!-- 1. **Data File Upload and Processing**  - Once the deployment finished, The Sample Data File upload and Document processing starts. -->
 
 ### Manual Deployment Steps:
 **Create Content Filter** - Please follow below steps
