@@ -10,8 +10,8 @@ on:
     - cron: "0 10,22 * * *" # Runs at 10:00 AM and 10:00 PM GMT
 
 env:
-  GPT_CAPACITY: 250
-  TEXT_EMBEDDING_CAPACITY: 200
+  GPT_CAPACITY: 100
+  TEXT_EMBEDDING_CAPACITY: 100
 
 jobs:
   deploy:
@@ -192,14 +192,17 @@ jobs:
             --template-file infra/main.bicep \
             --parameters \
                 solutionName="${{ env.SOLUTION_PREFIX }}" \
-                location=${{ env.AZURE_LOCATION }} \
-                gptModelName="gpt-4.1" \
+                location="australiaeast" \
+                gptModelDeploymentType="GlobalStandard" \
+                gptModelName="gpt-4.1-mini" \
                 gptModelCapacity=${{ env.GPT_CAPACITY }} \
-                gptModelVersion="2025-01-01-preview" \
+                gptModelVersion="2025-04-14" \
                 embeddingModelName="text-embedding-3-large" \
                 embeddingModelCapacity=${{ env.TEXT_EMBEDDING_CAPACITY }} \
-                enableMonitoring=true \
+                enableMonitoring=false \
                 enableTelemetry=true \
+                enableRedundancy=false \
+                enableScalability=false \
                 createdBy="Pipeline"
 
       - name: Generate Environment Name
