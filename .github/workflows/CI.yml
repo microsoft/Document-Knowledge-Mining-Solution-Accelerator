@@ -178,7 +178,9 @@ jobs:
           echo "Generated SOLUTION_PREFIX: ${UNIQUE_SOLUTION_PREFIX}" 
 
       - name: Deploy Bicep Template
-        
+        id: deploy
+        run: |
+          set -e
           az deployment group create \
             --name ${{ env.SOLUTION_PREFIX }}-deployment \
             --resource-group ${{ env.RESOURCE_GROUP_NAME }} \
