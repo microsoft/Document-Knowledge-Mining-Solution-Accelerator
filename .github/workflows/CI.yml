@@ -134,6 +134,67 @@ jobs:
         if: env.QUOTA_FAILED == 'true'
         run: exit 1
         
+      - name: Install Bicep CLI
+        run: az bicep install
+
+      - name: Set Deployment Region
+        run: |
+          echo "Selected Region: $VALID_REGION"
+          echo "AZURE_LOCATION=$VALID_REGION" >> $GITHUB_ENV
+
+      - name: Generate Resource Group Name
+        id: generate_rg_name
+        run: |
+          echo "Generating a unique resource group name..."
+          ACCL_NAME="dkm"  # Account name as specified
+          SHORT_UUID=$(uuidgen | cut -d'-' -f1)
+          UNIQUE_RG_NAME="arg-${ACCL_NAME}-${SHORT_UUID}"
+          echo "RESOURCE_GROUP_NAME=${UNIQUE_RG_NAME}" >> $GITHUB_ENV
+          echo "Generated RESOURCE_GROUP_NAME: ${UNIQUE_RG_NAME}"
+
+      - name: Check and Create Resource Group
+        id: check_create_rg
+        run: |
+          set -e  
+          echo "Checking if resource group exists..."
+          rg_exists=$(az group exists --name ${{ env.RESOURCE_GROUP_NAME }})
+          if [ "$rg_exists" = "false" ]; then
+            echo "Resource group does not exist. Creating..."
+            az group create --name ${{ env.RESOURCE_GROUP_NAME }} --location ${{ env.AZURE_LOCATION }} || { echo "Error creating resource group"; exit 1; }
+          else
+            echo "Resource group already exists."
+          fi
+          echo "RESOURCE_GROUP_NAME=${{ env.RESOURCE_GROUP_NAME }}" >> $GITHUB_OUTPUT      
+
+      - name: Generate Unique Solution Prefix
+        id: generate_solution_prefix
+        run: |
+          set -e
+          COMMON_PART="psldg"
+          TIMESTAMP=$(date +%s)  
+          UPDATED_TIMESTAMP=$(echo $TIMESTAMP | tail -c 6) 
+          UNIQUE_SOLUTION_PREFIX="${COMMON_PART}${UPDATED_TIMESTAMP}"
+          echo "SOLUTION_PREFIX=${UNIQUE_SOLUTION_PREFIX}" >> $GITHUB_ENV
+          echo "Generated SOLUTION_PREFIX: ${UNIQUE_SOLUTION_PREFIX}" 
+
+      - name: Deploy Bicep Template
+        
+          az deployment group create \
+            --name ${{ env.SOLUTION_PREFIX }}-deployment \
+            --resource-group ${{ env.RESOURCE_GROUP_NAME }} \
+            --template-file infra/main.bicep \
+            --parameters \
+                solutionName="${{ env.SOLUTION_PREFIX }}" \
+                secondaryLocation="australiaeast" \
+                deploymentType="GlobalStandard" \
+                gptModelName="gpt-4.1" \
+                azureOpenaiAPIVersion="2025-01-01-preview" \
+                gptDeploymentCapacity=${{ env.GPT_MIN_CAPACITY }} \
+                embeddingModel="text-embedding-3-large" \
+                embeddingDeploymentCapacity=${{ env.TEXT_EMBEDDING_MIN_CAPACITY }} \
+                azureAiServiceLocation=${{ env.AZURE_LOCATION }} \
+                createdBy="Pipeline"
+
       - name: Generate Environment Name
         id: generate_environment_name
         shell: bash
@@ -160,7 +221,7 @@ jobs:
           yes
           "@
           $input | pwsh ./resourcedeployment.ps1
-          Write-Host "Resource Group Name is ${{ env.rg_name }}"
+          Write-Host "Resource Group Name is ${{ env.RESOURCE_GROUP_NAME }}"
           Write-Host "Kubernetes resource group are ${{ env.krg_name }}"
         env:
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
@@ -173,7 +234,7 @@ jobs:
         shell: bash
         run: |
           # Save the resource group name and Kubernetes resource group name to GITHUB_OUTPUT
-          echo "RESOURCE_GROUP_NAME=${{ env.rg_name }}" >> $GITHUB_OUTPUT
+          echo "RESOURCE_GROUP_NAME=${{ env.RESOURCE_GROUP_NAME }}" >> $GITHUB_OUTPUT
           echo "KUBERNETES_RESOURCE_GROUP_NAME=${{ env.krg_name }}" >> $GITHUB_OUTPUT
           echo "VALID_REGION=${{ env.VALID_REGION }}" >> $GITHUB_OUTPUT
 
