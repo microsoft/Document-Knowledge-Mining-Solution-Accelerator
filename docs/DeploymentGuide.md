@@ -100,8 +100,8 @@ When you start the deployment, most parameters will have **default values**, but
 | **GPT Model Name**             | Specifies the name of the GPT model to be deployed.                                 | gpt-4.1            |
 | **GPT Model Version**          | Version of the GPT model to be used for deployment.                                 | 2024-08-06        |
 | **GPT Model Capacity**          | Sets the GPT model capacity.                                 | 100K        |
-| **Embedding Model**                         | Default: **text-embedding-ada-002**.                                                                      | text-embedding-3-large |
-| **Embedding Model Capacity**                | Set the capacity for **embedding models** (in thousands).                                                 | 200k                    |
+| **Embedding Model**                         | Sets the embedding model.                                                                      | text-embedding-3-large |
+| **Embedding Model Capacity**                | Set the capacity for **embedding models** (in thousands).                                                 | 100k                    |
 | **Enable Telemetry**           | Enables telemetry for monitoring and diagnostics.                                    | true              |
 | **Existing Log Analytics Workspace**        | To reuse an existing Log Analytics Workspace ID instead of creating a new one.              | *(none)*          |
 
