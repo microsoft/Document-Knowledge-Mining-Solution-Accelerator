@@ -74,7 +74,8 @@ function ValidateVariableIsNullOrEmpty {
 function PromptForParameters {
     param(
         [string]$email
-    )
+
+)
 
     Clear-Host
 
@@ -109,7 +110,7 @@ function LoginAzure([string]$tenantId, [string]$subscriptionID) {
         az login --service-principal `
             --username $env:AZURE_CLIENT_ID `
             --password $env:AZURE_CLIENT_SECRET `
-            --tenant $env:AZURE_TENANT_ID
+            --tenant $env:AZURE_TENANT_ID `
         Write-Host "CI deployment mode"
     }
     else{
@@ -125,7 +126,7 @@ function LoginAzure([string]$tenantId, [string]$subscriptionID) {
         Write-Host "manual deployment mode"
     }
     az account set --subscription $subscriptionID
-    Write-Host "Switched subscription to '$subscriptionID' `r`n" -ForegroundColor Yellow
+    Write-Host "Switched subscription to '$subscriptionID' `r`n" -ForegroundColor Yellow  
 }
 
 function DisplayResult([DeploymentResult]$displayResult) {
@@ -825,7 +826,7 @@ try {
     "2. Check GPT Model's TPM rate in your resource group - $($deploymentResult.ResourceGroupName) `n`r" +
     "Please set each value high as much as you can set`n`r" +
     "`t- Open AI Resource Name - $($deploymentResult.AzOpenAiServiceName) `n`r" +
-    "`t- GPT4o Model - $($deploymentResult.AzGPT4oModelName) `n`r" +
+    "`t- GPT Model - $($deploymentResult.AzGPT4oModelName) `n`r" +
     "`t- GPT Embedding Model - $($deploymentResult.AzGPTEmbeddingModelName) `n`r"
     Write-Host $messageString -ForegroundColor Yellow
     Write-Host "Don't forget to control the TPM rate for your GPT and Embedding Model in Azure Open AI Studio Deployments section." -ForegroundColor Red

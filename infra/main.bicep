@@ -103,6 +103,21 @@ param enableScalability bool = false
 @description('Required. Location for AI Foundry deployment. This is the location where the AI Foundry resources will be deployed.')
 param aiDeploymentsLocation string
 
+@description('Optional created by user name')
+param createdBy string = empty(deployer().userPrincipalName) ? '' : split(deployer().userPrincipalName, '@')[0]
+
+// ========== Resource Group Tag ========== //
+resource resourceGroupTags 'Microsoft.Resources/tags@2021-04-01' = {
+  name: 'default'
+  properties: {
+    tags: {
+      ...tags
+      TemplateName: 'DKM'
+      CreatedBy: createdBy
+    }
+  }
+}
+
 var solutionLocation = empty(location) ? resourceGroup().location : location
 
 // @description('Optional. Key vault reference and secret settings for the module\'s secrets export.')
