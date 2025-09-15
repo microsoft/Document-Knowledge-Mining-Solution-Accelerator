@@ -1,4 +1,4 @@
-﻿# Copyright (c) Microsoft Corporation.
+﻿﻿# Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
 #https://patorjk.com/software/taag
@@ -74,9 +74,7 @@ function ValidateVariableIsNullOrEmpty {
 function PromptForParameters {
     param(
         [string]$email
-
 )
-
     Clear-Host
 
     # Display banner
@@ -95,13 +93,6 @@ function PromptForParameters {
 
 # Prompt for parameters with kind messages
  $params = PromptForParameters -email $email
-# # Assign the parameters to variables
-# $tenantId = $params.tenantId
-# $subscriptionID = $params.subscriptionID
-# $environmentName = $params.environmentName
-# $resourceGroupName = $params.resourceGroupName
-# $location = $params.location
-# $modelLocation = $params.modelLocation
 $email = $params.email
 
 function LoginAzure([string]$tenantId, [string]$subscriptionID) {
@@ -203,6 +194,40 @@ function Show-Banner {
     Write-Host $borderLine -ForegroundColor Blue
 }
 
+# Get all environment values
+$envValues = azd env get-values --output json | ConvertFrom-Json
+function Get-AzdEnvValueOrDefault {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$KeyName,
+
+        [Parameter(Mandatory = $false)]
+        [string]$DefaultValue = "",
+
+        [Parameter(Mandatory = $false)]
+        [bool]$Required = $false
+    )
+
+    # Check if key exists
+    if ($envValues.PSObject.Properties.Name -contains $KeyName) {
+        return $envValues.$KeyName
+    }
+
+     # Step 2: Try from GitHub Action environment variables (system env)
+     $githubValue = [System.Environment]::GetEnvironmentVariable($KeyName, "Process")
+    if ($githubValue) {
+        return $githubValue
+    }
+
+    # Key doesn't exist
+    if ($Required) {
+        Write-Error "Required environment key '$KeyName' not found in azd environment."
+        exit 1
+    } else {
+        return $DefaultValue
+    }
+}
+
 class DeploymentResult {
     [string]$TenantId
     [string]$SubscriptionId
@@ -267,51 +292,48 @@ class DeploymentResult {
 
     [void]MapResult() {
 
-        $envValues = @{}
-        azd env get-values | ForEach-Object {
-            if ($_ -match "^\s*([^#][^=]+?)\s*=\s*(.+)\s*$") {
-                $key = $matches[1].Trim()
-                $value = $matches[2].Trim()
-                $envValues[$key] = $value.Trim('\"')
-            }
-        }
-
-        # $envValues = Get-AzdEnvValues
-        $this.TenantId = $envValues["AZURE_TENANT_ID"]
-        $this.SubscriptionId = $envValues["AZURE_SUBSCRIPTION_ID"]
+        # Replace direct $envValues lookups with function calls
+        $this.TenantId                = Get-AzdEnvValueOrDefault -KeyName "AZURE_TENANT_ID" -Required $true
+        $this.SubscriptionId          = Get-AzdEnvValueOrDefault -KeyName "AZURE_SUBSCRIPTION_ID" -Required $true
 
         # Add your code here
-        $this.ResourceGroupName = $envValues["AZURE_RESOURCE_GROUP"]
-        $this.ResourceGroupId = $envValues["AZURE_RESOURCE_GROUP_ID"]
+        $this.ResourceGroupName       = Get-AzdEnvValueOrDefault -KeyName "RESOURCE_GROUP_NAME" -Required $true
+        $this.ResourceGroupId         = Get-AzdEnvValueOrDefault -KeyName "AZURE_RESOURCE_GROUP_ID" -Required $true
+
         # Storage Account
-        $this.StorageAccountName = $envValues["STORAGE_ACCOUNT_NAME"]
+        $this.StorageAccountName      = Get-AzdEnvValueOrDefault -KeyName "STORAGE_ACCOUNT_NAME"
+
         # Azure Search
-        $this.AzSearchServiceName = $envValues["AZURE_SEARCH_SERVICE_NAME"]
-        $this.AzSearchServicEndpoint =  "https://$($this.AzSearchServiceName).search.windows.net"
+        $this.AzSearchServiceName     = Get-AzdEnvValueOrDefault -KeyName "AZURE_SEARCH_SERVICE_NAME"
+        $this.AzSearchServicEndpoint  = "https://$($this.AzSearchServiceName).search.windows.net"
+
         # Azure Kubernetes
-        $this.AksName = $envValues["AZURE_AKS_NAME"]
-        $this.AksMid = $envValues["AZURE_AKS_MI_ID"]
+        $this.AksName                 = Get-AzdEnvValueOrDefault -KeyName "AZURE_AKS_NAME"
+        $this.AksMid                  = Get-AzdEnvValueOrDefault -KeyName "AZURE_AKS_MI_ID"
+
         # Azure Container Registry
-        $this.AzContainerRegistryName = $envValues["AZURE_CONTAINER_REGISTRY_NAME"]
+        $this.AzContainerRegistryName = Get-AzdEnvValueOrDefault -KeyName "AZURE_CONTAINER_REGISTRY_NAME"
 
         # Azure Cognitive Service - Azure AI Document Intelligence Service
-        $this.AzCognitiveServiceName = $envValues["AZURE_COGNITIVE_SERVICE_NAME"]
-        $this.AzCognitiveServiceEndpoint = $envValues["AZURE_COGNITIVE_SERVICE_ENDPOINT"]
+        $this.AzCognitiveServiceName     = Get-AzdEnvValueOrDefault -KeyName "AZURE_COGNITIVE_SERVICE_NAME"
+        $this.AzCognitiveServiceEndpoint = Get-AzdEnvValueOrDefault -KeyName "AZURE_COGNITIVE_SERVICE_ENDPOINT"
 
         # Azure Open AI Service
-        $this.AzOpenAiServiceName = $envValues["AZURE_OPENAI_SERVICE_NAME"]
-        $this.AzOpenAiServiceEndpoint = $envValues["AZURE_OPENAI_SERVICE_ENDPOINT"]
+        $this.AzOpenAiServiceName     = Get-AzdEnvValueOrDefault -KeyName "AZURE_OPENAI_SERVICE_NAME"
+        $this.AzOpenAiServiceEndpoint = Get-AzdEnvValueOrDefault -KeyName "AZURE_OPENAI_SERVICE_ENDPOINT"
+
         # Azure Cosmos DB
-        $this.AzCosmosDBName = $envValues["AZURE_COSMOSDB_NAME"]
+        $this.AzCosmosDBName          = Get-AzdEnvValueOrDefault -KeyName "AZURE_COSMOSDB_NAME"
+
         # Azure Open AI Service Models
-        $this.AzGPT4oModelName = $envValues["AZ_GPT4O_MODEL_NAME"]
-        $this.AzGPT4oModelId = $envValues["AZ_GPT4O_MODEL_ID"]
-        $this.AzGPTEmbeddingModelName = $envValues["AZ_GPT_EMBEDDING_MODEL_NAME"]
-        $this.AzGPTEmbeddingModelId = $envValues["AZ_GPT_EMBEDDING_MODEL_ID"]
+        $this.AzGPT4oModelName        = Get-AzdEnvValueOrDefault -KeyName "AZ_GPT4O_MODEL_NAME"
+        $this.AzGPT4oModelId          = Get-AzdEnvValueOrDefault -KeyName "AZ_GPT4O_MODEL_ID"
+        $this.AzGPTEmbeddingModelName = Get-AzdEnvValueOrDefault -KeyName "AZ_GPT_EMBEDDING_MODEL_NAME"
+        $this.AzGPTEmbeddingModelId   = Get-AzdEnvValueOrDefault -KeyName "AZ_GPT_EMBEDDING_MODEL_ID"
+
         # Azure App Configuration
-        $this.AzAppConfigEndpoint = $envValues["AZURE_APP_CONFIG_ENDPOINT"]
-        # App Config Name
-        $this.AzAppConfigName = $envValues["AZURE_APP_CONFIG_NAME"]
+        $this.AzAppConfigEndpoint     = Get-AzdEnvValueOrDefault -KeyName "AZURE_APP_CONFIG_ENDPOINT"
+        $this.AzAppConfigName         = Get-AzdEnvValueOrDefault -KeyName "AZURE_APP_CONFIG_NAME"
     }
 }
 
