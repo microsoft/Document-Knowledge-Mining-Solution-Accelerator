@@ -10,8 +10,8 @@ on:
     - cron: "0 10,22 * * *" # Runs at 10:00 AM and 10:00 PM GMT
 
 env:
-  GPT_CAPACITY: 100
-  TEXT_EMBEDDING_CAPACITY: 100
+  GPT_CAPACITY: 200
+  TEXT_EMBEDDING_CAPACITY: 250
 
 jobs:
   deploy:
@@ -197,8 +197,8 @@ jobs:
             --template-file infra/main.bicep \
             --parameters \
                 solutionName="${{ env.SOLUTION_PREFIX }}" \
-                location="australiaeast" \
-                aiDeploymentsLocation="australiaeast" \
+                location=${{ env.AZURE_LOCATION }} \
+                aiDeploymentsLocation=${{ env.AZURE_LOCATION }} \
                 gptModelDeploymentType="GlobalStandard" \
                 gptModelName="gpt-4.1-mini" \
                 gptModelCapacity=${{ env.GPT_CAPACITY }} \
