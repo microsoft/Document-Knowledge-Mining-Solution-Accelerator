@@ -9,8 +9,8 @@ on:
     - cron: "0 10,22 * * *" # Runs at 10:00 AM and 10:00 PM GMT
 
 env:
-  GPT_CAPACITY: 200
-  TEXT_EMBEDDING_CAPACITY: 250
+  GPT_CAPACITY: 150
+  TEXT_EMBEDDING_CAPACITY: 200
 
 jobs:
   deploy:
