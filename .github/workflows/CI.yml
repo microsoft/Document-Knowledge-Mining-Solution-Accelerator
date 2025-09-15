@@ -243,7 +243,7 @@ jobs:
           yes
           "@
           $input | pwsh ./resourcedeployment.ps1
-          Write-Host "Resource Group Name is ${{ env.AZURE_RESOURCE_GROUP }}"
+          Write-Host "Resource Group Name is ${{ env.RESOURCE_GROUP_NAME }}"
           Write-Host "Kubernetes resource group is ${{ env.AZURE_AKS_NAME }}"
         env:
           # From GitHub secrets (for login)
@@ -253,7 +253,7 @@ jobs:
           AZURE_CLIENT_SECRET:   ${{ secrets.AZURE_CLIENT_SECRET }}
 
           # From deployment outputs step (these come from $GITHUB_ENV)
-          AZURE_RESOURCE_GROUP:          ${{ env.AZURE_RESOURCE_GROUP }}
+          RESOURCE_GROUP_NAME:          ${{ env.RESOURCE_GROUP_NAME }}
           AZURE_RESOURCE_GROUP_ID:       ${{ env.AZURE_RESOURCE_GROUP_ID }}
           STORAGE_ACCOUNT_NAME:          ${{ env.STORAGE_ACCOUNT_NAME }}
           AZURE_SEARCH_SERVICE_NAME:     ${{ env.AZURE_SEARCH_SERVICE_NAME }}

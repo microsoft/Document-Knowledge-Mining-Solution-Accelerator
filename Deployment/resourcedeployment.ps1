@@ -306,7 +306,7 @@ class DeploymentResult {
         $this.SubscriptionId          = Get-AzdEnvValueOrDefault -KeyName "AZURE_SUBSCRIPTION_ID" -Required $true
 
         # Add your code here
-        $this.ResourceGroupName       = Get-AzdEnvValueOrDefault -KeyName "AZURE_RESOURCE_GROUP" -Required $true
+        $this.ResourceGroupName       = Get-AzdEnvValueOrDefault -KeyName "RESOURCE_GROUP_NAME" -Required $true
         $this.ResourceGroupId         = Get-AzdEnvValueOrDefault -KeyName "AZURE_RESOURCE_GROUP_ID" -Required $true
 
         # Storage Account
