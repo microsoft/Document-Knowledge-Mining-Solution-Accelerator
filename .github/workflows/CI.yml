@@ -227,26 +227,12 @@ jobs:
           echo "$BICEP_OUTPUT"
 
           # Write outputs to GitHub env
-          echo "AZURE_TENANT_ID=$(echo $BICEP_OUTPUT | jq -r .AZURE_TENANT_ID.value)" >> $GITHUB_ENV
-          echo "AZURE_SUBSCRIPTION_ID=$(echo $BICEP_OUTPUT | jq -r .AZURE_SUBSCRIPTION_ID.value)" >> $GITHUB_ENV
-          echo "AZURE_RESOURCE_GROUP=$(echo $BICEP_OUTPUT | jq -r .AZURE_RESOURCE_GROUP.value)" >> $GITHUB_ENV
-          echo "AZURE_RESOURCE_GROUP_ID=$(echo $BICEP_OUTPUT | jq -r .AZURE_RESOURCE_GROUP_ID.value)" >> $GITHUB_ENV
-          echo "STORAGE_ACCOUNT_NAME=$(echo $BICEP_OUTPUT | jq -r .STORAGE_ACCOUNT_NAME.value)" >> $GITHUB_ENV
-          echo "AZURE_SEARCH_SERVICE_NAME=$(echo $BICEP_OUTPUT | jq -r .AZURE_SEARCH_SERVICE_NAME.value)" >> $GITHUB_ENV
-          echo "AZURE_AKS_NAME=$(echo $BICEP_OUTPUT | jq -r .AZURE_AKS_NAME.value)" >> $GITHUB_ENV
-          echo "AZURE_AKS_MI_ID=$(echo $BICEP_OUTPUT | jq -r .AZURE_AKS_MI_ID.value)" >> $GITHUB_ENV
-          echo "AZURE_CONTAINER_REGISTRY_NAME=$(echo $BICEP_OUTPUT | jq -r .AZURE_CONTAINER_REGISTRY_NAME.value)" >> $GITHUB_ENV
-          echo "AZURE_COGNITIVE_SERVICE_NAME=$(echo $BICEP_OUTPUT | jq -r .AZURE_COGNITIVE_SERVICE_NAME.value)" >> $GITHUB_ENV
-          echo "AZURE_COGNITIVE_SERVICE_ENDPOINT=$(echo $BICEP_OUTPUT | jq -r .AZURE_COGNITIVE_SERVICE_ENDPOINT.value)" >> $GITHUB_ENV
-          echo "AZURE_OPENAI_SERVICE_NAME=$(echo $BICEP_OUTPUT | jq -r .AZURE_OPENAI_SERVICE_NAME.value)" >> $GITHUB_ENV
-          echo "AZURE_OPENAI_SERVICE_ENDPOINT=$(echo $BICEP_OUTPUT | jq -r .AZURE_OPENAI_SERVICE_ENDPOINT.value)" >> $GITHUB_ENV
-          echo "AZURE_COSMOSDB_NAME=$(echo $BICEP_OUTPUT | jq -r .AZURE_COSMOSDB_NAME.value)" >> $GITHUB_ENV
-          echo "AZ_GPT4O_MODEL_NAME=$(echo $BICEP_OUTPUT | jq -r .AZ_GPT4O_MODEL_NAME.value)" >> $GITHUB_ENV
-          echo "AZ_GPT4O_MODEL_ID=$(echo $BICEP_OUTPUT | jq -r .AZ_GPT4O_MODEL_ID.value)" >> $GITHUB_ENV
-          echo "AZ_GPT_EMBEDDING_MODEL_NAME=$(echo $BICEP_OUTPUT | jq -r .AZ_GPT_EMBEDDING_MODEL_NAME.value)" >> $GITHUB_ENV
-          echo "AZ_GPT_EMBEDDING_MODEL_ID=$(echo $BICEP_OUTPUT | jq -r .AZ_GPT_EMBEDDING_MODEL_ID.value)" >> $GITHUB_ENV
-          echo "AZURE_APP_CONFIG_ENDPOINT=$(echo $BICEP_OUTPUT | jq -r .AZURE_APP_CONFIG_ENDPOINT.value)" >> $GITHUB_ENV
-          echo "AZURE_APP_CONFIG_NAME=$(echo $BICEP_OUTPUT | jq -r .AZURE_APP_CONFIG_NAME.value)" >> $GITHUB_ENV
+          # Loop through keys, normalize to uppercase, and export
+          for key in $(echo "$BICEP_OUTPUT" | jq -r 'keys[]'); do
+            value=$(echo "$BICEP_OUTPUT" | jq -r ".[\"$key\"].value")
+            upper_key=$(echo "$key" | tr '[:lower:]' '[:upper:]')
+            echo "$upper_key=$value" >> $GITHUB_ENV
+          done
 
       - name: Run Deployment Script with Input
         shell: pwsh
