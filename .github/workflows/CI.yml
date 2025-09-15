@@ -212,39 +212,78 @@ jobs:
                 enableRedundancy=false \
                 enableScalability=false 
 
-      - name: Generate Environment Name
-        id: generate_environment_name
-        shell: bash
+      - name: Get Deployment Output and extract Values
+        id: get_output
         run: |
           set -e
-          TIMESTAMP_SHORT=$(date +%s | tail -c 5)    # Last 4-5 digits of epoch seconds
-          RANDOM_SUFFIX=$(head /dev/urandom | tr -dc 'a-z0-9' | head -c 8)  # 8 random alphanum chars
-          UNIQUE_ENV_NAME="${TIMESTAMP_SHORT}${RANDOM_SUFFIX}"    # Usually ~12-13 chars
-          echo "ENVIRONMENT_NAME=${UNIQUE_ENV_NAME}" >> $GITHUB_ENV
-          echo "Generated ENVIRONMENT_NAME: ${UNIQUE_ENV_NAME}"
+          echo "Fetching deployment output..."
+          BICEP_OUTPUT=$(az deployment group show \
+            --name ${{ env.SOLUTION_PREFIX }}-deployment \
+            --resource-group ${{ env.RESOURCE_GROUP_NAME }} \
+            --query "properties.outputs" -o json)
+
+          echo "Deployment outputs:"
+          echo "$BICEP_OUTPUT"
+
+          # Write outputs to GitHub env
+          echo "AZURE_TENANT_ID=$(echo $BICEP_OUTPUT | jq -r .AZURE_TENANT_ID.value)" >> $GITHUB_ENV
+          echo "AZURE_SUBSCRIPTION_ID=$(echo $BICEP_OUTPUT | jq -r .AZURE_SUBSCRIPTION_ID.value)" >> $GITHUB_ENV
+          echo "AZURE_RESOURCE_GROUP=$(echo $BICEP_OUTPUT | jq -r .AZURE_RESOURCE_GROUP.value)" >> $GITHUB_ENV
+          echo "AZURE_RESOURCE_GROUP_ID=$(echo $BICEP_OUTPUT | jq -r .AZURE_RESOURCE_GROUP_ID.value)" >> $GITHUB_ENV
+          echo "STORAGE_ACCOUNT_NAME=$(echo $BICEP_OUTPUT | jq -r .STORAGE_ACCOUNT_NAME.value)" >> $GITHUB_ENV
+          echo "AZURE_SEARCH_SERVICE_NAME=$(echo $BICEP_OUTPUT | jq -r .AZURE_SEARCH_SERVICE_NAME.value)" >> $GITHUB_ENV
+          echo "AZURE_AKS_NAME=$(echo $BICEP_OUTPUT | jq -r .AZURE_AKS_NAME.value)" >> $GITHUB_ENV
+          echo "AZURE_AKS_MI_ID=$(echo $BICEP_OUTPUT | jq -r .AZURE_AKS_MI_ID.value)" >> $GITHUB_ENV
+          echo "AZURE_CONTAINER_REGISTRY_NAME=$(echo $BICEP_OUTPUT | jq -r .AZURE_CONTAINER_REGISTRY_NAME.value)" >> $GITHUB_ENV
+          echo "AZURE_COGNITIVE_SERVICE_NAME=$(echo $BICEP_OUTPUT | jq -r .AZURE_COGNITIVE_SERVICE_NAME.value)" >> $GITHUB_ENV
+          echo "AZURE_COGNITIVE_SERVICE_ENDPOINT=$(echo $BICEP_OUTPUT | jq -r .AZURE_COGNITIVE_SERVICE_ENDPOINT.value)" >> $GITHUB_ENV
+          echo "AZURE_OPENAI_SERVICE_NAME=$(echo $BICEP_OUTPUT | jq -r .AZURE_OPENAI_SERVICE_NAME.value)" >> $GITHUB_ENV
+          echo "AZURE_OPENAI_SERVICE_ENDPOINT=$(echo $BICEP_OUTPUT | jq -r .AZURE_OPENAI_SERVICE_ENDPOINT.value)" >> $GITHUB_ENV
+          echo "AZURE_COSMOSDB_NAME=$(echo $BICEP_OUTPUT | jq -r .AZURE_COSMOSDB_NAME.value)" >> $GITHUB_ENV
+          echo "AZ_GPT4O_MODEL_NAME=$(echo $BICEP_OUTPUT | jq -r .AZ_GPT4O_MODEL_NAME.value)" >> $GITHUB_ENV
+          echo "AZ_GPT4O_MODEL_ID=$(echo $BICEP_OUTPUT | jq -r .AZ_GPT4O_MODEL_ID.value)" >> $GITHUB_ENV
+          echo "AZ_GPT_EMBEDDING_MODEL_NAME=$(echo $BICEP_OUTPUT | jq -r .AZ_GPT_EMBEDDING_MODEL_NAME.value)" >> $GITHUB_ENV
+          echo "AZ_GPT_EMBEDDING_MODEL_ID=$(echo $BICEP_OUTPUT | jq -r .AZ_GPT_EMBEDDING_MODEL_ID.value)" >> $GITHUB_ENV
+          echo "AZURE_APP_CONFIG_ENDPOINT=$(echo $BICEP_OUTPUT | jq -r .AZURE_APP_CONFIG_ENDPOINT.value)" >> $GITHUB_ENV
+          echo "AZURE_APP_CONFIG_NAME=$(echo $BICEP_OUTPUT | jq -r .AZURE_APP_CONFIG_NAME.value)" >> $GITHUB_ENV
 
       - name: Run Deployment Script with Input
         shell: pwsh
         run: |
           cd Deployment
           $input = @"
-          ${{ secrets.AZURE_TENANT_ID }}
-          ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          ${{ env.ENVIRONMENT_NAME }}
-
-          CanadaCentral
-          ${{ env.VALID_REGION }}
           ${{ secrets.EMAIL }}
           yes
           "@
           $input | pwsh ./resourcedeployment.ps1
-          Write-Host "Resource Group Name is ${{ env.RESOURCE_GROUP_NAME }}"
-          Write-Host "Kubernetes resource group are ${{ env.krg_name }}"
+          Write-Host "Resource Group Name is ${{ env.AZURE_RESOURCE_GROUP }}"
+          Write-Host "Kubernetes resource group is ${{ env.AZURE_AKS_NAME }}"
         env:
+          # From GitHub secrets (for login)
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID:       ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID:       ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET:   ${{ secrets.AZURE_CLIENT_SECRET }}
+
+          # From deployment outputs step (these come from $GITHUB_ENV)
+          AZURE_RESOURCE_GROUP:          ${{ env.AZURE_RESOURCE_GROUP }}
+          AZURE_RESOURCE_GROUP_ID:       ${{ env.AZURE_RESOURCE_GROUP_ID }}
+          STORAGE_ACCOUNT_NAME:          ${{ env.STORAGE_ACCOUNT_NAME }}
+          AZURE_SEARCH_SERVICE_NAME:     ${{ env.AZURE_SEARCH_SERVICE_NAME }}
+          AZURE_AKS_NAME:                ${{ env.AZURE_AKS_NAME }}
+          AZURE_AKS_MI_ID:               ${{ env.AZURE_AKS_MI_ID }}
+          AZURE_CONTAINER_REGISTRY_NAME: ${{ env.AZURE_CONTAINER_REGISTRY_NAME }}
+          AZURE_COGNITIVE_SERVICE_NAME:  ${{ env.AZURE_COGNITIVE_SERVICE_NAME }}
+          AZURE_COGNITIVE_SERVICE_ENDPOINT: ${{ env.AZURE_COGNITIVE_SERVICE_ENDPOINT }}
+          AZURE_OPENAI_SERVICE_NAME:     ${{ env.AZURE_OPENAI_SERVICE_NAME }}
+          AZURE_OPENAI_SERVICE_ENDPOINT: ${{ env.AZURE_OPENAI_SERVICE_ENDPOINT }}
+          AZURE_COSMOSDB_NAME:           ${{ env.AZURE_COSMOSDB_NAME }}
+          AZ_GPT4O_MODEL_NAME:           ${{ env.AZ_GPT4O_MODEL_NAME }}
+          AZ_GPT4O_MODEL_ID:             ${{ env.AZ_GPT4O_MODEL_ID }}
+          AZ_GPT_EMBEDDING_MODEL_NAME:   ${{ env.AZ_GPT_EMBEDDING_MODEL_NAME }}
+          AZ_GPT_EMBEDDING_MODEL_ID:     ${{ env.AZ_GPT_EMBEDDING_MODEL_ID }}
+          AZURE_APP_CONFIG_ENDPOINT:     ${{ env.AZURE_APP_CONFIG_ENDPOINT }}
+          AZURE_APP_CONFIG_NAME:         ${{ env.AZURE_APP_CONFIG_NAME }}
 
       - name: Extract Web App URL and Increase TPM
         id: get_webapp_url
@@ -273,43 +312,6 @@ jobs:
           else
             echo "Failed to retrieve Web App URL."
             exit 1
-          fi
-
-          # Get Azure OpenAI resource name
-          openai_resource_name=$(az cognitiveservices account list --resource-group ${{ env.rg_name }} --query "[?kind=='OpenAI'].name | [0]" -o tsv)
-          if [ -z "$openai_resource_name" ]; then
-            echo "No Azure OpenAI resource found in the resource group."
-            exit 1
-          fi
-          echo "OpenAI resource name is $openai_resource_name"
-          echo "OPENAI_RESOURCE_NAME=$openai_resource_name" >> $GITHUB_OUTPUT
-
-          # Get Azure Document Intelligence resource name
-          document_intelligence_resource_name=$(az cognitiveservices account list --resource-group ${{ env.rg_name }} --query "[?kind=='FormRecognizer'].name | [0]" -o tsv)
-          if [ -z "$document_intelligence_resource_name" ]; then
-            echo "No Azure Document Intelligence resource found in the resource group."
-          else
-            echo "Document Intelligence resource name is $document_intelligence_resource_name"
-            echo "DOCUMENT_INTELLIGENCE_RESOURCE_NAME=$document_intelligence_resource_name" >> $GITHUB_OUTPUT
-          fi
-
-          # Increase the TPM for the Azure OpenAI models
-          echo "Increasing TPM for Azure OpenAI models..."
-          openai_gpt_deployment_url="/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.rg_name }}/providers/Microsoft.CognitiveServices/accounts/$openai_resource_name/deployments/gpt-4o-mini?api-version=2023-05-01"
-          az rest -m put -u "$openai_gpt_deployment_url" -b "{'sku':{'name':'GlobalStandard','capacity':${{ env.GPT_CAPACITY }}},'properties': {'model': {'format': 'OpenAI','name': 'gpt-4o-mini','version': '2024-07-18'}}}"
-          if [ $? -ne 0 ]; then
-            echo "Failed to increase TPM for GPT deployment."
-            exit 1
-          else
-            echo "Successfully increased TPM for GPT deployment."
-          fi
-          openai_embedding_deployment_url="/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.rg_name }}/providers/Microsoft.CognitiveServices/accounts/$openai_resource_name/deployments/text-embedding-large?api-version=2023-05-01"
-          az rest -m put -u "$openai_embedding_deployment_url" -b "{'sku':{'name':'GlobalStandard','capacity': ${{ env.TEXT_EMBEDDING_CAPACITY }}},'properties': {'model': {'format': 'OpenAI','name': 'text-embedding-3-large','version': '1'}}}"
-          if [ $? -ne 0 ]; then
-            echo "Failed to increase TPM for Text Embedding deployment."
-            exit 1
-          else
-            echo "Successfully increased TPM for Text Embedding deployment."
           fi
 
       - name: Validate Deployment
@@ -382,7 +384,6 @@ jobs:
           else
             echo "Azure CLI is not authenticated. Skipping logout."
           fi
-
 
   e2e-test:
     needs: deploy
