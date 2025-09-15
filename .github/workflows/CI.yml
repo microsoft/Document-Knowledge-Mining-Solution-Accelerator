@@ -210,7 +210,8 @@ jobs:
                 enableMonitoring=false \
                 enableTelemetry=true \
                 enableRedundancy=false \
-                enableScalability=false 
+                enableScalability=false \
+                createdBy="Pipeline"
 
       - name: Get Deployment Output and extract Values
         id: get_output
