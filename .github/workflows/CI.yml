@@ -280,6 +280,8 @@ jobs:
           echo "RESOURCE_GROUP_NAME=${{ env.RESOURCE_GROUP_NAME }}" >> $GITHUB_OUTPUT
           echo "KUBERNETES_RESOURCE_GROUP_NAME=${{ env.krg_name }}" >> $GITHUB_OUTPUT
           echo "VALID_REGION=${{ env.VALID_REGION }}" >> $GITHUB_OUTPUT
+          echo "OPENAI_RESOURCE_NAME=${{ env.AZURE_OPENAI_SERVICE_NAME }}" >> $GITHUB_OUTPUT
+          echo "DOCUMENT_INTELLIGENCE_RESOURCE_NAME=${{ env.AZURE_COGNITIVE_SERVICE_NAME }}" >> $GITHUB_OUTPUT
 
           if az account show &> /dev/null; then
             echo "Azure CLI is authenticated."
