@@ -9,7 +9,7 @@ on:
     - cron: "0 10,22 * * *" # Runs at 10:00 AM and 10:00 PM GMT
 
 env:
-  GPT_CAPACITY: 250
+  GPT_CAPACITY: 150
   TEXT_EMBEDDING_CAPACITY: 200
 
 jobs:
@@ -42,11 +42,32 @@ jobs:
       - name: Install Helm
         shell: bash
         run: |
-          curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
-          sudo apt-get install apt-transport-https --yes
+          # If helm is already available on the runner, print version and skip installation
+              if command -v helm >/dev/null 2>&1; then
+              echo "helm already installed: $(helm version --short 2>/dev/null || true)"
+              exit 0
+            fi
+
+          # Ensure prerequisites are present
+            sudo apt-get update
+            sudo apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
+
+          # Ensure keyrings dir exists
+          sudo mkdir -p /usr/share/keyrings
+
+          # Add Helm GPG key (use -fS to fail fast on curl errors)
+          curl -fsSL https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg >/dev/null
+
+          # Add the Helm apt repository
           echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+
+          # Install helm
           sudo apt-get update
-          sudo apt-get install helm
+          sudo apt-get install -y helm
+
+          # Verify
+          echo "Installed helm version:"
+          helm version          
 
       - name: Set up Docker
         uses: docker/setup-buildx-action@v3
@@ -112,48 +133,154 @@ jobs:
         if: env.QUOTA_FAILED == 'true'
         run: exit 1
         
-      - name: Generate Environment Name
-        id: generate_environment_name
+      - name: Install Bicep CLI
+        run: az bicep install
+
+      - name: Install Azure Developer CLI
+        run: |
+          curl -fsSL https://aka.ms/install-azd.sh | bash
         shell: bash
+        
+      - name: Set Deployment Region
+        run: |
+          echo "Selected Region: $VALID_REGION"
+          echo "AZURE_LOCATION=$VALID_REGION" >> $GITHUB_ENV
+
+      - name: Generate Resource Group Name
+        id: generate_rg_name
+        run: |
+          echo "Generating a unique resource group name..."
+          ACCL_NAME="dkm"  # Account name as specified
+          SHORT_UUID=$(uuidgen | cut -d'-' -f1)
+          UNIQUE_RG_NAME="arg-${ACCL_NAME}-${SHORT_UUID}"
+          echo "RESOURCE_GROUP_NAME=${UNIQUE_RG_NAME}" >> $GITHUB_ENV
+          echo "Generated RESOURCE_GROUP_NAME: ${UNIQUE_RG_NAME}"
+
+      - name: Login to Azure
+        run: |
+          az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+          az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Check and Create Resource Group
+        id: check_create_rg
+        run: |
+          set -e  
+          echo "Checking if resource group exists..."
+          rg_exists=$(az group exists --name ${{ env.RESOURCE_GROUP_NAME }})
+          if [ "$rg_exists" = "false" ]; then
+            echo "Resource group does not exist. Creating..."
+            az group create --name ${{ env.RESOURCE_GROUP_NAME }} --location ${{ env.AZURE_LOCATION }} || { echo "Error creating resource group"; exit 1; }
+          else
+            echo "Resource group already exists."
+          fi
+          echo "RESOURCE_GROUP_NAME=${{ env.RESOURCE_GROUP_NAME }}" >> $GITHUB_OUTPUT      
+
+      - name: Generate Unique Solution Prefix
+        id: generate_solution_prefix
         run: |
           set -e
-          TIMESTAMP_SHORT=$(date +%s | tail -c 5)    # Last 4-5 digits of epoch seconds
-          RANDOM_SUFFIX=$(head /dev/urandom | tr -dc 'a-z0-9' | head -c 8)  # 8 random alphanum chars
-          UNIQUE_ENV_NAME="${TIMESTAMP_SHORT}${RANDOM_SUFFIX}"    # Usually ~12-13 chars
-          echo "ENVIRONMENT_NAME=${UNIQUE_ENV_NAME}" >> $GITHUB_ENV
-          echo "Generated ENVIRONMENT_NAME: ${UNIQUE_ENV_NAME}"
+          COMMON_PART="psldkm"
+          TIMESTAMP=$(date +%s)  
+          UPDATED_TIMESTAMP=$(echo $TIMESTAMP | tail -c 6) 
+          UNIQUE_SOLUTION_PREFIX="${COMMON_PART}${UPDATED_TIMESTAMP}"
+          echo "SOLUTION_PREFIX=${UNIQUE_SOLUTION_PREFIX}" >> $GITHUB_ENV
+          echo "Generated SOLUTION_PREFIX: ${UNIQUE_SOLUTION_PREFIX}" 
+
+      - name: Deploy Bicep Template
+        id: deploy
+        run: |
+          set -e
+          az deployment group create \
+            --name ${{ env.SOLUTION_PREFIX }}-deployment \
+            --resource-group ${{ env.RESOURCE_GROUP_NAME }} \
+            --template-file infra/main.bicep \
+            --parameters \
+                solutionName="${{ env.SOLUTION_PREFIX }}" \
+                location=${{ env.AZURE_LOCATION }} \
+                aiDeploymentsLocation=${{ env.AZURE_LOCATION }} \
+                gptModelDeploymentType="GlobalStandard" \
+                gptModelName="gpt-4.1-mini" \
+                gptModelCapacity=${{ env.GPT_CAPACITY }} \
+                gptModelVersion="2025-04-14" \
+                embeddingModelName="text-embedding-3-large" \
+                embeddingModelCapacity=${{ env.TEXT_EMBEDDING_CAPACITY }} \
+                embeddingModelVersion="1" \
+                enablePrivateNetworking=false \
+                enableMonitoring=false \
+                enableTelemetry=true \
+                enableRedundancy=false \
+                enableScalability=false \
+                createdBy="Pipeline"
+
+      - name: Get Deployment Output and extract Values
+        id: get_output
+        run: |
+          set -e
+          echo "Fetching deployment output..."
+          BICEP_OUTPUT=$(az deployment group show \
+            --name ${{ env.SOLUTION_PREFIX }}-deployment \
+            --resource-group ${{ env.RESOURCE_GROUP_NAME }} \
+            --query "properties.outputs" -o json)
+
+          echo "Deployment outputs:"
+          echo "$BICEP_OUTPUT"
+
+          # Write outputs to GitHub env
+          # Loop through keys, normalize to uppercase, and export
+          for key in $(echo "$BICEP_OUTPUT" | jq -r 'keys[]'); do
+            value=$(echo "$BICEP_OUTPUT" | jq -r ".[\"$key\"].value")
+            upper_key=$(echo "$key" | tr '[:lower:]' '[:upper:]')
+            echo "$upper_key=$value" >> $GITHUB_ENV
+          done
 
       - name: Run Deployment Script with Input
         shell: pwsh
         run: |
           cd Deployment
           $input = @"
-          ${{ secrets.AZURE_TENANT_ID }}
-          ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          ${{ env.ENVIRONMENT_NAME }}
-
-          CanadaCentral
-          ${{ env.VALID_REGION }}
           ${{ secrets.EMAIL }}
           yes
           "@
           $input | pwsh ./resourcedeployment.ps1
-          Write-Host "Resource Group Name is ${{ env.rg_name }}"
-          Write-Host "Kubernetes resource group are ${{ env.krg_name }}"
+          Write-Host "Resource Group Name is ${{ env.RESOURCE_GROUP_NAME }}"
+          Write-Host "Kubernetes resource group is ${{ env.AZURE_AKS_NAME }}"
         env:
+          # From GitHub secrets (for login)
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID:       ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID:       ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET:   ${{ secrets.AZURE_CLIENT_SECRET }}
+
+          # From deployment outputs step (these come from $GITHUB_ENV)
+          RESOURCE_GROUP_NAME:          ${{ env.RESOURCE_GROUP_NAME }}
+          AZURE_RESOURCE_GROUP_ID:       ${{ env.AZURE_RESOURCE_GROUP_ID }}
+          STORAGE_ACCOUNT_NAME:          ${{ env.STORAGE_ACCOUNT_NAME }}
+          AZURE_SEARCH_SERVICE_NAME:     ${{ env.AZURE_SEARCH_SERVICE_NAME }}
+          AZURE_AKS_NAME:                ${{ env.AZURE_AKS_NAME }}
+          AZURE_AKS_MI_ID:               ${{ env.AZURE_AKS_MI_ID }}
+          AZURE_CONTAINER_REGISTRY_NAME: ${{ env.AZURE_CONTAINER_REGISTRY_NAME }}
+          AZURE_COGNITIVE_SERVICE_NAME:  ${{ env.AZURE_COGNITIVE_SERVICE_NAME }}
+          AZURE_COGNITIVE_SERVICE_ENDPOINT: ${{ env.AZURE_COGNITIVE_SERVICE_ENDPOINT }}
+          AZURE_OPENAI_SERVICE_NAME:     ${{ env.AZURE_OPENAI_SERVICE_NAME }}
+          AZURE_OPENAI_SERVICE_ENDPOINT: ${{ env.AZURE_OPENAI_SERVICE_ENDPOINT }}
+          AZURE_COSMOSDB_NAME:           ${{ env.AZURE_COSMOSDB_NAME }}
+          AZ_GPT4O_MODEL_NAME:           ${{ env.AZ_GPT4O_MODEL_NAME }}
+          AZ_GPT4O_MODEL_ID:             ${{ env.AZ_GPT4O_MODEL_ID }}
+          AZ_GPT_EMBEDDING_MODEL_NAME:   ${{ env.AZ_GPT_EMBEDDING_MODEL_NAME }}
+          AZ_GPT_EMBEDDING_MODEL_ID:     ${{ env.AZ_GPT_EMBEDDING_MODEL_ID }}
+          AZURE_APP_CONFIG_ENDPOINT:     ${{ env.AZURE_APP_CONFIG_ENDPOINT }}
+          AZURE_APP_CONFIG_NAME:         ${{ env.AZURE_APP_CONFIG_NAME }}
 
       - name: Extract Web App URL and Increase TPM
         id: get_webapp_url
         shell: bash
         run: |
           # Save the resource group name and Kubernetes resource group name to GITHUB_OUTPUT
-          echo "RESOURCE_GROUP_NAME=${{ env.rg_name }}" >> $GITHUB_OUTPUT
+          echo "RESOURCE_GROUP_NAME=${{ env.RESOURCE_GROUP_NAME }}" >> $GITHUB_OUTPUT
           echo "KUBERNETES_RESOURCE_GROUP_NAME=${{ env.krg_name }}" >> $GITHUB_OUTPUT
           echo "VALID_REGION=${{ env.VALID_REGION }}" >> $GITHUB_OUTPUT
+          echo "OPENAI_RESOURCE_NAME=${{ env.AZURE_OPENAI_SERVICE_NAME }}" >> $GITHUB_OUTPUT
+          echo "DOCUMENT_INTELLIGENCE_RESOURCE_NAME=${{ env.AZURE_COGNITIVE_SERVICE_NAME }}" >> $GITHUB_OUTPUT
 
           if az account show &> /dev/null; then
             echo "Azure CLI is authenticated."
@@ -173,43 +300,6 @@ jobs:
           else
             echo "Failed to retrieve Web App URL."
             exit 1
-          fi
-
-          # Get Azure OpenAI resource name
-          openai_resource_name=$(az cognitiveservices account list --resource-group ${{ env.rg_name }} --query "[?kind=='OpenAI'].name | [0]" -o tsv)
-          if [ -z "$openai_resource_name" ]; then
-            echo "No Azure OpenAI resource found in the resource group."
-            exit 1
-          fi
-          echo "OpenAI resource name is $openai_resource_name"
-          echo "OPENAI_RESOURCE_NAME=$openai_resource_name" >> $GITHUB_OUTPUT
-
-          # Get Azure Document Intelligence resource name
-          document_intelligence_resource_name=$(az cognitiveservices account list --resource-group ${{ env.rg_name }} --query "[?kind=='FormRecognizer'].name | [0]" -o tsv)
-          if [ -z "$document_intelligence_resource_name" ]; then
-            echo "No Azure Document Intelligence resource found in the resource group."
-          else
-            echo "Document Intelligence resource name is $document_intelligence_resource_name"
-            echo "DOCUMENT_INTELLIGENCE_RESOURCE_NAME=$document_intelligence_resource_name" >> $GITHUB_OUTPUT
-          fi
-
-          # Increase the TPM for the Azure OpenAI models
-          echo "Increasing TPM for Azure OpenAI models..."
-          openai_gpt_deployment_url="/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.rg_name }}/providers/Microsoft.CognitiveServices/accounts/$openai_resource_name/deployments/gpt-4o-mini?api-version=2023-05-01"
-          az rest -m put -u "$openai_gpt_deployment_url" -b "{'sku':{'name':'GlobalStandard','capacity':${{ env.GPT_CAPACITY }}},'properties': {'model': {'format': 'OpenAI','name': 'gpt-4o-mini','version': '2024-07-18'}}}"
-          if [ $? -ne 0 ]; then
-            echo "Failed to increase TPM for GPT deployment."
-            exit 1
-          else
-            echo "Successfully increased TPM for GPT deployment."
-          fi
-          openai_embedding_deployment_url="/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.rg_name }}/providers/Microsoft.CognitiveServices/accounts/$openai_resource_name/deployments/text-embedding-large?api-version=2023-05-01"
-          az rest -m put -u "$openai_embedding_deployment_url" -b "{'sku':{'name':'GlobalStandard','capacity': ${{ env.TEXT_EMBEDDING_CAPACITY }}},'properties': {'model': {'format': 'OpenAI','name': 'text-embedding-3-large','version': '1'}}}"
-          if [ $? -ne 0 ]; then
-            echo "Failed to increase TPM for Text Embedding deployment."
-            exit 1
-          else
-            echo "Successfully increased TPM for Text Embedding deployment."
           fi
 
       - name: Validate Deployment
@@ -282,7 +372,6 @@ jobs:
           else
             echo "Azure CLI is not authenticated. Skipping logout."
           fi
-
 
   e2e-test:
     needs: deploy

@@ -15,13 +15,13 @@ using Microsoft.KernelMemory.Pipeline;
 using Azure.Core;
 using Azure;
 using Microsoft.KernelMemory.Configuration;
+using Azure.Identity;
 
 namespace Microsoft.KernelMemory.DataFormats.Pdf;
 public sealed class PdfMarkdownDecoder(KernelMemoryConfig config, ILoggerFactory? loggerFactory = null) : IContentDecoder
 {
     private readonly ILogger<PdfDecoder> _log = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<PdfDecoder>();
     private DocumentIntelligenceClient _client = null!; // Initialize _client as null
-    private string _apiKey = (string)config.Services["AzureAIDocIntel"]["APIKey"];
     private string _endpoint = (string)config.Services["AzureAIDocIntel"]["Endpoint"];
 
     /// <inheritdoc />
@@ -49,7 +49,7 @@ public sealed class PdfMarkdownDecoder(KernelMemoryConfig config, ILoggerFactory
             Retry = { Delay = TimeSpan.FromSeconds(90), MaxDelay = TimeSpan.FromSeconds(180), MaxRetries = 3, Mode = RetryMode.Exponential },
         };
 
-        this._client = new DocumentIntelligenceClient(new Uri(this._endpoint), new AzureKeyCredential(this._apiKey), options);
+        this._client = new DocumentIntelligenceClient(new Uri(this._endpoint), new DefaultAzureCredential(), options);
 
         Operation<AnalyzeResult> operation = null;
         operation = await this._client.AnalyzeDocumentAsync(WaitUntil.Completed, analyzeDocumentOptions, cancellationToken).ConfigureAwait(false);
