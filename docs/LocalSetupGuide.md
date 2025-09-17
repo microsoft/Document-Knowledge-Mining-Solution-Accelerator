@@ -90,11 +90,23 @@ To enable local debugging and ensure your application can access necessary Azure
      ```
      VITE_API_ENDPOINT=https://localhost:52190
      ```
-4. Install dependencies:
+4. Before installing dependencies, ensure Node.js (LTS) and Yarn are installed on your machine:
+   - Recommended: install Node.js LTS (18.x or later) from https://nodejs.org
+   - Install Yarn if it's not already available:
+     ```powershell
+     npm install -g yarn
+     ```
+   - Verify the installations:
+     ```powershell
+     node -v
+     npm -v
+     yarn -v
+     ```
+5. Install dependencies:
      ```powershell
      yarn install
      ```
-5. Start the application:
+6. Start the application:
      ```powershell
      yarn start
      ```
