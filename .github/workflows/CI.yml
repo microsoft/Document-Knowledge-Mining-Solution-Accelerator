@@ -5,7 +5,6 @@ on:
       - main # Adjust this to the branch you want to trigger the deployment on
       - dev
       - demo
-      - CI-Pipeline-dkm
   schedule:
     - cron: "0 10,22 * * *" # Runs at 10:00 AM and 10:00 PM GMT
 
