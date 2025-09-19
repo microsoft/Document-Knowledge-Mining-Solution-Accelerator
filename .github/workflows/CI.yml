@@ -5,6 +5,7 @@ on:
       - main # Adjust this to the branch you want to trigger the deployment on
       - dev
       - demo
+      - CI-Pipeline-dkm
   schedule:
     - cron: "0 10,22 * * *" # Runs at 10:00 AM and 10:00 PM GMT
 
@@ -190,6 +191,10 @@ jobs:
         id: deploy
         run: |
           set -e
+
+          # Generate current timestamp in desired format: YYYY-MM-DDTHH:MM:SS.SSSSSSSZ
+            current_date=$(date -u +"%Y-%m-%dT%H:%M:%S.%7NZ")
+          
           az deployment group create \
             --name ${{ env.SOLUTION_PREFIX }}-deployment \
             --resource-group ${{ env.RESOURCE_GROUP_NAME }} \
@@ -210,7 +215,8 @@ jobs:
                 enableTelemetry=true \
                 enableRedundancy=false \
                 enableScalability=false \
-                createdBy="Pipeline"
+                createdBy="Pipeline" \
+                tags="{'SecurityControl':'Ignore','Purpose':'Deploying and Cleaning Up Resources for Validation','CreatedDate':'$current_date'}"
 
       - name: Get Deployment Output and extract Values
         id: get_output
