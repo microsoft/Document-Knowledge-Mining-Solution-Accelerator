@@ -43,7 +43,7 @@ const useStyles = makeStyles({
     },
 
     aiKnowledgeTab:{
-        height:"calc(100vh - 150px) !important",
+        height:"calc(100vh - 200px) !important",
         overflow:"auto"
     }
 });
