@@ -112,7 +112,7 @@ resource resourceGroupTags 'Microsoft.Resources/tags@2021-04-01' = {
   properties: {
     tags: {
       ...tags
-      TemplateName: 'DKM'
+      TemplateName: enablePrivateNetworking ? 'DKM-WAF' : 'DKM'
       CreatedBy: createdBy
     }
   }
