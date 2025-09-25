@@ -9,8 +9,6 @@ param (
     [string]$ResourceGroupName
 )
 
-Write-Host "DEBUG: ResourceGroupName parameter received: '$ResourceGroupName'" -ForegroundColor Magenta
-
 function startBanner() {
     Write-Host "  _____                                        _                                               "
     Write-Host " |  __ \                                      | |                                              "
@@ -448,14 +446,10 @@ try {
     Write-Host "Retrieving the deployment details.....`r`n" -ForegroundColor Yellow
 
     # Map the deployment result to DeploymentResult object from .env file
-    Write-Host "Mapping the deployment details.....`r`n" -ForegroundColor Yellow
-    Write-Host "Resource Group Name: $ResourceGroupName" -ForegroundColor Yellow
     if ($ResourceGroupName) {
-        Write-Host "Using provided resource group name: $ResourceGroupName" -ForegroundColor Yellow
         $deploymentResult.MapResultAz($ResourceGroupName.Trim())
     }
     else {
-        Write-Host "Using azd environment." -ForegroundColor Yellow
         $deploymentResult.MapResultAzd()
     }
 
