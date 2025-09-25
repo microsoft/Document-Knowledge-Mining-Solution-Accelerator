@@ -1,4 +1,4 @@
-﻿﻿# Copyright (c) Microsoft Corporation.
+﻿# Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
 #https://patorjk.com/software/taag
@@ -251,6 +251,8 @@ class DeploymentResult {
     [string]$AzCosmosDBConnectionString
     [string]$AzAppConfigEndpoint
     [string]$AzAppConfigName
+    [string]$AzUserAssignedIdentityClientId
+    [string]$AzUserAssignedIdentityResourceId
 
     DeploymentResult() {
         # Resource Group
@@ -334,6 +336,10 @@ class DeploymentResult {
         # Azure App Configuration
         $this.AzAppConfigEndpoint     = Get-AzdEnvValueOrDefault -KeyName "AZURE_APP_CONFIG_ENDPOINT"
         $this.AzAppConfigName         = Get-AzdEnvValueOrDefault -KeyName "AZURE_APP_CONFIG_NAME"
+        
+        # Azure User Assigned Managed Identity
+        $this.AzUserAssignedIdentityClientId = Get-AzdEnvValueOrDefault -KeyName "AZURE_USER_ASSIGNED_IDENTITY_CLIENT_ID" -Required $true
+        $this.AzUserAssignedIdentityResourceId = Get-AzdEnvValueOrDefault -KeyName "AZURE_USER_ASSIGNED_IDENTITY_ID" -Required $true
     }
 }
 
@@ -500,6 +506,33 @@ try {
         exit 1
     }
 
+    # 1.5. Get VMSS name and assign User Assigned Managed Identity
+    try {
+        Write-Host "Getting VMSS name and assigning User Assigned Managed Identity..." -ForegroundColor Cyan
+        
+        # Get vmss name
+        $vmssName = $(az vmss list --resource-group $aksResourceGroupName --query "[0].name" --output tsv)
+        
+        # Validate if vmss Name is null or empty
+        ValidateVariableIsNullOrEmpty -variableValue $vmssName -variableName "VMSS name"
+        
+        Write-Host "VMSS name: $vmssName" -ForegroundColor Green
+        
+        # Assign User Assigned Managed Identity to VMSS
+        Write-Host "Assigning User Assigned Managed Identity to VMSS..." -ForegroundColor Yellow
+        az vmss identity assign --resource-group $aksResourceGroupName --name $vmssName --identities $deploymentResult.AzUserAssignedIdentityResourceId
+        Write-Host "Successfully assigned User Assigned Managed Identity to VMSS." -ForegroundColor Green
+        
+    }
+    catch {
+        Write-Host "Failed to assign User Assigned Managed Identity to VMSS." -ForegroundColor Red
+        Write-Host "Error details:" -ForegroundColor Red
+        Write-Host $_.Exception.Message -ForegroundColor Red
+        Write-Host $_.Exception.StackTrace -ForegroundColor Red
+        failureBanner
+        exit 1
+    }
+
     # 2.Connect to AKS cluster
     try {
         Write-Host "Connecting to AKS cluster..." -ForegroundColor Cyan
@@ -591,42 +624,6 @@ try {
     # Validate if vmss Name is null or empty
     ValidateVariableIsNullOrEmpty -variableValue $vmssName -variableName "VMSS name"    
         
-    # Create System Assigned Managed Identity
-    $systemAssignedIdentity = $(az vmss identity assign --resource-group $vmssResourceGroupName --name $vmssName --query systemAssignedIdentity --output tsv)
-
-    # Validate if System Assigned Identity is null or empty
-    ValidateVariableIsNullOrEmpty -variableValue $systemAssignedIdentity -variableName "System-assigned managed identity"    
-    
-    # Validate if ResourceGroupId is null or empty
-    ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.ResourceGroupId -variableName "ResourceGroupId"    
- 
-    # Assign the role for aks system assigned managed identity to App Configuration Data Reader role with the scope of Resourcegroup
-    Write-Host "Assign the role for aks system assigned managed identity to App Configuration Data Reader role" -ForegroundColor Green
-    az role assignment create --assignee $systemAssignedIdentity --role "App Configuration Data Reader" --scope $deploymentResult.ResourceGroupId
-    
-    # Assign the role for aks system assigned managed identity to Azure blob storage Data Contributor role with the scope of Storage Account
-    Write-Host "Assign the role for aks system assigned managed identity to App Storage Blob Data Contributor role" -ForegroundColor Green
-    az role assignment create --assignee $systemAssignedIdentity --role "Storage Blob Data Contributor" --scope "/subscriptions/$($deploymentResult.SubscriptionId)/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.Storage/storageAccounts/$($deploymentResult.StorageAccountName)"
-
-    # Assign the role for aks system assigned managed identity to Azure Queue Data Contributor role with the scope of Storage Account
-    Write-Host "Assign the role for aks system assigned managed identity to App Storage Queue Data Contributor role" -ForegroundColor Green
-    az role assignment create --assignee $systemAssignedIdentity --role "Storage Queue Data Contributor" --scope "/subscriptions/$($deploymentResult.SubscriptionId)/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.Storage/storageAccounts/$($deploymentResult.StorageAccountName)"
-
-    # Assign the role for aks system assigned managed identity to Azure Queue Data Contributor role with the scope of Storage Account
-    Write-Host "Assign the role for aks system assigned managed identity to App Cognitive Services OpenAI User role" -ForegroundColor Green
-    az role assignment create --assignee $systemAssignedIdentity --role "Cognitive Services OpenAI User" --scope "/subscriptions/$($deploymentResult.SubscriptionId)/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.CognitiveServices/accounts/$($deploymentResult.AzOpenAiServiceName)"
-
-    # Assign the role for aks system assigned managed identity to Azure Queue Data Contributor role with the scope of Storage Account
-    Write-Host "Assign the role for aks system assigned managed identity to App Search Index Data Contributor role" -ForegroundColor Green
-    az role assignment create --assignee $systemAssignedIdentity --role "Search Index Data Contributor" --scope "/subscriptions/$($deploymentResult.SubscriptionId)/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.Search/searchServices/$($deploymentResult.AzSearchServiceName)"
-
-    # Assign the role for aks system assigned managed identity to Azure Queue Data Contributor role with the scope of Storage Account
-    Write-Host "Assign the role for aks system assigned managed identity to App Search Service Contributor role" -ForegroundColor Green
-    az role assignment create --assignee $systemAssignedIdentity --role "Search Service Contributor" --scope "/subscriptions/$($deploymentResult.SubscriptionId)/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.Search/searchServices/$($deploymentResult.AzSearchServiceName)"
-
-    # Assign the role for aks system assigned managed identity to Azure Queue Data Contributor role with the scope of Storage Account
-    Write-Host "Assign the role for aks system assigned managed identity to App Cognitive Services User role" -ForegroundColor Green
-    az role assignment create --assignee $systemAssignedIdentity --role "Cognitive Services User" --scope "/subscriptions/$($deploymentResult.SubscriptionId)/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.CognitiveServices/accounts/$($deploymentResult.AzCognitiveServiceName)"
 
     # 8. Update aks nodepools to updated new role
     try {
@@ -693,6 +690,7 @@ try {
         '{{ aiservice-imagepath }}' = $acrAIServiceTag
         '{{ kernelmemory-imagepath }}' = $acrKernelMemoryTag
         '{{ frontapp-imagepath }}' = $acrFrontAppTag
+        '{{ user-assigned-identity-client-id }}' = $deploymentResult.AzUserAssignedIdentityClientId
     }
 
     $deploymentTemplate = Get-Content -Path .\kubernetes\deploy.deployment.yaml.template -Raw

@@ -26,6 +26,9 @@ spec:
         image: {{ aiservice-imagepath }}
         ports:
         - containerPort: 8080
+        env:
+        - name: AZURE_CLIENT_ID
+          value: "{{ user-assigned-identity-client-id }}"
         resources:
           limits:
             cpu: "2"
@@ -54,6 +57,9 @@ spec:
         image: {{ kernelmemory-imagepath }}
         ports:
         - containerPort: 8080
+        env:
+        - name: AZURE_CLIENT_ID
+          value: "{{ user-assigned-identity-client-id }}"
         resources:
           limits:
             cpu: "2"

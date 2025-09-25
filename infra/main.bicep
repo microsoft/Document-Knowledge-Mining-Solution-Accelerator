@@ -600,6 +600,11 @@ module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = {
         roleDefinitionIdOrName: 'Storage Blob Data Contributor'
         principalType: 'ServicePrincipal'
       }
+      {
+        principalId: userAssignedIdentity.outputs.principalId
+        roleDefinitionIdOrName: 'Storage Queue Data Contributor'
+        principalType: 'ServicePrincipal'
+      }
     ]
 
     // WAF aligned networking
@@ -676,6 +681,11 @@ module avmSearchSearchServices 'br/public:avm/res/search/search-service:0.9.1' =
       }
       {
         roleDefinitionIdOrName: 'Search Index Data Reader' //'5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'// Cognitive Services OpenAI User
+        principalId: userAssignedIdentity.outputs.principalId
+        principalType: 'ServicePrincipal'
+      }
+      {
+        roleDefinitionIdOrName: 'Search Service Contributor'
         principalId: userAssignedIdentity.outputs.principalId
         principalType: 'ServicePrincipal'
       }
@@ -958,8 +968,14 @@ output AZURE_SEARCH_SERVICE_NAME string = avmSearchSearchServices.outputs.name
 @description('Contains Azure AKS Name.')
 output AZURE_AKS_NAME string = managedCluster.outputs.name
 
-@description('Contains Azure AKS Managed Identity ID.')
-output AZURE_AKS_MI_ID string = managedCluster.outputs.systemAssignedMIPrincipalId
+@description('Contains Azure AKS User-Assigned Managed Identity ID.')
+output AZURE_AKS_MI_ID string = userAssignedIdentity.outputs.principalId
+
+@description('Contains Azure User-Assigned Managed Identity Resource ID.')
+output AZURE_USER_ASSIGNED_IDENTITY_ID string = userAssignedIdentity.outputs.resourceId
+
+@description('Contains Azure User-Assigned Managed Identity Client ID.')
+output AZURE_USER_ASSIGNED_IDENTITY_CLIENT_ID string = userAssignedIdentity.outputs.clientId
 
 @description('Contains Azure Container Registry Name.')
 output AZURE_CONTAINER_REGISTRY_NAME string = avmContainerRegistry.outputs.name
