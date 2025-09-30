@@ -179,6 +179,8 @@ cd .\Deployment\
 
 > **Note:** Replace `<your-resource-group-name>` with the actual name of the resource group containing your deployed Azure resources.
 
+> **💡 Tip**: Since this guide is for azd deployment, you'll typically use the first command without the `-ResourceGroupName` parameter.
+
 If you run into issue with PowerShell script file not being digitally signed, you can execute below command:
 
 ```

@@ -83,12 +83,21 @@ The post-deployment process is automated through a single PowerShell script that
    cd .\Deployment\
    ```
 
-2. Run the post-deployment script with your resource group name:
+2. **Choose the appropriate command based on your deployment method:**
+
+   **If you deployed using custom templates, ARM/Bicep deployments, or `az deployment group` commands:**
    ```powershell
    .\resourcedeployment.ps1 -ResourceGroupName "<your-resource-group-name>"
    ```
    
-   > **Note**: Replace `<your-resource-group-name>` with the actual name of the resource group containing your AVM-deployed resources.
+   **If you deployed using `azd up` command:**
+   ```powershell
+   .\resourcedeployment.ps1
+   ```
+   
+   > **Note**: Replace `<your-resource-group-name>` with the actual name of the resource group containing your deployed Azure resources.
+
+   > **💡 Tip**: Since this guide is for AVM deployments, you'll most likely use the first command with the `-ResourceGroupName` parameter.
 
 3. **If you encounter execution policy issues**, use this alternative command:
    ```powershell
@@ -132,7 +141,7 @@ Upon successful completion, you'll see a success message with important informat
 
 | Model Name             | Recommended TPM | Minimum TPM |
 |------------------------|----------------|-------------|
-| GPT-4o-mini            | 100K TPM       | 10K TPM     |
+| gpt-4.1-mini            | 100K TPM       | 10K TPM     |
 | text-embedding-3-large | 200K TPM       | 50K TPM     |
 
 > **⚠️ Warning**: Insufficient quota will cause failures during document upload and processing. Ensure adequate capacity before proceeding.

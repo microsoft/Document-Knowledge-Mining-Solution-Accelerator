@@ -349,6 +349,11 @@ class DeploymentResult {
     [void]MapResultAz([string]$resourceGroupName) {
         # Get deployment outputs
         $deploymentName=$(az group show --name "$resourceGroupName" --query "tags.DeploymentName" -o tsv)
+        if (!$deploymentName) {
+            Write-Error "Deployment name not found in the resource group tags."
+            exit 1
+        }
+
         $deploymentOutputs=$(az deployment group show --resource-group "$resourceGroupName" --name "$deploymentName" --query "properties.outputs" -o json | ConvertFrom-Json)
 
         $this.TenantId                = $deploymentOutputs.azurE_TENANT_ID.value
