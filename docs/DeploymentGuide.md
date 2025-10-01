@@ -14,7 +14,7 @@
 
 1. **[PowerShell](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-7.4)** <small>(v5.1+)</small> - available for Windows, macOS, and Linux.
 
-1. **[Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-windows?tabs=azure-cli)** <small>(v2.0+)</small> - command-line tool for managing Azure resources.
+1. **[Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-windows?tabs=azure-cli)** <small>(v1.18.0+)</small> - command-line tool for managing Azure resources.
 
     2a. **kubectl** - command-line tool for interacting with Kubernetes clusters.  
         In PowerShell, run the following command:  
@@ -140,6 +140,7 @@ Once you've opened the project [locally](#local-environment), you can deploy it 
     ```shell
     azd up
     ```
+    > **Note:** This solution accelerator requires **Azure Developer CLI (azd) version 1.18.0 or higher**. Please ensure you have the latest version installed before proceeding with deployment. [Download azd here](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/install-azd).
 
 4. Provide an `azd` environment name (e.g., "ckmapp").
 5. Select a subscription from your Azure account and choose a location that has quota for all the resources. 
