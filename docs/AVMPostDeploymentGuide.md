@@ -1,5 +1,9 @@
 # AVM Post Deployment Guide
 
+> **📋 Note**: This guide is specifically for post-deployment steps after using the AVM template. For complete deployment from scratch, see the main [Deployment Guide](./DeploymentGuide.md).
+
+---
+
 This document provides guidance on post-deployment steps after deploying the Document Knowledge Mining Solution Accelerator from the [AVM (Azure Verified Modules) repository](https://github.com/Azure/bicep-registry-modules/tree/main/avm/ptn/sa/document-knowledge-mining).
 
 ## Overview
@@ -190,7 +194,3 @@ Once document upload is complete, you can:
 - **Access the web application** at the URL provided in the deployment output
 - **Start exploring** the knowledge mining capabilities
 - **Upload additional documents** through the web interface
-
----
-
-> **📋 Note**: This guide is specifically for post-deployment steps after using the AVM template. For complete deployment from scratch, see the main [Deployment Guide](./DeploymentGuide.md).
