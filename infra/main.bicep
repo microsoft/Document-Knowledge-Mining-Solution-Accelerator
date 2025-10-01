@@ -869,6 +869,7 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.
     networkPlugin: 'azure'
     networkPolicy: 'azure'
     omsAgentEnabled: true
+    webApplicationRoutingEnabled: true
     // WAF aligned configuration for Monitoring
     diagnosticSettings: enableMonitoring ? [
       {

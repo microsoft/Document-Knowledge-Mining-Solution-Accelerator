@@ -551,24 +551,6 @@ try {
     # 3.Create namespace for AI Service
     kubectl create namespace $kubenamespace
     
-    Write-Host "Enable Add routing addon for AKS" -ForegroundColor Yellow
-    
-    # 4.approuting enable and enable addons for http_application_routing
-    try {
-        Write-Host "Enabling application routing addon for AKS..." -ForegroundColor Cyan
-        Import-Module .\kubernetes\enable_approuting.psm1
-        Enable-AppRouting -ResourceGroupName $deploymentResult.ResourceGroupName -ClusterName $deploymentResult.AksName
-        Write-Host "Application routing addon enabled." -ForegroundColor Green
-    }
-    catch {
-        Write-Host "Failed to enable application routing addon." -ForegroundColor Red
-        Write-Host "Error details:" -ForegroundColor Red
-        Write-Host $_.Exception.Message -ForegroundColor Red
-        Write-Host $_.Exception.StackTrace -ForegroundColor Red
-        failureBanner
-        exit 1
-    }
-    
     # 5. Get the public IP address for the default public ingress controller
     #    https://learn.microsoft.com/en-us/azure/aks/app-routing
 
