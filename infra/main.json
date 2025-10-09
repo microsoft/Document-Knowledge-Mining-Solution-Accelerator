@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "8418820476800736272"
+      "templateHash": "2904572962142281757"
     }
   },
   "parameters": {
@@ -66,7 +66,7 @@
     },
     "gptModelCapacity": {
       "type": "int",
-      "defaultValue": 150,
+      "defaultValue": 100,
       "minValue": 10,
       "metadata": {
         "description": "Optional. Capacity of the GPT model deployment:"
@@ -183,6 +183,13 @@
         },
         "description": "Required. Location for AI Foundry deployment. This is the location where the AI Foundry resources will be deployed."
       }
+    },
+    "createdBy": {
+      "type": "string",
+      "defaultValue": "[if(contains(deployer(), 'userPrincipalName'), split(deployer().userPrincipalName, '@')[0], deployer().objectId)]",
+      "metadata": {
+        "description": "Optional created by user name"
+      }
     }
   },
   "variables": {
@@ -285,6 +292,14 @@
     "applicationInsightsResourceName": "[format('appi-{0}', variables('solutionSuffix'))]"
   },
   "resources": {
+    "resourceGroupTags": {
+      "type": "Microsoft.Resources/tags",
+      "apiVersion": "2021-04-01",
+      "name": "default",
+      "properties": {
+        "tags": "[shallowMerge(createArray(parameters('tags'), createObject('TemplateName', 'DKM', 'Type', if(parameters('enablePrivateNetworking'), 'WAF', 'Non-WAF'), 'CreatedBy', parameters('createdBy'), 'DeploymentName', deployment().name)))]"
+      }
+    },
     "avmPrivateDnsZones": {
       "copy": {
         "name": "avmPrivateDnsZones",
@@ -39783,8 +39798,8 @@
         }
       },
       "dependsOn": [
-        "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').storageBlob)]",
         "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').storageQueue)]",
+        "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').storageBlob)]",
         "network",
         "userAssignedIdentity"
       ]
@@ -47131,7 +47146,7 @@
             "value": "[parameters('enableTelemetry')]"
           },
           "kubernetesVersion": {
-            "value": "1.30.4"
+            "value": "1.32.7"
           },
           "dnsPrefix": {
             "value": "[format('aks-{0}', variables('solutionSuffix'))]"
@@ -50479,8 +50494,8 @@
           "flowType": {
             "value": "Bluefield"
           },
-          "workspaceResourceId": "[if(parameters('enableMonitoring'), createObject('value', reference('logAnalyticsWorkspace').outputs.resourceId.value), createObject('value', ''))]",
-          "diagnosticSettings": "[if(parameters('enableMonitoring'), createObject('value', createArray(createObject('workspaceResourceId', reference('logAnalyticsWorkspace').outputs.resourceId.value))), createObject('value', null()))]"
+          "workspaceResourceId": "[if(parameters('enableMonitoring'), if(variables('useExistingLogAnalytics'), createObject('value', parameters('existingLogAnalyticsWorkspaceId')), createObject('value', reference('logAnalyticsWorkspace').outputs.resourceId.value)), createObject('value', ''))]",
+          "diagnosticSettings": "[if(parameters('enableMonitoring'), createObject('value', createArray(createObject('workspaceResourceId', if(variables('useExistingLogAnalytics'), parameters('existingLogAnalyticsWorkspaceId'), reference('logAnalyticsWorkspace').outputs.resourceId.value)))), createObject('value', null()))]"
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",

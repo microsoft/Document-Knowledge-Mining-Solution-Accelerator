@@ -165,9 +165,22 @@ Open PowerShell, change directory where you code cloned, then run the deploy scr
 ```
 cd .\Deployment\  
 ```  
+
+#### Choose the appropriate command based on your deployment method:
+
+**If you deployed using `azd up` command:**
 ```
 .\resourcedeployment.ps1
 ```
+
+**If you deployed using custom templates, ARM/Bicep deployments, or `az deployment group` commands:**
+```
+.\resourcedeployment.ps1 -ResourceGroupName "<your-resource-group-name>"
+```
+
+> **Note:** Replace `<your-resource-group-name>` with the actual name of the resource group containing your deployed Azure resources.
+
+> **💡 Tip**: Since this guide is for azd deployment, you'll typically use the first command without the `-ResourceGroupName` parameter.
 
 If you run into issue with PowerShell script file not being digitally signed, you can execute below command:
 
