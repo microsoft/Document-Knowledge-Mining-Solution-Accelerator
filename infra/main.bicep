@@ -825,7 +825,7 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.
     location: solutionLocation
     tags: tags
     enableTelemetry: enableTelemetry
-    kubernetesVersion: '1.30.4'
+    kubernetesVersion: '1.32.7'
     dnsPrefix: 'aks-${solutionSuffix}'
     enableRBAC: true
     disableLocalAccounts: false
