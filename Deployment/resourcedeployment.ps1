@@ -1,7 +1,14 @@
-﻿﻿# Copyright (c) Microsoft Corporation.
+﻿# Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
 #https://patorjk.com/software/taag
+
+
+param (
+    [Parameter(Mandatory=$false)]
+    [string]$ResourceGroupName
+)
+
 function startBanner() {
     Write-Host "  _____                                        _                                               "
     Write-Host " |  __ \                                      | |                                              "
@@ -195,7 +202,10 @@ function Show-Banner {
 }
 
 # Get all environment values
-$envValues = azd env get-values --output json | ConvertFrom-Json
+if (!$ResourceGroupName) {
+    $envValues = azd env get-values --output json | ConvertFrom-Json
+}
+
 function Get-AzdEnvValueOrDefault {
     param (
         [Parameter(Mandatory = $true)]
@@ -290,7 +300,7 @@ class DeploymentResult {
 
     }
 
-    [void]MapResult() {
+    [void]MapResultAzd() {
 
         # Replace direct $envValues lookups with function calls
         $this.TenantId                = Get-AzdEnvValueOrDefault -KeyName "AZURE_TENANT_ID" -Required $true
@@ -334,6 +344,68 @@ class DeploymentResult {
         # Azure App Configuration
         $this.AzAppConfigEndpoint     = Get-AzdEnvValueOrDefault -KeyName "AZURE_APP_CONFIG_ENDPOINT"
         $this.AzAppConfigName         = Get-AzdEnvValueOrDefault -KeyName "AZURE_APP_CONFIG_NAME"
+    }
+
+    [void]MapResultAz([string]$resourceGroupName) {
+        # Get deployment outputs
+        $deploymentName=$(az group show --name "$resourceGroupName" --query "tags.DeploymentName" -o tsv)
+        if (!$deploymentName) {
+            Write-Error "Deployment name not found in the resource group tags."
+            exit 1
+        }
+
+        $deploymentOutputs=$(az deployment group show --resource-group "$resourceGroupName" --name "$deploymentName" --query "properties.outputs" -o json | ConvertFrom-Json)
+
+        $this.TenantId                = $deploymentOutputs.azurE_TENANT_ID.value
+        if (!$this.TenantId) {
+            $this.TenantId = $(az account show --query tenantId -o tsv)
+        }
+
+        $this.SubscriptionId          = $(az account show --query id -o tsv)
+
+        # Resource Group
+        $this.ResourceGroupName       = $resourceGroupName
+        $this.ResourceGroupId         = $deploymentOutputs.azurE_RESOURCE_GROUP_ID.value
+        if (!$this.ResourceGroupId) {
+            Write-Error "Required value 'AZURE_RESOURCE_GROUP_ID' not found in the deployment outputs."
+            exit 1
+        }
+
+        # Storage Account
+        $this.StorageAccountName      = $deploymentOutputs.storagE_ACCOUNT_NAME.value
+
+        # Search Service
+        $this.AzSearchServiceName     = $deploymentOutputs.azurE_SEARCH_SERVICE_NAME.value
+        $this.AzSearchServicEndpoint  = "https://$($this.AzSearchServiceName).search.windows.net"
+
+        # AKS
+        $this.AksName                 = $deploymentOutputs.azurE_AKS_NAME.value
+        $this.AksMid                  = $deploymentOutputs.azurE_AKS_MI_ID.value
+
+        # Container Registry
+        $this.AzContainerRegistryName = $deploymentOutputs.azurE_CONTAINER_REGISTRY_NAME.value
+
+        # Cognitive Service - Azure AI Document Intelligence Service
+        $this.AzCognitiveServiceName     = $deploymentOutputs.azurE_COGNITIVE_SERVICE_NAME.value
+        $this.AzCognitiveServiceEndpoint = $deploymentOutputs.azurE_COGNITIVE_SERVICE_ENDPOINT.value
+
+        # Open AI Service
+        $this.AzOpenAiServiceName     = $deploymentOutputs.azurE_OPENAI_SERVICE_NAME.value
+        $this.AzOpenAiServiceEndpoint = $deploymentOutputs.azurE_OPENAI_SERVICE_ENDPOINT.value
+
+        # Cosmos DB
+        $this.AzCosmosDBName          = $deploymentOutputs.azurE_COSMOSDB_NAME.value
+
+        # Open AI Service Models
+        $this.AzGPT4oModelName        = $deploymentOutputs.aZ_GPT4O_MODEL_NAME.value
+        $this.AzGPT4oModelId          = $deploymentOutputs.aZ_GPT4O_MODEL_ID.value
+        $this.AzGPTEmbeddingModelName = $deploymentOutputs.aZ_GPT_EMBEDDING_MODEL_NAME.value
+        $this.AzGPTEmbeddingModelId   = $deploymentOutputs.aZ_GPT_EMBEDDING_MODEL_ID.value
+
+        # App Configuration
+        $this.AzAppConfigEndpoint     = $deploymentOutputs.azurE_APP_CONFIG_ENDPOINT.value
+        $this.AzAppConfigName         = $deploymentOutputs.azurE_APP_CONFIG_NAME.value
+
     }
 }
 
@@ -379,7 +451,12 @@ try {
     Write-Host "Retrieving the deployment details.....`r`n" -ForegroundColor Yellow
 
     # Map the deployment result to DeploymentResult object from .env file
-    $deploymentResult.MapResult()
+    if ($ResourceGroupName) {
+        $deploymentResult.MapResultAz($ResourceGroupName.Trim())
+    }
+    else {
+        $deploymentResult.MapResultAzd()
+    }
 
     LoginAzure $deploymentResult.TenantId $deploymentResult.SubscriptionId
 
