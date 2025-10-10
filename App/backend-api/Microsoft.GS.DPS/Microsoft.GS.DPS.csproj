@@ -12,11 +12,11 @@
     <PackageReference Include="Azure.Search.Documents" Version="11.6.1" />
     <PackageReference Include="FluentValidation" Version="12.0.0" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
-    <PackageReference Include="Microsoft.KernelMemory.WebClient" Version="0.79.241014.2" />
+    <PackageReference Include="Microsoft.KernelMemory" Version="0.98.250508.3" />
     <PackageReference Include="Microsoft.Maui.Graphics" Version="9.0.81" />
     <PackageReference Include="Microsoft.Maui.Graphics.Skia" Version="9.0.81" />
-    <PackageReference Include="MongoDB.Driver" Version="2.29.0" />
-    <PackageReference Include="MongoDB.Driver.Core" Version="2.29.0" />
+    <PackageReference Include="MongoDB.Driver" Version="3.5.0" />
+    <PackageReference Include="MongoDB.Driver.Core" Version="2.30.0" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.119.0" />
   </ItemGroup>
 

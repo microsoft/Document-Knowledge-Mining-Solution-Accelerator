@@ -15,20 +15,6 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: kernelmemory-service
-  namespace: ns-km
-spec:
-  type: ClusterIP
-  ports:
-    - name: http
-      port: 80
-      targetPort: 9001
-  selector:
-    app: kernelmemory
----
-apiVersion: v1
-kind: Service
-metadata:
   name: frontapp-service
   namespace: ns-km
 spec:

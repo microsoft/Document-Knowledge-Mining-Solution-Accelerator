@@ -48,7 +48,6 @@ namespace Microsoft.GS.DPS.Storage.Components
 
                 settings.SslSettings =
                       new SslSettings() { EnabledSslProtocols = SslProtocols.Tls12 };
-                settings.LinqProvider = LinqProvider.V2;
 
                 return new MongoClient(settings);
 

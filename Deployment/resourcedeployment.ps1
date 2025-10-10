@@ -756,19 +756,19 @@ try {
     ## Define Image Tags
     $acrNamespace = "kmgs"
     $acrAIServiceTag = "$($deploymentResult.AzContainerRegistryName).azurecr.io/$acrNamespace/aiservice"
-    $acrKernelMemoryTag = "$($deploymentResult.AzContainerRegistryName).azurecr.io/$acrNamespace/kernelmemory"
+    # $acrKernelMemoryTag = "$($deploymentResult.AzContainerRegistryName).azurecr.io/$acrNamespace/kernelmemory"
     $acrFrontAppTag = "$($deploymentResult.AzContainerRegistryName).azurecr.io/$acrNamespace/frontapp"
     
     # Validate AI Service Tag IsNull Or Empty.    
     ValidateVariableIsNullOrEmpty -variableValue $acrAIServiceTag -variableName "AI Service Tag"
     # Validate Kernel Memory Tag IsNull Or Empty.   
-    ValidateVariableIsNullOrEmpty -variableValue $acrKernelMemoryTag -variableName "Kernel Memory Tag"
+    # ValidateVariableIsNullOrEmpty -variableValue $acrKernelMemoryTag -variableName "Kernel Memory Tag"
     # Validate Front App Tag IsNull Or Empty.   
     ValidateVariableIsNullOrEmpty -variableValue $acrFrontAppTag -variableName "Front App Tag"
 
     $deploymentTemplatePlaceholders = @{
         '{{ aiservice-imagepath }}' = $acrAIServiceTag
-        '{{ kernelmemory-imagepath }}' = $acrKernelMemoryTag
+        # '{{ kernelmemory-imagepath }}' = $acrKernelMemoryTag
         '{{ frontapp-imagepath }}' = $acrFrontAppTag
     }
 
@@ -884,8 +884,8 @@ try {
 
     #  2-2. Build and push the Kernel Memory Service container image to Azure Container Registry
     #$acrKernelMemoryTag = "$($deploymentResult.AzContainerRegistryName).azurecr.io/$acrNamespace/kernelmemory"
-    docker build "../App/kernel-memory/." --no-cache -t $acrKernelMemoryTag
-    docker push $acrKernelMemoryTag
+    # docker build "../App/kernel-memory/." --no-cache -t $acrKernelMemoryTag
+    # docker push $acrKernelMemoryTag
 
     #  2-3. Build and push the Frontend App Service container image to Azure Container Registry
     #$acrFrontAppTag = "$($deploymentResult.AzContainerRegistryName).azurecr.io/$acrNamespace/frontapp"

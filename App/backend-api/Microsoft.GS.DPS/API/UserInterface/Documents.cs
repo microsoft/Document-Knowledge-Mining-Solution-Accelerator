@@ -15,10 +15,10 @@ namespace Microsoft.GS.DPS.API.UserInterface
     public class Documents
     {
         private readonly DocumentRepository _documentRepository;
-        private readonly MemoryWebClient _memoryWebClient;
+        private readonly MemoryServerless _memoryWebClient;
         private readonly DataCacheManager _dataCache;
 
-        public Documents(DocumentRepository documentRepository, MemoryWebClient memoryWebClient, DataCacheManager dataCache)
+        public Documents(DocumentRepository documentRepository, MemoryServerless memoryWebClient, DataCacheManager dataCache)
         {
             _documentRepository = documentRepository;
             _memoryWebClient = memoryWebClient;

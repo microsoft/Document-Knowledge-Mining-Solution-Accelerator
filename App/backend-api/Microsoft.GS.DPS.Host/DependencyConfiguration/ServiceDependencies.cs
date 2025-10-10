@@ -1,18 +1,15 @@
-﻿using Microsoft.GS.DPSHost.API;
-using Microsoft.KernelMemory;
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.ChatCompletion;
+﻿using FluentValidation;
 using Microsoft.Extensions.Options;
-using Microsoft.GS.DPS.API;
-using Microsoft.GS.DPS.Storage.ChatSessions;
-using Microsoft.GS.DPS.Storage.Document;
-using MongoDB.Driver;
-using FluentValidation;
 using Microsoft.GS.DPS.Model.UserInterface;
 using Microsoft.GS.DPS.Storage.AISearch;
+using Microsoft.GS.DPS.Storage.ChatSessions;
+using Microsoft.GS.DPS.Storage.Document;
 using Microsoft.GS.DPSHost.AppConfiguration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.GS.DPSHost.Helpers;
+using Microsoft.KernelMemory;
+using Microsoft.SemanticKernel;
+using MongoDB.Driver;
+using Microsoft.GS.DPS.Handlers;
 
 namespace Microsoft.GS.DPSHost.ServiceConfiguration
 {
@@ -26,6 +23,11 @@ namespace Microsoft.GS.DPSHost.ServiceConfiguration
                 .AddSingleton<Microsoft.GS.DPS.API.ChatHost>()
                 .AddSingleton<Microsoft.GS.DPS.API.UserInterface.Documents>()
                 .AddSingleton<Microsoft.GS.DPS.API.UserInterface.DataCacheManager>()
+                //.AddSingleton<Microsoft.KernelMemory.KernelMemoryConfig>(x =>
+                //{
+                //    return builder.Configuration.GetSection("KernelMemory").Get<Microsoft.KernelMemory.KernelMemoryConfig>() ??
+                //           throw new InvalidOperationException("Unable to load KernelMemory configuration");
+                //})
                 .AddSingleton<Microsoft.SemanticKernel.Kernel>(x =>
                 {
                     var aiService = x.GetRequiredService<IOptions<AIServices>>().Value;
@@ -58,10 +60,39 @@ namespace Microsoft.GS.DPSHost.ServiceConfiguration
 
 
                 })
-                .AddSingleton<MemoryWebClient>(x =>
+                .AddSingleton<MemoryServerless>(x =>
                 {
-                    var services = x.GetRequiredService<IOptions<Services>>().Value;
-                    return new MemoryWebClient(endpoint: services.KernelMemory.Endpoint ?? "", new HttpClient() { Timeout = new TimeSpan(0, 60, 0) });
+                    var azureBlobConfig = x.GetRequiredService<IOptions<AzureBlobsConfig>>().Value;
+                    var azureOpenAIConfig = x.GetRequiredService<IOptionsMonitor<AzureOpenAIConfig>>();
+                    var azureOpenAIEmbeddingConfig = azureOpenAIConfig.Get("Embedding");
+                    var azureOpenAITextConfig = azureOpenAIConfig.Get("Text");
+                    var azureAISearchConfig = x.GetRequiredService<IOptions<Microsoft.KernelMemory.AzureAISearchConfig>>().Value;
+                    var azureAIDocIntelConfig = x.GetRequiredService<IOptions<AzureAIDocIntelConfig>>().Value;
+                    var kernelMemoryConfig = x.GetRequiredService<IOptions<Microsoft.KernelMemory.KernelMemoryConfig>>().Value
+                                                ?? throw new InvalidOperationException("Unable to load KernelMemory configuration");
+
+                    var kmBuilder = new KernelMemoryBuilder()
+                                .WithAzureBlobsDocumentStorage(azureBlobConfig)
+                                .WithAzureOpenAITextEmbeddingGeneration(azureOpenAIEmbeddingConfig)
+                                .WithAzureOpenAITextGeneration(azureOpenAITextConfig)
+                                .WithAzureAISearchMemoryDb(azureAISearchConfig)
+                                .WithAzureAIDocIntel(azureAIDocIntelConfig)
+                                .Configure(builder => builder.Services.AddLogging(l =>
+                                {
+                                    l.SetMinimumLevel(LogLevel.Error);
+                                    l.AddSimpleConsole(c => c.SingleLine = true);
+                                }))
+                                .Build<MemoryServerless>();
+
+                    var keywordHandler = new KeywordExtractingHandler(
+                        stepName: "keyword_extract",
+                        orchestrator: kmBuilder.Orchestrator,
+                        config: kernelMemoryConfig
+                    );
+                    
+                    // Add the handler instance instead of using generic method
+                    kmBuilder.Orchestrator.AddHandler(keywordHandler);
+                    return kmBuilder;
 
                 })
                 .AddSingleton<TagUpdater>(x =>

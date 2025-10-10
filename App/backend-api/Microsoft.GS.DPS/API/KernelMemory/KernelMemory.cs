@@ -24,7 +24,7 @@ namespace Microsoft.GS.DPS.API
 {
     public class KernelMemory
     {
-        private MemoryWebClient _kmClient;
+        private MemoryServerless _kmClient;
         private DocumentRepository _documentRepository;
         private DataCacheManager _dataCache;
         private TagUpdater _tagUpdator;
@@ -40,7 +40,7 @@ namespace Microsoft.GS.DPS.API
             KernelMemory.keywordExtractorPrompt = System.IO.File.ReadAllText(systemPromptFilePath);
         }
 
-        public KernelMemory(MemoryWebClient kmClient, DocumentRepository documentRepository, DataCacheManager dataCache, TagUpdater tagUpdator)
+        public KernelMemory(MemoryServerless kmClient, DocumentRepository documentRepository, DataCacheManager dataCache, TagUpdater tagUpdator)
         {
             _kmClient = kmClient;
             _documentRepository = documentRepository;

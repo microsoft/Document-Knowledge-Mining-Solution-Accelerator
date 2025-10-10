@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace Microsoft.GS.DPS.Storage.Components
 {
@@ -21,6 +23,7 @@ namespace Microsoft.GS.DPS.Storage.Components
         /// <summary>
         /// id will be generated automatically. you don't need to manage it by yourself
         /// </summary>
+        [BsonRepresentation(BsonType.String)]
         public Guid id { get; set; }
 
         /// <summary>

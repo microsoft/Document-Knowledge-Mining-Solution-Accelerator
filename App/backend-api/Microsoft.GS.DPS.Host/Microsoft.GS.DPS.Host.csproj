@@ -19,13 +19,13 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.AzureAppConfiguration" Version="8.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.6" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.6" />
-    <PackageReference Include="Microsoft.KernelMemory.WebClient" Version="0.79.241014.2" />
+    <PackageReference Include="Microsoft.KernelMemory" Version="0.98.250508.3" />
     <PackageReference Include="Microsoft.SemanticKernel" Version="1.32.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
     <PackageReference Include="MimeTypesMap" Version="1.0.9" />
-	<PackageReference Include="MongoDB.Bson" Version="2.29.0" />
-	<PackageReference Include="MongoDB.Driver" Version="2.29.0" />
-	<PackageReference Include="MongoDB.Driver.Core" Version="2.29.0" />
+	<PackageReference Include="MongoDB.Bson" Version="3.5.0" />
+	<PackageReference Include="MongoDB.Driver" Version="3.5.0" />
+	<PackageReference Include="MongoDB.Driver.Core" Version="2.30.0" />
     <PackageReference Include="NSwag.AspNetCore" Version="14.4.0" />
     <PackageReference Include="NSwag.Core" Version="14.4.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.1" />

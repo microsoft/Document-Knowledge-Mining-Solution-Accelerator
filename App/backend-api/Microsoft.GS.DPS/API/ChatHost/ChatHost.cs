@@ -26,9 +26,9 @@ namespace Microsoft.GS.DPS.API
         };
     }
 
-    public class ChatHost(MemoryWebClient kmClient, Kernel kernel, API.KernelMemory kernelMemory, ChatSessionRepository chatSessions)
+    public class ChatHost(MemoryServerless kmClient, Kernel kernel, API.KernelMemory kernelMemory, ChatSessionRepository chatSessions)
     {
-        private MemoryWebClient _kmClient = kmClient;
+        private MemoryServerless _kmClient = kmClient;
         private Kernel _kernel = kernel;
         private API.KernelMemory _kernelMemory = kernelMemory;
         private IChatCompletionService _chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
@@ -144,7 +144,7 @@ namespace Microsoft.GS.DPS.API
             {
                 Arguments = new Dictionary<string, object?>()
                 {
-                    { Microsoft.KernelMemory.Constants.CustomContext.Rag.Temperature, 0},
+                    { Microsoft.KernelMemory.Constants.CustomContext.Rag.Temperature, 0.0},
                     { Microsoft.KernelMemory.Constants.CustomContext.Rag.MaxTokens, 10000 }
                 }
             };

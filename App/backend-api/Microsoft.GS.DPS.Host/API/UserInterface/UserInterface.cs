@@ -56,7 +56,7 @@ namespace Microsoft.GS.DPSHost.API
             app.MapGet("/Documents/{documentId}/{fileName}", async (HttpContext ctx,
                                                                     string documentId,
                                                                     string fileName,
-                                                                    MemoryWebClient kmClient,
+                                                                    MemoryServerless kmClient,
                                                                     bool? embed) =>
             {
                 StreamableFileContent fileContent = await kmClient.ExportFileAsync(documentId, fileName);

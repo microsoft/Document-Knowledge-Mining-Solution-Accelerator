@@ -37,34 +37,6 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kernelmemory-deployment
-  namespace: ns-km
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: kernelmemory
-  template:
-    metadata:
-      labels:
-        app: kernelmemory
-    spec:
-      containers:
-      - name: kernelmemory
-        image: {{ kernelmemory-imagepath }}
-        ports:
-        - containerPort: 8080
-        resources:
-          limits:
-            cpu: "2"
-            memory: "2Gi"
-          requests:
-            cpu: "1"
-            memory: "1Gi"
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
   name: frontapp-deployment
   namespace: ns-km
 spec:
