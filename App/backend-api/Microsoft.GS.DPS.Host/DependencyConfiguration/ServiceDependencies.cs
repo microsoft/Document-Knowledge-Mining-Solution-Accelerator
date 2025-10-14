@@ -1,5 +1,11 @@
-﻿using FluentValidation;
+﻿using Azure;
+using Azure.AI.DocumentIntelligence;
+using Azure.AI.FormRecognizer.DocumentAnalysis;
+using Azure.Core;
+using FluentValidation;
 using Microsoft.Extensions.Options;
+using Microsoft.GS.DPS.Decoders;
+using Microsoft.GS.DPS.Handlers;
 using Microsoft.GS.DPS.Model.UserInterface;
 using Microsoft.GS.DPS.Storage.AISearch;
 using Microsoft.GS.DPS.Storage.ChatSessions;
@@ -7,9 +13,11 @@ using Microsoft.GS.DPS.Storage.Document;
 using Microsoft.GS.DPSHost.AppConfiguration;
 using Microsoft.GS.DPSHost.Helpers;
 using Microsoft.KernelMemory;
+using Microsoft.KernelMemory.DataFormats;
+using Microsoft.KernelMemory.DataFormats.AzureAIDocIntel;
+using Microsoft.KernelMemory.DataFormats.Pdf;
 using Microsoft.SemanticKernel;
 using MongoDB.Driver;
-using Microsoft.GS.DPS.Handlers;
 
 namespace Microsoft.GS.DPSHost.ServiceConfiguration
 {
@@ -60,6 +68,29 @@ namespace Microsoft.GS.DPSHost.ServiceConfiguration
 
 
                 })
+                .AddSingleton<DocumentIntelligenceClient>(x =>
+                {
+                    var azureAIDocIntelConfig = x.GetRequiredService<IOptions<AzureAIDocIntelConfig>>().Value;
+                    DocumentIntelligenceClientOptions options = new()
+                    {
+                        Retry = { Delay = TimeSpan.FromSeconds(90), MaxDelay = TimeSpan.FromSeconds(180), MaxRetries = 3, Mode = RetryMode.Exponential },
+                    };
+                    if (azureAIDocIntelConfig.Auth == AzureAIDocIntelConfig.AuthTypes.AzureIdentity)
+                    {
+                        return new DocumentIntelligenceClient(
+                            new Uri(azureAIDocIntelConfig.Endpoint),
+                            AzureCredentialHelper.GetAzureCredential(),
+                            options);
+                    }
+                    else
+                    {
+                        return new DocumentIntelligenceClient(
+                            new Uri(azureAIDocIntelConfig.Endpoint),
+                            new AzureKeyCredential(azureAIDocIntelConfig.APIKey),
+                            options);
+                    }
+                })
+                .AddSingleton<CustomDocIntelPdfDecoder>()
                 .AddSingleton<MemoryServerless>(x =>
                 {
                     var azureBlobConfig = x.GetRequiredService<IOptions<AzureBlobsConfig>>().Value;
@@ -70,6 +101,7 @@ namespace Microsoft.GS.DPSHost.ServiceConfiguration
                     var azureAIDocIntelConfig = x.GetRequiredService<IOptions<AzureAIDocIntelConfig>>().Value;
                     var kernelMemoryConfig = x.GetRequiredService<IOptions<Microsoft.KernelMemory.KernelMemoryConfig>>().Value
                                                 ?? throw new InvalidOperationException("Unable to load KernelMemory configuration");
+                    var docIntelPdfDecoder = x.GetRequiredService<CustomDocIntelPdfDecoder>();
 
                     var kmBuilder = new KernelMemoryBuilder()
                                 .WithAzureBlobsDocumentStorage(azureBlobConfig)
@@ -77,6 +109,7 @@ namespace Microsoft.GS.DPSHost.ServiceConfiguration
                                 .WithAzureOpenAITextGeneration(azureOpenAITextConfig)
                                 .WithAzureAISearchMemoryDb(azureAISearchConfig)
                                 .WithAzureAIDocIntel(azureAIDocIntelConfig)
+                                .WithContentDecoder(docIntelPdfDecoder)
                                 .Configure(builder => builder.Services.AddLogging(l =>
                                 {
                                     l.SetMinimumLevel(LogLevel.Error);

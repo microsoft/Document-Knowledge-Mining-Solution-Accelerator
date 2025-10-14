@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="14.0.0" />
+    <PackageReference Include="Azure.AI.DocumentIntelligence" Version="1.0.0" />
     <PackageReference Include="Azure.Data.AppConfiguration" Version="1.6.1" />
     <PackageReference Include="Azure.Identity" Version="1.14.1" />
     <PackageReference Include="Microsoft.Extensions.Azure" Version="1.12.0" />

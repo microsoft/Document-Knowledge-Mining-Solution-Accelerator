@@ -67,17 +67,23 @@ namespace Microsoft.GS.DPSHost.API
                     return Results.NotFound();
                 }
 
+                // Read stream into memory
+                using var memoryStream = new MemoryStream();
+                await fileStream.CopyToAsync(memoryStream);
+                var fileBytes = memoryStream.ToArray();
+
                 // Determine the Content-Disposition header based on the embed parameter
                 string contentDisposition = embed.HasValue && embed.Value ? "inline" : "attachment";
                 ctx.Response.Headers["Content-Disposition"] = $"{contentDisposition}; filename=\"{SanitizeHeaderValue(fileContent.FileName)}\"";
                 ctx.Response.Headers["Content-Type"] = fileContent.FileType;
                 ctx.Response.Headers["Last-Modified"] = fileContent.LastWrite.ToString("R");
+                ctx.Response.ContentLength = fileBytes.Length;
+                ctx.Response.StatusCode = 200;
 
-                // Write the file stream to the response
-                ctx.Response.ContentLength = fileStream.Length;
-                await fileStream.CopyToAsync(ctx.Response.Body);
+                await ctx.Response.Body.WriteAsync(fileBytes);
 
-                return Results.Ok();
+                // Return empty result since we've already written to the response
+                return Results.Empty;
             })
             .DisableAntiforgery();
 
