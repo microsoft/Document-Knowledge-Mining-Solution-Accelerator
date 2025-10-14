@@ -186,7 +186,6 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
 
 
 
-
         let filterByDocumentIds: string[] = [];
 
 

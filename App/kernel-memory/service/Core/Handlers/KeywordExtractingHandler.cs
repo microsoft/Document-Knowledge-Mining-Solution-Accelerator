@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Azure.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.KernelMemory.Diagnostics;
 using Microsoft.KernelMemory.Pipeline;
@@ -38,7 +39,7 @@ public sealed class KeywordExtractingHandler : IPipelineStepHandler
         this._kernel = Kernel.CreateBuilder()
             .AddAzureOpenAIChatCompletion(deploymentName: (string)this._config.Services["AzureOpenAIText"]["Deployment"],
                                                 endpoint: (string)this._config.Services["AzureOpenAIText"]["Endpoint"],
-                                                  apiKey: (string)this._config.Services["AzureOpenAIText"]["APIKey"])
+                                                  credentials: new DefaultAzureCredential())
             .Build();
     }
 

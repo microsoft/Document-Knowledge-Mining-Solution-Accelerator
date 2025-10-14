@@ -65,6 +65,7 @@ export function Filter({
     };
 
     const [selectedKeywords, setSelectedKeywords] = useState<{ [key: string]: string[] }>(getInitialSelectedKeywords);
+    const [openItems, setOpenItems] = useState<string[]>([]);
     const isInitialMount = useRef(true);
 
     useEffect(() => {
@@ -84,10 +85,27 @@ export function Filter({
     useEffect(() => {
         if (clearFilters) {
             setSelectedKeywords({});
+            setOpenItems([]); // Close all accordion items when clearing filters
             localStorage.removeItem(localStorageKey);
             onFilterCleared(); // Notify parent that filters have been cleared
         }
     }, [clearFilters, onFilterCleared]);
+
+    // Effect to automatically expand/collapse accordion items based on selections
+    useEffect(() => {
+        if (!keywordFilterInfo) return;
+
+        const categoriesWithSelections: string[] = [];
+        
+        Object.entries(keywordFilterInfo).forEach(([category], index) => {
+            // Check if this category has any selected keywords
+            if (selectedKeywords[category] && selectedKeywords[category].length > 0) {
+                categoriesWithSelections.push(index.toString());
+            }
+        });
+
+        setOpenItems(categoriesWithSelections);
+    }, [selectedKeywords, keywordFilterInfo]);
 
     const handleCheckboxChange = (checked: boolean, category: string, keyword: string) => {
         setSelectedKeywords((prevKeywords) => {
@@ -113,10 +131,19 @@ export function Filter({
         });
     };
 
+    const handleAccordionToggle = (_event: any, data: { openItems: string[] }) => {
+        setOpenItems(data.openItems);
+    };
+
     return (
         <div className={`${className || ""} flex flex-col`}>
             <div className={classes.accordionWrapper}>
-                <Accordion multiple collapsible>
+                <Accordion 
+                    multiple 
+                    collapsible 
+                    openItems={openItems}
+                    onToggle={handleAccordionToggle}
+                >
                     {keywordFilterInfo && Object.entries(keywordFilterInfo).slice(0,10).map(([category, keywords], index) => (
                         <AccordionItem key={index} value={index.toString()}>
                             <AccordionHeader inline>{category}</AccordionHeader>

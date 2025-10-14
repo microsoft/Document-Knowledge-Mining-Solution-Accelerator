@@ -12,6 +12,7 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Azure.AI.OpenAI;
 using System.Collections.Generic;
+using Azure.Identity;
 
 namespace Microsoft.KernelMemory.DataFormats.Image
 {
@@ -32,7 +33,7 @@ namespace Microsoft.KernelMemory.DataFormats.Image
             this._kernel = Kernel.CreateBuilder()
                 .AddAzureOpenAIChatCompletion(deploymentName: (string)this._config.Services["AzureOpenAIText"]["Deployment"],
                                                     endpoint: (string)this._config.Services["AzureOpenAIText"]["Endpoint"],
-                                                      apiKey: (string)this._config.Services["AzureOpenAIText"]["APIKey"])
+                                                      credentials: new DefaultAzureCredential())
                 .Build();
         }
 
