@@ -90,18 +90,39 @@ public class KeywordExtractingHandler : IPipelineStepHandler
                         TAGS COUNT CAN BE UP TO 10 UNDER A CATEGORY
                         CATEGORY COUNT CAN BE UP TO 10
                         DON'T ADD ANY MARKDOWN EXPRESSION IN YOUR RESPONSE
+                        STRICTLY RESPOND IN FORMAT SHOWN IN BELOW EXAMPLES
                         [END RULES]
 
-                        [EXAMPLE]
+                        [EXAMPLE 1]
                         [
                             {
-                                [category1": ["tag1", "tag2", "tag3"]
+                                "category1": ["tag1", "tag2", "tag3"]
                             },
                             {
                                 "category2": ["tag1", "tag2", "tag3"]
                             }
                         ]
-                        [END EXAMPLE]
+                        [END EXAMPLE 1]
+
+                        [EXAMPLE 2]
+                        [
+                            {
+                                "Economic Conditions": [
+                                    "Nonfarm Payrolls",
+                                    "Job Growth",
+                                    "GDP Growth"
+                                ]
+                            },
+                            {
+                                "Home Sales Market": [
+                                    "Market Conditions",
+                                    "Home Sales Volume",
+                                    "Mortgage Rates",
+                                    "REO Properties"
+                                ]
+                            }
+                        ]
+                        [END EXAMPLE 2]
                         """;
 
                     chatHistory.AddSystemMessage(systemMessage);
