@@ -20,8 +20,8 @@ function Send-FilesToEndpoint {
     # Get all files in the Data folder
     $files = Get-ChildItem -Path $DataFolderPath -File
 
-    # Create HttpClient with timeout
-    $timeout = 300000 # Timeout in milliseconds (e.g., 300000 ms = 300 seconds)
+    # Create HttpClient with timeout with 20minutes
+    $timeout = 1200000 # Timeout in milliseconds (e.g., 1200000 ms = 1200 seconds)
     $httpClient = [System.Net.Http.HttpClient]::new()
     $httpClient.Timeout = [TimeSpan]::FromMilliseconds($timeout)
 
