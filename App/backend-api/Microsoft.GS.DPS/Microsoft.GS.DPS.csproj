@@ -15,8 +15,6 @@
     <PackageReference Include="Microsoft.KernelMemory.WebClient" Version="0.79.241014.2" />
     <PackageReference Include="Microsoft.Maui.Graphics" Version="9.0.110" />
     <PackageReference Include="Microsoft.Maui.Graphics.Skia" Version="9.0.110" />
-    <PackageReference Include="Microsoft.SemanticKernel" Version="1.32.0" />
-    <PackageReference Include="MongoDB.Bson" Version="2.29.0" />
     <PackageReference Include="MongoDB.Driver" Version="2.29.0" />
     <PackageReference Include="MongoDB.Driver.Core" Version="2.29.0" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.119.1" />
