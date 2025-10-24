@@ -35,6 +35,8 @@ param gptModelDeploymentType string = 'GlobalStandard'
 @description('Optional. Name of the GPT model to deploy:')
 @allowed([
   'gpt-4.1-mini'
+  'gpt-4o'
+  'gpt-4o-mini'
 ])
 param gptModelName string = 'gpt-4.1-mini'
 
@@ -44,6 +46,18 @@ param gptModelVersion string = '2025-04-14'
 @description('Optional. Capacity of the GPT model deployment:')
 @minValue(10)
 param gptModelCapacity int = 100
+
+@minLength(1)
+@description('Optional. Name of the GPT model to deploy:')
+@allowed([
+  'gpt-4.1-mini'
+  'gpt-4o'
+  'gpt-4o-mini'
+])
+param gptModelNameTags string = 'gpt-4o-mini'
+
+@description('Optional. Version of the GPT model to deploy.')
+param gptModelVersionTags string = '2024-07-18'
 
 @minLength(1)
 @description('Optional. Name of the Text Embedding model to deploy:')
@@ -95,7 +109,8 @@ param enableScalability bool = false
   azd: {
     type: 'location'
     usageName: [
-      'OpenAI.GlobalStandard.gpt4.1-mini,150'
+      'OpenAI.GlobalStandard.gpt4.1-mini,100'
+      'OpenAI.GlobalStandard.gpt-4o-mini,100'
       'OpenAI.GlobalStandard.text-embedding-3-large,100'
     ]
   }
@@ -166,6 +181,13 @@ var gptModelDeployment = {
   deploymentCapacity: gptModelCapacity
 }
 
+var gptModelDeploymentTags = {
+  modelName: gptModelNameTags
+  deploymentName: gptModelNameTags
+  deploymentVersion: gptModelVersionTags
+  deploymentCapacity: gptModelCapacity
+}
+
 var embeddingModelDeployment = {
   modelName: embeddingModelName
   deploymentName: embeddingModelName
@@ -184,6 +206,18 @@ var openAiDeployments = [
     sku: {
       name: gptModelDeploymentType
       capacity: gptModelDeployment.deploymentCapacity
+    }
+  }
+  {
+    name: gptModelDeploymentTags.deploymentName
+    model: {
+      format: 'OpenAI'
+      name: gptModelDeploymentTags.modelName
+      version: gptModelDeploymentTags.deploymentVersion
+    }
+    sku: {
+      name: gptModelDeploymentType
+      capacity: gptModelDeploymentTags.deploymentCapacity
     }
   }
   {
@@ -527,6 +561,10 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
       {
         name: 'KernelMemory:Services:AzureOpenAIText:Deployment'
         value: gptModelDeployment.deploymentName
+      }
+      {
+        name: 'KernelMemory:Services:AzureOpenAIText:DeploymentTags'
+        value: gptModelDeploymentTags.deploymentName
       }
       {
         name: 'KernelMemory:Services:AzureOpenAIText:Endpoint'

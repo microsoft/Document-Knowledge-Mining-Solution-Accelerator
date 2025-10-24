@@ -38,7 +38,7 @@ public class KeywordExtractingHandler : IPipelineStepHandler
 
         //init Semantic Kernel
         this._kernel = Kernel.CreateBuilder()
-            .AddAzureOpenAIChatCompletion(deploymentName: (string)this._config.Services["AzureOpenAIText"]["Deployment"],
+            .AddAzureOpenAIChatCompletion(deploymentName: (string)this._config.Services["AzureOpenAIText"]["DeploymentTags"],
                                                 endpoint: (string)this._config.Services["AzureOpenAIText"]["Endpoint"],
                                                   credentials: new DefaultAzureCredential())
             .Build();
@@ -89,6 +89,7 @@ public class KeywordExtractingHandler : IPipelineStepHandler
                         TAGS SHOULD BE A LIST OF STRINGS
                         TAGS COUNT CAN BE UP TO 10 UNDER A CATEGORY
                         CATEGORY COUNT CAN BE UP TO 10
+                        ONLY INCLUDE RELEVANT AND IMPORTANT CATEGORIES AND TAGS TO KEEP THE LIST MINIMAL
                         DON'T ADD ANY MARKDOWN EXPRESSION IN YOUR RESPONSE
                         STRICTLY RESPOND IN FORMAT SHOWN IN BELOW EXAMPLES
                         [END RULES]
@@ -107,18 +108,18 @@ public class KeywordExtractingHandler : IPipelineStepHandler
                         [EXAMPLE 2]
                         [
                             {
-                                "Economic Conditions": [
-                                    "Nonfarm Payrolls",
-                                    "Job Growth",
-                                    "GDP Growth"
+                                "Addenda": [
+                                    "Addendum Regarding Fixture Leases",
+                                    "Loan Assumption Addendum",
+                                    "Seller Financing Addendum"
                                 ]
                             },
                             {
-                                "Home Sales Market": [
-                                    "Market Conditions",
-                                    "Home Sales Volume",
-                                    "Mortgage Rates",
-                                    "REO Properties"
+                                "Contract Details": [
+                                    "Closing Date",
+                                    "Earnest Money",
+                                    "Property Condition",
+                                    "Sales Price"
                                 ]
                             }
                         ]

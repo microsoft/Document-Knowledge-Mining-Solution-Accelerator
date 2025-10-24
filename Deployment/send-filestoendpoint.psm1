@@ -21,7 +21,7 @@ function Send-FilesToEndpoint {
     $files = Get-ChildItem -Path $DataFolderPath -File
 
     # Create HttpClient with timeout
-    $timeout = 600000 # Timeout in milliseconds (e.g., 600000 ms = 600 seconds)
+    $timeout = 720000 # Timeout in milliseconds (e.g., 720000 ms = 720 seconds)
     $httpClient = [System.Net.Http.HttpClient]::new()
     $httpClient.Timeout = [TimeSpan]::FromMilliseconds($timeout)
 
@@ -69,8 +69,6 @@ function Send-FilesToEndpoint {
             else {
                 Write-Error "Failed to upload file: $($file.Name). Status code: $($response.StatusCode)"
             }
-
-            Start-Sleep -Seconds 30
         }
         catch {
             Write-Error "An error occurred while uploading the file: $($file.Name). Error: $_"
