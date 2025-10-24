@@ -76,7 +76,50 @@ param subnets subnetType[] = [
     addressPrefixes: ['10.0.6.0/23']
     networkSecurityGroup: {
       name: 'nsg-aks'
-      securityRules: []
+      securityRules: [
+        {
+          name: 'AllowHttpHttpsInbound'
+          properties: {
+            access: 'Allow'
+            direction: 'Inbound'
+            priority: 1000
+            protocol: 'Tcp'
+            sourcePortRange: '*'
+            destinationPortRanges: ['80', '443']
+            sourceAddressPrefix: 'Internet'
+            destinationAddressPrefix: '*'
+            description: 'Allow HTTP and HTTPS traffic from Internet for AKS ingress'
+          }
+        }
+        {
+          name: 'AllowAzureLoadBalancer'
+          properties: {
+            access: 'Allow'
+            direction: 'Inbound'
+            priority: 1100
+            protocol: '*'
+            sourcePortRange: '*'
+            destinationPortRange: '*'
+            sourceAddressPrefix: 'AzureLoadBalancer'
+            destinationAddressPrefix: '*'
+            description: 'Allow Azure Load Balancer traffic'
+          }
+        }
+        {
+          name: 'AllowVnetInbound'
+          properties: {
+            access: 'Allow'
+            direction: 'Inbound'
+            priority: 1200
+            protocol: '*'
+            sourcePortRange: '*'
+            destinationPortRange: '*'
+            sourceAddressPrefix: 'VirtualNetwork'
+            destinationAddressPrefix: 'VirtualNetwork'
+            description: 'Allow traffic within the virtual network'
+          }
+        }
+      ]
     }
   }
   {
