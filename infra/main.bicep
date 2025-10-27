@@ -938,7 +938,7 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.
         scaleSetEvictionPolicy: 'Delete'
         scaleSetPriority: 'Regular'
      // Use the dedicated AKS subnet to avoid subnet delegation conflicts
-         vnetSubnetResourceId: enablePrivateNetworking ? virtualNetwork!.outputs.aksSubnetResourceId : null
+         vnetSubnetResourceId: enablePrivateNetworking ? virtualNetwork!.outputs.webSubnetResourceId : null
       }
     ]
     autoNodeOsUpgradeProfileUpgradeChannel: 'Unmanaged'

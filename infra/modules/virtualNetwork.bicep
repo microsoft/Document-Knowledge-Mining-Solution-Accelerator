@@ -15,7 +15,6 @@ param subnets subnetType[] = [
   {
     name: 'web'
     addressPrefixes: ['10.0.0.0/23'] // /23 (10.0.0.0 - 10.0.1.255), 512 addresses
-    delegation: 'Microsoft.Web/serverFarms'
     networkSecurityGroup: {
       name: 'nsg-web'
       securityRules: [
@@ -29,7 +28,20 @@ param subnets subnetType[] = [
             sourcePortRange: '*'
             destinationPortRange: '443'
             sourceAddressPrefixes: ['0.0.0.0/0']
-            destinationAddressPrefixes: ['10.0.0.0/23']
+            destinationAddressPrefix: '*'
+          }
+        }
+        {
+          name: 'AllowHttpInbound'
+          properties: {
+            access: 'Allow'
+            direction: 'Inbound'
+            priority: 110
+            protocol: 'Tcp'
+            sourcePortRange: '*'
+            destinationPortRange: '80'
+            sourceAddressPrefixes: ['0.0.0.0/0']
+            destinationAddressPrefix: '*'
           }
         }
         {
@@ -41,8 +53,8 @@ param subnets subnetType[] = [
             protocol: '*'
             sourcePortRange: '*'
             destinationPortRange: '*'
-            sourceAddressPrefixes: ['10.0.0.0/23']
-            destinationAddressPrefixes: ['10.0.0.0/23']
+            sourceAddressPrefixes: ['10.0.0.0/23'] // From same subnet
+            destinationAddressPrefixes: ['10.0.0.0/23'] // To same subnet
           }
         }
         {
@@ -69,57 +81,6 @@ param subnets subnetType[] = [
     networkSecurityGroup: {
       name: 'nsg-peps'
       securityRules: []
-    }
-  }
-  {
-    name: 'aks'
-    addressPrefixes: ['10.0.6.0/23']
-    networkSecurityGroup: {
-      name: 'nsg-aks'
-      securityRules: [
-        {
-          name: 'AllowHttpHttpsInbound'
-          properties: {
-            access: 'Allow'
-            direction: 'Inbound'
-            priority: 1000
-            protocol: 'Tcp'
-            sourcePortRange: '*'
-            destinationPortRanges: ['80', '443']
-            sourceAddressPrefix: 'Internet'
-            destinationAddressPrefix: '*'
-            description: 'Allow HTTP and HTTPS traffic from Internet for AKS ingress'
-          }
-        }
-        {
-          name: 'AllowAzureLoadBalancer'
-          properties: {
-            access: 'Allow'
-            direction: 'Inbound'
-            priority: 1100
-            protocol: '*'
-            sourcePortRange: '*'
-            destinationPortRange: '*'
-            sourceAddressPrefix: 'AzureLoadBalancer'
-            destinationAddressPrefix: '*'
-            description: 'Allow Azure Load Balancer traffic'
-          }
-        }
-        {
-          name: 'AllowVnetInbound'
-          properties: {
-            access: 'Allow'
-            direction: 'Inbound'
-            priority: 1200
-            protocol: '*'
-            sourcePortRange: '*'
-            destinationPortRange: '*'
-            sourceAddressPrefix: 'VirtualNetwork'
-            destinationAddressPrefix: 'VirtualNetwork'
-            description: 'Allow traffic within the virtual network'
-          }
-        }
-      ]
     }
   }
   {
@@ -184,6 +145,16 @@ param subnets subnetType[] = [
     }
   }
   {
+    name: 'deployment-scripts'
+    addressPrefixes: ['10.0.4.0/24']
+    networkSecurityGroup: {
+      name: 'nsg-deployment-scripts'
+      securityRules: []
+      }
+    delegation: 'Microsoft.ContainerInstance/containerGroups'
+    serviceEndpoints: ['Microsoft.Storage']
+  }
+  {
     name: 'jumpbox'
     addressPrefixes: ['10.0.12.0/23'] // /23 (10.0.12.0 - 10.0.13.255), 512 addresses
     networkSecurityGroup: {
@@ -204,16 +175,6 @@ param subnets subnetType[] = [
         }
       ]
     }
-  }
-  {
-        name: 'deployment-scripts'
-        addressPrefixes: ['10.0.4.0/24']
-        networkSecurityGroup: {
-          name: 'nsg-deployment-scripts'
-          securityRules: []
-        }
-        delegation: 'Microsoft.ContainerInstance/containerGroups'
-        serviceEndpoints: ['Microsoft.Storage']
   }
 ]
 
@@ -344,9 +305,8 @@ output subnets subnetOutputType[] = [
 output webSubnetResourceId string = contains(map(subnets, subnet => subnet.name), 'web') ? virtualNetwork.outputs.subnetResourceIds[indexOf(map(subnets, subnet => subnet.name), 'web')] : ''
 output pepsSubnetResourceId string = contains(map(subnets, subnet => subnet.name), 'peps') ? virtualNetwork.outputs.subnetResourceIds[indexOf(map(subnets, subnet => subnet.name), 'peps')] : ''
 output bastionSubnetResourceId string = contains(map(subnets, subnet => subnet.name), 'AzureBastionSubnet') ? virtualNetwork.outputs.subnetResourceIds[indexOf(map(subnets, subnet => subnet.name), 'AzureBastionSubnet')] : ''
-output jumpboxSubnetResourceId string = contains(map(subnets, subnet => subnet.name), 'jumpbox') ? virtualNetwork.outputs.subnetResourceIds[indexOf(map(subnets, subnet => subnet.name), 'jumpbox')] : ''
 output deploymentScriptsSubnetResourceId string = contains(map(subnets, subnet => subnet.name), 'deployment-scripts') ? virtualNetwork.outputs.subnetResourceIds[indexOf(map(subnets, subnet => subnet.name), 'deployment-scripts')] : ''
-output aksSubnetResourceId string = contains(map(subnets, subnet => subnet.name), 'aks') ? virtualNetwork.outputs.subnetResourceIds[indexOf(map(subnets, subnet => subnet.name), 'aks')] : ''
+output jumpboxSubnetResourceId string = contains(map(subnets, subnet => subnet.name), 'jumpbox') ? virtualNetwork.outputs.subnetResourceIds[indexOf(map(subnets, subnet => subnet.name), 'jumpbox')] : ''
 
 @export()
 @description('Custom type definition for subnet resource information as output')
