@@ -84,6 +84,38 @@ param subnets subnetType[] = [
     }
   }
   {
+    name: 'deployment-scripts'
+    addressPrefixes: ['10.0.4.0/24']
+    networkSecurityGroup: {
+      name: 'nsg-deployment-scripts'
+      securityRules: []
+      }
+    delegation: 'Microsoft.ContainerInstance/containerGroups'
+    serviceEndpoints: ['Microsoft.Storage']
+  }
+  {
+    name: 'jumpbox'
+    addressPrefixes: ['10.0.12.0/23'] // /23 (10.0.12.0 - 10.0.13.255), 512 addresses
+    networkSecurityGroup: {
+      name: 'nsg-jumpbox'
+      securityRules: [
+        {
+          name: 'AllowRdpFromBastion'
+          properties: {
+            access: 'Allow'
+            direction: 'Inbound'
+            priority: 100
+            protocol: 'Tcp'
+            sourcePortRange: '*'
+            destinationPortRange: '3389'
+            sourceAddressPrefixes: ['10.0.10.0/26'] // Azure Bastion subnet
+            destinationAddressPrefixes: ['10.0.12.0/23']
+          }
+        }
+      ]
+    }
+  }
+  {
     name: 'AzureBastionSubnet' // Required name for Azure Bastion
     addressPrefixes: ['10.0.10.0/26']
     networkSecurityGroup: {
@@ -139,38 +171,6 @@ param subnets subnetType[] = [
             destinationPortRange: '443'
             sourceAddressPrefix: '*'
             destinationAddressPrefix: 'AzureCloud'
-          }
-        }
-      ]
-    }
-  }
-  {
-    name: 'deployment-scripts'
-    addressPrefixes: ['10.0.4.0/24']
-    networkSecurityGroup: {
-      name: 'nsg-deployment-scripts'
-      securityRules: []
-      }
-    delegation: 'Microsoft.ContainerInstance/containerGroups'
-    serviceEndpoints: ['Microsoft.Storage']
-  }
-  {
-    name: 'jumpbox'
-    addressPrefixes: ['10.0.12.0/23'] // /23 (10.0.12.0 - 10.0.13.255), 512 addresses
-    networkSecurityGroup: {
-      name: 'nsg-jumpbox'
-      securityRules: [
-        {
-          name: 'AllowRdpFromBastion'
-          properties: {
-            access: 'Allow'
-            direction: 'Inbound'
-            priority: 100
-            protocol: 'Tcp'
-            sourcePortRange: '*'
-            destinationPortRange: '3389'
-            sourceAddressPrefixes: ['10.0.10.0/26'] // Azure Bastion subnet
-            destinationAddressPrefixes: ['10.0.12.0/23']
           }
         }
       ]
