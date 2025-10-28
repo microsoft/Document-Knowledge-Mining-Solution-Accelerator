@@ -579,6 +579,38 @@ try {
 
     # 2.Connect to AKS cluster
     try {
+        Write-Host "Checking if user already has AKS Cluster Admin role..." -ForegroundColor Cyan
+        # -----------------------------------------
+        # Check and assign AKS RBAC Cluster Admin role
+        # -----------------------------------------
+
+        $subscriptionId = (az account show --query id -o tsv)
+        $resourceGroup = $deploymentResult.ResourceGroupName
+        $aksName = $deploymentResult.AksName
+
+        # Get current signed-in user
+        $currentUser = az ad signed-in-user show --query id -o tsv
+
+        # Get AKS resource ID
+        $aksResourceId = az aks show --resource-group $resourceGroup --name $aksName --subscription $subscriptionId --query id -o tsv
+
+        # Check if role already assigned
+        $roleCheck = az role assignment list `
+            --assignee $currentUser `
+            --role "Azure Kubernetes Service RBAC Cluster Admin" `
+            --scope $aksResourceId `
+            --query "[].id" -o tsv
+
+        if (-not $roleCheck) {
+            Write-Host "Assigning 'Azure Kubernetes Service RBAC Cluster Admin' role to current user..."
+            az role assignment create `
+                --assignee $currentUser `
+                --role "Azure Kubernetes Service RBAC Cluster Admin" `
+                --scope $aksResourceId | Out-Null
+            Write-Host "Role assignment complete."
+        } else {
+            Write-Host "User already has 'Azure Kubernetes Service RBAC Cluster Admin' role."
+        }
         Write-Host "Connecting to AKS cluster..." -ForegroundColor Cyan
         az aks get-credentials --resource-group $deploymentResult.ResourceGroupName --name $deploymentResult.AksName --overwrite-existing
         Write-Host "Connected to AKS cluster." -ForegroundColor Green
