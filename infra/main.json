@@ -5,8 +5,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.37.4.10188",
-      "templateHash": "1515188294148574385"
+      "version": "0.36.177.2456",
+      "templateHash": "16347082498493141517"
     }
   },
   "parameters": {
@@ -6622,7 +6622,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.36.177.2456",
-              "templateHash": "12821710260684723913"
+              "templateHash": "7116469417351280182"
             }
           },
           "definitions": {
@@ -6828,9 +6828,22 @@
                           "sourceAddressPrefixes": [
                             "0.0.0.0/0"
                           ],
-                          "destinationAddressPrefixes": [
-                            "10.0.0.0/23"
-                          ]
+                          "destinationAddressPrefix": "*"
+                        }
+                      },
+                      {
+                        "name": "AllowHttpInbound",
+                        "properties": {
+                          "access": "Allow",
+                          "direction": "Inbound",
+                          "priority": 110,
+                          "protocol": "Tcp",
+                          "sourcePortRange": "*",
+                          "destinationPortRange": "80",
+                          "sourceAddressPrefixes": [
+                            "0.0.0.0/0"
+                          ],
+                          "destinationAddressPrefix": "*"
                         }
                       },
                       {
@@ -6876,6 +6889,48 @@
                   "networkSecurityGroup": {
                     "name": "nsg-peps",
                     "securityRules": []
+                  }
+                },
+                {
+                  "name": "deployment-scripts",
+                  "addressPrefixes": [
+                    "10.0.4.0/24"
+                  ],
+                  "networkSecurityGroup": {
+                    "name": "nsg-deployment-scripts",
+                    "securityRules": []
+                  },
+                  "delegation": "Microsoft.ContainerInstance/containerGroups",
+                  "serviceEndpoints": [
+                    "Microsoft.Storage"
+                  ]
+                },
+                {
+                  "name": "jumpbox",
+                  "addressPrefixes": [
+                    "10.0.12.0/23"
+                  ],
+                  "networkSecurityGroup": {
+                    "name": "nsg-jumpbox",
+                    "securityRules": [
+                      {
+                        "name": "AllowRdpFromBastion",
+                        "properties": {
+                          "access": "Allow",
+                          "direction": "Inbound",
+                          "priority": 100,
+                          "protocol": "Tcp",
+                          "sourcePortRange": "*",
+                          "destinationPortRange": "3389",
+                          "sourceAddressPrefixes": [
+                            "10.0.10.0/26"
+                          ],
+                          "destinationAddressPrefixes": [
+                            "10.0.12.0/23"
+                          ]
+                        }
+                      }
+                    ]
                   }
                 },
                 {
@@ -6939,48 +6994,6 @@
                           "destinationPortRange": "443",
                           "sourceAddressPrefix": "*",
                           "destinationAddressPrefix": "AzureCloud"
-                        }
-                      }
-                    ]
-                  }
-                },
-                {
-                  "name": "deployment-scripts",
-                  "addressPrefixes": [
-                    "10.0.4.0/24"
-                  ],
-                  "networkSecurityGroup": {
-                    "name": "nsg-deployment-scripts",
-                    "securityRules": []
-                  },
-                  "delegation": "Microsoft.ContainerInstance/containerGroups",
-                  "serviceEndpoints": [
-                    "Microsoft.Storage"
-                  ]
-                },
-                {
-                  "name": "jumpbox",
-                  "addressPrefixes": [
-                    "10.0.12.0/23"
-                  ],
-                  "networkSecurityGroup": {
-                    "name": "nsg-jumpbox",
-                    "securityRules": [
-                      {
-                        "name": "AllowRdpFromBastion",
-                        "properties": {
-                          "access": "Allow",
-                          "direction": "Inbound",
-                          "priority": 100,
-                          "protocol": "Tcp",
-                          "sourcePortRange": "*",
-                          "destinationPortRange": "3389",
-                          "sourceAddressPrefixes": [
-                            "10.0.10.0/26"
-                          ],
-                          "destinationAddressPrefixes": [
-                            "10.0.12.0/23"
-                          ]
                         }
                       }
                     ]
