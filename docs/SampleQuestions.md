@@ -13,30 +13,32 @@ _Sample Worlflow:_
 - Task: Click the **New topic** button to clear the chat conversation.
   
 ### **Housing Report**
-Search for the keyword “Housing Report” to filter the document list and display only relevant results.
-
+Explore key findings, compare annual data, and review detailed housing insights.
+![housing](images/readme/dkm_housting.png) 
 _Sample Workflow:_ 
 
+- Task: Search for the keyword **Housing Report** to filter the document list and display only relevant results.
 - Task: Select two documents in the list chat **(Annual Housing Report 2022 & 2023)** top panel should show **2 Selected** and
 - Question: Analyze the two annual reports and compare the positive and negative outcomes YoY.  Show the results in a table.
 - Task: Click **Details** on the **Annual Housing Report 2023** document to display the pop-up viewer.
 - Task: Review the Extractive Summary for accuracy.
 - Task: Scroll through pages of the document until pages **10** & **11**.
-- Task: Click on **Chat** and
-- Question: Can you summarize and compare the tables on page 10 and 11?.
+- Task: Click on **Chat** and ask
+- Question: Can you summarize and compare the tables on page **10** and **11**?.
 
 ### **Contracts**
-Search for the keyword “Contracts” to filter the document list and display only relevant results.
+Review, analyze, and extract key details from handwritten contract documents.
 
 _Sample Workflow:_ 
 
-- Task: Select **3** to **4** of the **handwritten contract documents**.
+- Search for the keyword **Contracts** to filter the document list and display only relevant results.
+- Task: Select **3** to **4** of the **handwritten contract documents**.-
 - Question: Analyze these forms and create a table with all buyers, sellers, and corresponding purchase prices.
 - Task: Click **Details** button on one of the handwritten contracts.
 - Task: Ask the question in pop-up chat.
 - Question: What liabilities is the buyer responsible for within the contract?
 
-![housing](images/readme/dkm_housting.png) 
+
 Enables faster insight discovery and smarter data analysis through automated content extraction and chat-based guidance.
 
 
