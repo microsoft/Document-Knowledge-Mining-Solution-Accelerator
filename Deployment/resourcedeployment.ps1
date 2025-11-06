@@ -102,8 +102,23 @@ function PromptForParameters {
  $params = PromptForParameters -email $email
 $email = $params.email
 
+$script:alreadyLoggedIn = $false
+
 function LoginAzure([string]$tenantId, [string]$subscriptionID) {
     Write-Host "Log in to Azure.....`r`n" -ForegroundColor Yellow
+    if ([string]::IsNullOrEmpty($tenantId) -or [string]::IsNullOrEmpty($subscriptionID)) {
+        az login
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Failed to log in to Azure. Please check your credentials." -ForegroundColor Red
+            failureBanner
+            exit 1
+        }
+        else{
+            Write-Host "Logged in to Azure successfully." -ForegroundColor Green
+            $script:alreadyLoggedIn = $true
+            return
+        }
+    }
     if ($env:CI -eq "true"){
         az login --service-principal `
             --username $env:AZURE_CLIENT_ID `
@@ -478,13 +493,16 @@ try {
 
     # Map the deployment result to DeploymentResult object from .env file
     if ($ResourceGroupName) {
+        LoginAzure "" ""
         $deploymentResult.MapResultAz($ResourceGroupName.Trim())
     }
     else {
         $deploymentResult.MapResultAzd()
     }
 
-    LoginAzure $deploymentResult.TenantId $deploymentResult.SubscriptionId
+    if (-not $script:alreadyLoggedIn) {
+        LoginAzure $deploymentResult.TenantId $deploymentResult.SubscriptionId
+    }
 
     # Display the deployment result
     DisplayResult($deploymentResult)
