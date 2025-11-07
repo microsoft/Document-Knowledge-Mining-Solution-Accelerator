@@ -102,8 +102,23 @@ function PromptForParameters {
  $params = PromptForParameters -email $email
 $email = $params.email
 
+$script:alreadyLoggedIn = $false
+
 function LoginAzure([string]$tenantId, [string]$subscriptionID) {
     Write-Host "Log in to Azure.....`r`n" -ForegroundColor Yellow
+    if ([string]::IsNullOrEmpty($tenantId) -or [string]::IsNullOrEmpty($subscriptionID)) {
+        az login
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Failed to log in to Azure. Please check your credentials." -ForegroundColor Red
+            failureBanner
+            exit 1
+        }
+        else{
+            Write-Host "Logged in to Azure successfully." -ForegroundColor Green
+            $script:alreadyLoggedIn = $true
+            return
+        }
+    }
     if ($env:CI -eq "true"){
         az login --service-principal `
             --username $env:AZURE_CLIENT_ID `
@@ -353,59 +368,85 @@ class DeploymentResult {
             Write-Error "Deployment name not found in the resource group tags."
             exit 1
         }
-
+    
         $deploymentOutputs=$(az deployment group show --resource-group "$resourceGroupName" --name "$deploymentName" --query "properties.outputs" -o json | ConvertFrom-Json)
-
-        $this.TenantId                = $deploymentOutputs.azurE_TENANT_ID.value
+    
+        # Helper function to get value from deployment outputs with fallback
+        function Get-DeploymentOutputValue {
+            param (
+                [Parameter(Mandatory=$true)]
+                $outputs,
+                [Parameter(Mandatory=$true)]
+                [string]$primaryKey,
+                [Parameter(Mandatory=$true)]
+                [string]$fallbackKey
+            )
+            
+            $value = $null
+            
+            # Try primary key first (old convention)
+            if ($outputs.PSObject.Properties.Name -contains $primaryKey) {
+                $value = $outputs.$primaryKey.value
+            }
+            
+            # If not found or empty, try fallback key (new convention)
+            if ([string]::IsNullOrEmpty($value) -and ($outputs.PSObject.Properties.Name -contains $fallbackKey)) {
+                $value = $outputs.$fallbackKey.value
+            }
+            
+            return $value
+        }
+    
+        # Tenant ID
+        $this.TenantId = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_TENANT_ID" -fallbackKey "azureTenantId"
         if (!$this.TenantId) {
             $this.TenantId = $(az account show --query tenantId -o tsv)
         }
-
-        $this.SubscriptionId          = $(az account show --query id -o tsv)
-
+    
+        $this.SubscriptionId = $(az account show --query id -o tsv)
+    
         # Resource Group
-        $this.ResourceGroupName       = $resourceGroupName
-        $this.ResourceGroupId         = $deploymentOutputs.azurE_RESOURCE_GROUP_ID.value
+        $this.ResourceGroupName = $resourceGroupName
+        $this.ResourceGroupId = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_RESOURCE_GROUP_ID" -fallbackKey "azureResourceGroupId"
         if (!$this.ResourceGroupId) {
-            Write-Error "Required value 'AZURE_RESOURCE_GROUP_ID' not found in the deployment outputs."
+            Write-Error "Required value 'AZURE_RESOURCE_GROUP_ID' or 'azureResourceGroupId' not found in the deployment outputs."
             exit 1
         }
-
+    
         # Storage Account
-        $this.StorageAccountName      = $deploymentOutputs.storagE_ACCOUNT_NAME.value
-
+        $this.StorageAccountName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "storagE_ACCOUNT_NAME" -fallbackKey "storageAccountName"
+    
         # Search Service
-        $this.AzSearchServiceName     = $deploymentOutputs.azurE_SEARCH_SERVICE_NAME.value
-        $this.AzSearchServicEndpoint  = "https://$($this.AzSearchServiceName).search.windows.net"
-
+        $this.AzSearchServiceName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_SEARCH_SERVICE_NAME" -fallbackKey "azureSearchServiceName"
+        $this.AzSearchServicEndpoint = "https://$($this.AzSearchServiceName).search.windows.net"
+    
         # AKS
-        $this.AksName                 = $deploymentOutputs.azurE_AKS_NAME.value
-        $this.AksMid                  = $deploymentOutputs.azurE_AKS_MI_ID.value
-
+        $this.AksName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_AKS_NAME" -fallbackKey "azureAksName"
+        $this.AksMid = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_AKS_MI_ID" -fallbackKey "azureAksMiId"
+    
         # Container Registry
-        $this.AzContainerRegistryName = $deploymentOutputs.azurE_CONTAINER_REGISTRY_NAME.value
-
+        $this.AzContainerRegistryName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_CONTAINER_REGISTRY_NAME" -fallbackKey "azureContainerRegistryName"
+    
         # Cognitive Service - Azure AI Document Intelligence Service
-        $this.AzCognitiveServiceName     = $deploymentOutputs.azurE_COGNITIVE_SERVICE_NAME.value
-        $this.AzCognitiveServiceEndpoint = $deploymentOutputs.azurE_COGNITIVE_SERVICE_ENDPOINT.value
-
+        $this.AzCognitiveServiceName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_COGNITIVE_SERVICE_NAME" -fallbackKey "azureCognitiveServiceName"
+        $this.AzCognitiveServiceEndpoint = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_COGNITIVE_SERVICE_ENDPOINT" -fallbackKey "azureCognitiveServiceEndpoint"
+    
         # Open AI Service
-        $this.AzOpenAiServiceName     = $deploymentOutputs.azurE_OPENAI_SERVICE_NAME.value
-        $this.AzOpenAiServiceEndpoint = $deploymentOutputs.azurE_OPENAI_SERVICE_ENDPOINT.value
-
+        $this.AzOpenAiServiceName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_OPENAI_SERVICE_NAME" -fallbackKey "azureOpenAiServiceName"
+        $this.AzOpenAiServiceEndpoint = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_OPENAI_SERVICE_ENDPOINT" -fallbackKey "azureOpenAiServiceEndpoint"
+    
         # Cosmos DB
-        $this.AzCosmosDBName          = $deploymentOutputs.azurE_COSMOSDB_NAME.value
-
+        $this.AzCosmosDBName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_COSMOSDB_NAME" -fallbackKey "azureCosmosDbName"
+    
         # Open AI Service Models
-        $this.AzGPT4oModelName        = $deploymentOutputs.aZ_GPT4O_MODEL_NAME.value
-        $this.AzGPT4oModelId          = $deploymentOutputs.aZ_GPT4O_MODEL_ID.value
-        $this.AzGPTEmbeddingModelName = $deploymentOutputs.aZ_GPT_EMBEDDING_MODEL_NAME.value
-        $this.AzGPTEmbeddingModelId   = $deploymentOutputs.aZ_GPT_EMBEDDING_MODEL_ID.value
-
+        $this.AzGPT4oModelName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "aZ_GPT4O_MODEL_NAME" -fallbackKey "azGpt4oModelName"
+        $this.AzGPT4oModelId = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "aZ_GPT4O_MODEL_ID" -fallbackKey "azGpt4oModelId"
+        $this.AzGPTEmbeddingModelName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "aZ_GPT_EMBEDDING_MODEL_NAME" -fallbackKey "azGptEmbeddingModelName"
+        $this.AzGPTEmbeddingModelId = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "aZ_GPT_EMBEDDING_MODEL_ID" -fallbackKey "azGptEmbeddingModelId"
+    
         # App Configuration
-        $this.AzAppConfigEndpoint     = $deploymentOutputs.azurE_APP_CONFIG_ENDPOINT.value
-        $this.AzAppConfigName         = $deploymentOutputs.azurE_APP_CONFIG_NAME.value
-
+        $this.AzAppConfigEndpoint = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_APP_CONFIG_ENDPOINT" -fallbackKey "azureAppConfigEndpoint"
+        $this.AzAppConfigName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_APP_CONFIG_NAME" -fallbackKey "azureAppConfigName"
     }
 }
 
@@ -452,13 +493,16 @@ try {
 
     # Map the deployment result to DeploymentResult object from .env file
     if ($ResourceGroupName) {
+        LoginAzure "" ""
         $deploymentResult.MapResultAz($ResourceGroupName.Trim())
     }
     else {
         $deploymentResult.MapResultAzd()
     }
 
-    LoginAzure $deploymentResult.TenantId $deploymentResult.SubscriptionId
+    if (-not $script:alreadyLoggedIn) {
+        LoginAzure $deploymentResult.TenantId $deploymentResult.SubscriptionId
+    }
 
     # Display the deployment result
     DisplayResult($deploymentResult)
