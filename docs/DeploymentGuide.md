@@ -148,6 +148,7 @@ Once you've opened the project [locally](#local-environment), you can deploy it 
     - If you encounter an error or timeout during deployment, changing the location may help, as there could be availability constraints for the resources.
 
 6. If you are done trying out the application, you can delete the resources by running `azd down`.
+   > **Note:** If you deployed with `enableRedundancy=true` and Log Analytics workspace replication is enabled, you must first disable replication before running `azd down` else resource group delete will fail. Follow the steps in [Handling Log Analytics Workspace Deletion with Replication Enabled](./LogAnalyticsReplicationDisable.md), wait until replication returns `false`, then run `azd down`.
 
 ### Post Deployment Script:
 
