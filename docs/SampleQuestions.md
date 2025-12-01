@@ -6,7 +6,7 @@ To help you get started, here are some **Sample Prompts** you can ask in the app
 Prompts focus on housing issues, document filtering, and comparing annual report outcomes.
 
 ### **Overview**
-_Sample Worlflow:_
+_Sample Workflow:_
 
 - Question: What are the main factors contributing to the current housing affordability issues?
 - Task: Click one of the **suggested follow-up question** and related response is generated.
@@ -25,15 +25,15 @@ _Sample Workflow:_
 - Task: Review the Extractive Summary for accuracy.
 - Task: Scroll through the pages of the document until page **10** & **11**.
 - Task: Click on **Chat** tab
-- Question: Can you summarize and compare the tables on page **10** and **11**?.
+- Question: Can you summarize and compare the tables on page **10** and **11**?
 
 ### **Contracts**
 Review, analyze, and extract key details from handwritten contract documents.
 
 _Sample Workflow:_ 
 
-- Search for the keyword **Contracts** to filter the document list and display only relevant results.
-- Task: Select **3** to **4**,  **handwritten contract documents**.
+- Task: Search for the keyword **Contracts** to filter the document list and display only relevant results.
+- Task: Select **3** to **4**, **handwritten contract documents**.
 - Question: Analyze these forms and create a table with all buyers, sellers, and corresponding purchase prices.
 - Task: Click **Details** button on one of the handwritten contracts to display the pop-up viewer.
 - Task: Click on **Chat** tab
