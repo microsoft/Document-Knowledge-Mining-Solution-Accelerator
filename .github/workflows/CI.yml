@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v5 # Checks out your repository
+        uses: actions/checkout@v6 # Checks out your repository
 
       - name: Install Azure CLI
         shell: bash
