@@ -8,14 +8,14 @@
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="15.1.0" />
-    <PackageReference Include="Azure.Identity" Version="1.17.0" />
+    <PackageReference Include="Azure.Identity" Version="1.17.1" />
     <PackageReference Include="Azure.Search.Documents" Version="11.7.0" />
-    <PackageReference Include="FluentValidation" Version="12.0.0" />
-    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
+    <PackageReference Include="FluentValidation" Version="12.1.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.0" />
     <PackageReference Include="Microsoft.KernelMemory.WebClient" Version="0.98.250508.3" />
-    <PackageReference Include="Microsoft.Maui.Graphics" Version="9.0.120" />
-    <PackageReference Include="Microsoft.Maui.Graphics.Skia" Version="9.0.120" />
-    <PackageReference Include="MongoDB.Driver" Version="3.5.0" />
+    <PackageReference Include="Microsoft.Maui.Graphics" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Maui.Graphics.Skia" Version="10.0.11" />
+    <PackageReference Include="MongoDB.Driver" Version="3.5.2" />
     <PackageReference Include="MongoDB.Driver.Core" Version="2.30.0" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.119.1" />
   </ItemGroup>
