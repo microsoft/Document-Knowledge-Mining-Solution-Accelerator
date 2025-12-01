@@ -104,8 +104,8 @@ _Note: This is not meant to outline all costs as selected SKUs, scaled use, cust
 
 | Product | Description | Cost |
 |---|---|---|
-| [Azure OpenAI Service](https://learn.microsoft.com/en-us/azure/ai-services/openai/) | Used for chat exerpeince/RAG in wen app, data processing workflow for extraction and summarization. | [Pricing](https://azure.microsoft.com/en-us/pricing/details/cognitive-services/openai-service/) |
-| [Azure AI Search](https://learn.microsoft.com/en-us/azure/search/) | Processed and extracted document information is added to an Azure AI Search vecortized index. | [Pricing](https://learn.microsoft.com/en-us/azure/search/) |
+| [Azure OpenAI Service](https://learn.microsoft.com/en-us/azure/ai-services/openai/) | Used for chat experience/RAG in web app, data processing workflow for extraction and summarization. | [Pricing](https://azure.microsoft.com/en-us/pricing/details/cognitive-services/openai-service/) |
+| [Azure AI Search](https://learn.microsoft.com/en-us/azure/search/) | Processed and extracted document information is added to an Azure AI Search vectorized index. | [Pricing](https://learn.microsoft.com/en-us/azure/search/) |
 | [Azure AI Document Intelligence](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/)| Used during data processing workflow where documents have Optical Character Recognition (OCR) applied to extract data. | [Pricing](https://azure.microsoft.com/en-us/pricing/details/ai-document-intelligence/) |
 | [Azure Container Registry](https://learn.microsoft.com/en-us/azure/container-registry/)| Private registry where the Document Processor, AI Service, and Web App images are built, stored and managed. | [Pricing](https://azure.microsoft.com/pricing/details/container-registry/) |
 | [Azure Kubernetes Service (AKS)](https://learn.microsoft.com/azure/aks/)| The solution is deployed as a managed container app with with high availability, scalability, and region portability. | [Pricing](https://azure.microsoft.com/en-us/pricing/details/kubernetes-service/) |
