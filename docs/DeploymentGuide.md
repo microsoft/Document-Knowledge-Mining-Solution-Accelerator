@@ -260,3 +260,8 @@ If you run into issue with PowerShell script file not being digitally signed, yo
 ```
 powershell.exe -ExecutionPolicy Bypass -File ".\uploadfiles.ps1" -EndpointUrl https://kmgs<your dns name>.<datacenter>.cloudapp.azure.com
 ```
+
+## Next Steps
+Now that you've completed your deployment, you can start using the solution. 
+
+To help you get started, here are some [Sample Questions](./SampleQuestions.md) you can follow to try it out.
