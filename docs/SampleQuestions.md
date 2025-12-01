@@ -19,7 +19,7 @@ _Sample Workflow:_
 
 - Task: Search for the keyword **Housing Report** to filter the document list and display only relevant results.
 - Task: Select two documents **(Annual Housing Report 2022 & 2023)** right top panel is switched to **2 Selected** tab.
-![housing](images/readme/dkm_housting.png)   
+![housing](images/readme/dkm_housing.png)   
 - Question: Analyze the two annual reports and compare the positive and negative outcomes YoY.  Show the results in a table.
 - Task: Click **Details** on the **Annual Housing Report 2023** document to display the pop-up viewer.
 - Task: Review the Extractive Summary for accuracy.
