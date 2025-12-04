@@ -36,7 +36,7 @@ Ensure you have access to an [Azure subscription](https://azure.microsoft.com/fr
 3. If you can access this page, you have the required permissions
 4. Cancel without creating an app registration
 
-📖 **Detailed Setup:** Follow [Azure Account Set Up](./AzureAccountSetup.md) for complete configuration.
+📖 **Detailed Setup:** Follow [Azure Account Set Up](./AzureAccountSetUp.md) for complete configuration.
 
 ### 1.2 Check Service Availability & Quota
 
