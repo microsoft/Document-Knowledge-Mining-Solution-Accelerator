@@ -5,6 +5,6 @@ name: document-knowledge-mining-solution-accelerator
 requiredVersions:
   azd: '>= 1.18.0'
 
-metadata:
-  template: document-knowledge-mining-solution-accelerator@1.0
-  name: document-knowledge-mining-solution-accelerator@1.0
+# metadata:
+#   template: document-knowledge-mining-solution-accelerator@1.0
+#   name: document-knowledge-mining-solution-accelerator@1.0

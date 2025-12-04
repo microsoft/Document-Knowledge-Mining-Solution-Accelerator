@@ -1,262 +1,393 @@
 # Deployment Guide
 
-> This repository presents a solution and reference architecture for the Knowledge Mining solution accelerator. Please note that the  **provided code serves as a demonstration and is not an officially supported Microsoft offering**.
-> 
-> For additional security, please review how to [use Azure API Management with microservices deployed in Azure Kubernetes Service](https://learn.microsoft.com/en-us/azure/api-management/api-management-kubernetes).
+## Overview
 
-## Contents
-* [Prerequisites](#prerequisites)
-* [Deployment Options](#deployment-options--steps)
-* [Deployment](#deployment-steps)
-* [Next Steps](#next-steps)
+This guide walks you through deploying the Document Knowledge Mining Solution Accelerator to Azure. The deployment process takes approximately 8-10 minutes for the default Development/Testing configuration and includes both infrastructure provisioning and application setup.
 
-## Prerequisites
+🆘 **Need Help?** If you encounter any issues during deployment, check our [Troubleshooting Guide](./TroubleShootingSteps.md) for solutions to common problems.
 
-1. **[PowerShell](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-7.4)** <small>(v5.1+)</small> - available for Windows, macOS, and Linux.
+## Step 1: Prerequisites & Setup
 
-1. **[Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-windows?tabs=azure-cli)** <small>(v1.18.0+)</small> - command-line tool for managing Azure resources.
+### 1.1 Azure Account Requirements
 
-    2a. **kubectl** - command-line tool for interacting with Kubernetes clusters.  
-        In PowerShell, run the following command:  
+Ensure you have access to an [Azure subscription](https://azure.microsoft.com/free/) with the following permissions:
 
-        az aks install-cli
+| **Required Permission/Role** | **Scope** | **Purpose** |
+|------------------------------|-----------|-------------|
+| **Contributor** | Subscription level | Create and manage Azure resources |
+| **User Access Administrator** | Subscription level | Manage user access and role assignments |
+| **Role Based Access Control** | Subscription/Resource Group level | Configure RBAC permissions |
+| **App Registration Creation** | Azure Active Directory | Create and configure authentication |
 
+**🔍 How to Check Your Permissions:**
 
-    2b. **aks-preview**  - extension for Azure CLI to manage Azure Kubernetes Service.  
-        In PowerShell, run the following command:  
+1. Go to [Azure Portal](https://portal.azure.com/)
+2. Navigate to **Subscriptions** (search for "subscriptions" in the top search bar)
+3. Click on your target subscription
+4. In the left menu, click **Access control (IAM)**
+5. Scroll down to see the table with your assigned roles - you should see:
+   - **Contributor** 
+   - **User Access Administrator**
+   - **Role Based Access Control Administrator** (or similar RBAC role)
 
-        
-        az extension add --name aks-preview
-        
-1. [Helm](https://helm.sh/docs/intro/install/) - package manager for Kubernetes
+**For App Registration permissions:**
+1. Go to **Microsoft Entra ID** → **Manage** → **App registrations**
+2. Try clicking **New registration** 
+3. If you can access this page, you have the required permissions
+4. Cancel without creating an app registration
 
-1. [Docker Desktop](https://docs.docker.com/get-docker/): service to containerize and publish into Azure Container Registry. Please make sure Docker desktop is running before executing Deployment script.
+📖 **Detailed Setup:** Follow [Azure Account Set Up](./AzureAccountSetup.md) for complete configuration.
 
-1. **Azure Access** - subscription-level `Owner` or `User Access Administrator` role required.
+### 1.2 Check Service Availability & Quota
 
-1. **Microsoft.Compute Registration**  - Ensure that **Microsoft.Compute** is registered in your Azure subscription by following these steps:  
-   1. Log in to your **Azure Portal**.  
-   2. Navigate to your **active Azure subscription**.  
-   3. Go to **Settings** and select **Resource Providers**.
-   4. Check for Microsoft.Compute and click Register if it is not already registered.
-   <br>
+⚠️ **CRITICAL:** Before proceeding, ensure your chosen region has all required services available:
+
+**Required Azure Services:**
+- [Azure OpenAI Service](https://learn.microsoft.com/en-us/azure/ai-services/openai/)
+- [Azure AI Search](https://learn.microsoft.com/en-us/azure/search/)
+- [Azure AI Document Intelligence](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/)
+- [Azure Container Registry](https://learn.microsoft.com/en-us/azure/container-registry/)
+- [Azure Kubernetes Service](https://learn.microsoft.com/en-us/azure/aks/)
+- [Azure App Service](https://learn.microsoft.com/en-us/azure/app-service/)
+- [Azure Blob Storage](https://learn.microsoft.com/en-us/azure/storage/blobs/)
+- [Azure Queue Storage](https://learn.microsoft.com/en-us/azure/storage/queues/)
+- [Azure Cosmos DB](https://learn.microsoft.com/en-us/azure/cosmos-db/)
+
+**Recommended Regions:** East US, East US 2, West US 3, Sweden Central
+
+🔍 **Check Availability:** Use [Azure Products by Region](https://azure.microsoft.com/en-us/explore/global-infrastructure/products-by-region/) to verify service availability.
+
+### 1.3 Quota Check (Optional)
+
+💡 **RECOMMENDED:** Check your Azure OpenAI quota availability before deployment for optimal planning.
+
+📖 **Follow:** [Quota Check Instructions](./QuotaCheck.md) to ensure sufficient capacity.
+
+**Recommended Configuration:**
+- **Default:** 200k tokens (minimum)
+- **Optimal:** 500k tokens (recommended for best performance)
+
+> **Note:** When you run `azd up`, the deployment will automatically show you regions with available quota, so this pre-check is optional but helpful for planning purposes. You can customize these settings later in [Step 3.3: Advanced Configuration](#33-advanced-configuration-optional).
+
+📖 **Adjust Quota:** Follow [Azure AI Model Quota Settings](./AzureAIModelQuotaSettings.md) if needed.
+
+## Step 2: Deployment Environment
+
+<summary><b>Local Environment</b></summary>
+
+**Required Tools:**
+- [PowerShell 7.0+](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell) 
+- [Azure CLI (az) 1.18.0+](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-windows?tabs=azure-cli)
+- [Azure Developer CLI (azd) 1.18.0+](https://aka.ms/install-azd)
+- [Helm](https://helm.sh/docs/intro/install/)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- [Git](https://git-scm.com/downloads)
+- [Microsoft.Compute Registration](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/resource-providers-and-types#azure-portal) 
+  Ensure that **Microsoft.Compute** is registered in your Azure subscription by following these steps:
+  - Log in to your **Azure Portal**.  
+  - Navigate to your **active Azure subscription**.  
+  - Go to **Settings** and select **Resource Providers**.
+  - Check for Microsoft.Compute and click Register if it is not already registered.
+  
    <img src="./images/deployment/Subscription_ResourceProvider.png" alt="ResourceProvider" width="900">
 
-## Deployment Options & Steps
+**Setup Steps:**
+1. Install all required deployment tools listed above
+2. Clone the repository:
+   ```shell
+   azd init -t microsoft/Document-Knowledge-Mining-Solution-Accelerator
+   ```
+3. Open the project folder in your terminal
+4. Proceed to [Step 3: Configure Deployment Settings](#step-3-configure-deployment-settings)
 
-### Sandbox or WAF Aligned Deployment Options
+**PowerShell Users:** If you encounter script execution issues, run:
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
 
-The [`infra`](../infra) folder of the Multi Agent Solution Accelerator contains the [`main.bicep`](../infra/main.bicep) Bicep script, which defines all Azure infrastructure components for this solution.
+### 3.1 Choose Deployment Type (Optional)
 
-By default, the `azd up` command uses the [`main.parameters.json`](../infra/main.parameters.json) file to deploy the solution. This file is pre-configured for a **sandbox environment** — ideal for development and proof-of-concept scenarios, with minimal security and cost controls for rapid iteration.
+| **Aspect** | **Development/Testing (Default)** | **Production** |
+|------------|-----------------------------------|----------------|
+| **Configuration File** | `main.parameters.json` (sandbox) | Copy `main.waf.parameters.json` to `main.parameters.json` |
+| **Security Controls** | Minimal (for rapid iteration) | Enhanced (production best practices) |
+| **Cost** | Lower costs | Cost optimized |
+| **Use Case** | POCs, development, testing | Production workloads |
+| **Framework** | Basic configuration | [Well-Architected Framework](https://learn.microsoft.com/en-us/azure/well-architected/) |
+| **Features** | Core functionality | Reliability, security, operational excellence |
 
-For **production deployments**, the repository also provides [`main.waf.parameters.json`](../infra/main.waf.parameters.json), which applies a [Well-Architected Framework (WAF) aligned](https://learn.microsoft.com/en-us/azure/well-architected/) configuration. This option enables additional Azure best practices for reliability, security, cost optimization, operational excellence, and performance efficiency, such as:
+**To use production configuration:**
 
-  - Enhanced network security (e.g., Network protection with private endpoints)
-  - Stricter access controls and managed identities
-  - Logging, monitoring, and diagnostics enabled by default
-  - Resource tagging and cost management recommendations
+Copy the contents from the production configuration file to your main parameters file:
 
-**How to choose your deployment configuration:**
+1. Navigate to the `infra` folder in your project
+2. Open `main.waf.parameters.json` in a text editor (like Notepad, VS Code, etc.)
+3. Select all content (Ctrl+A) and copy it (Ctrl+C)
+4. Open `main.parameters.json` in the same text editor
+5. Select all existing content (Ctrl+A) and paste the copied content (Ctrl+V)
+6. Save the file (Ctrl+S)
 
-* Use the default `main.parameters.json` file for a **sandbox/dev environment**
-* For a **WAF-aligned, production-ready deployment**, copy the contents of `main.waf.parameters.json` into `main.parameters.json` before running `azd up`
+### 3.2 Set VM Credentials (Optional - Production Deployment Only)
 
----
+> **Note:** This section only applies if you selected **Production** deployment type in section 3.1. VMs are not deployed in the default Development/Testing configuration.
 
-### VM Credentials Configuration
+By default, random GUIDs are generated for VM credentials. To set custom credentials:
 
-By default, the solution sets the VM administrator username and password from environment variables.
-If you do not configure these values, a randomly generated GUID will be used for both the username and password.
-
-To set your own VM credentials before deployment, use:
-
-```sh
+```shell
 azd env set AZURE_ENV_VM_ADMIN_USERNAME <your-username>
 azd env set AZURE_ENV_VM_ADMIN_PASSWORD <your-password>
 ```
 
-> [!TIP]
-> Always review and adjust parameter values (such as region, capacity, security settings and log analytics workspace configuration) to match your organization’s requirements before deploying. For production, ensure you have sufficient quota and follow the principle of least privilege for all identities and role assignments.
-
-
-> [!IMPORTANT]
-> The WAF-aligned configuration is under active development. More Azure Well-Architected recommendations will be added in future updates.
-
-## Deployment Steps
-
-Consider the following settings during your deployment to modify specific settings:
+### 3.3 Advanced Configuration (Optional)
 
 <details>
-  <summary><b>Configurable Deployment Settings</b></summary>
+<summary><b>Configurable Parameters</b></summary>
 
-When you start the deployment, most parameters will have **default values**, but you can update the following settings [here](../docs/CustomizingAzdParameters.md):
+You can customize various deployment settings before running `azd up`, including Azure regions, AI model configurations (deployment type, version, capacity), container registry settings, and resource names.
 
-| **Setting**                    | **Description**                                                                      | **Default value** |
-| ------------------------------ | ------------------------------------------------------------------------------------ | ----------------- |
-| **Environment Name**           | Used as a prefix for all resource names to ensure uniqueness across environments.    | dkm             |
-| **Azure Region**               | Location of the Azure resources. Controls where the infrastructure will be deployed. | australiaeast     |
-| **Model Deployment Type**      | Defines the deployment type for the AI model (e.g., Standard, GlobalStandard).      | GlobalStandard    |
-| **GPT Model Name**             | Specifies the name of the GPT model to be deployed.                                 | gpt-4.1            |
-| **GPT Model Version**          | Version of the GPT model to be used for deployment.                                 | 2024-08-06        |
-| **GPT Model Capacity**          | Sets the GPT model capacity.                                 | 100K        |
-| **Embedding Model**                         | Sets the embedding model.                                                                      | text-embedding-3-large |
-| **Embedding Model Capacity**                | Set the capacity for **embedding models** (in thousands).                                                 | 100k                    |
-| **Enable Telemetry**           | Enables telemetry for monitoring and diagnostics.                                    | true              |
-| **Existing Log Analytics Workspace**        | To reuse an existing Log Analytics Workspace ID instead of creating a new one.              | *(none)*          |
+📖 **Complete Guide:** See [Parameter Customization Guide](../docs/CustomizingAzdParameters.md) for the full list of available parameters and their usage.
 
 </details>
 
-### Deploying with AZD
+<details>
+<summary><b>Reuse Existing Resources</b></summary>
 
-Once you've opened the project [locally](#local-environment), you can deploy it to Azure by following these steps:
+To optimize costs and integrate with your existing Azure infrastructure, you can configure the solution to reuse compatible resources already deployed in your subscription.
 
-1. Clone the repository or download the project code via command-line:
+**Supported Resources for Reuse:**
 
-    ```cmd
-    git clone https://github.com/microsoft/Document-Knowledge-Mining-Solution-Accelerator
-    ```
+- **Log Analytics Workspace:** Integrate with your existing monitoring infrastructure by reusing an established Log Analytics workspace for centralized logging and monitoring. [Configuration Guide](./re-use-log-analytics.md)
 
-    Open the cloned repository in Visual Studio Code and connect to the development container.
+**Key Benefits:**
+- **Cost Optimization:** Eliminate duplicate resource charges
+- **Operational Consistency:** Maintain unified monitoring and AI infrastructure
+- **Faster Deployment:** Skip resource creation for existing compatible services
+- **Simplified Management:** Reduce the number of resources to manage and monitor
 
-    ```cmd
-    code .
-    ```
+**Important Considerations:**
+- Ensure existing resources meet the solution's requirements and are in compatible regions
+- Review access permissions and configurations before reusing resources
+- Consider the impact on existing workloads when sharing resources
 
-2. Login to Azure:
+</details>
 
-    ```shell
-    azd auth login
-    ```
+## Step 4: Deploy the Solution
 
-    #### To authenticate with Azure Developer CLI (`azd`), use the following command with your **Tenant ID**:
+💡 **Before You Start:** If you encounter any issues during deployment, check our [Troubleshooting Guide](./TroubleShootingSteps.md) for common solutions.
 
-    ```sh
-    azd auth login --tenant-id <tenant-id>
-    ```
+### 4.1 Authenticate with Azure
 
-3. Provision and deploy all the resources:
+```shell
+azd auth login
+```
 
-    ```shell
-    azd up
-    ```
-    > **Note:** This solution accelerator requires **Azure Developer CLI (azd) version 1.18.0 or higher**. Please ensure you have the latest version installed before proceeding with deployment. [Download azd here](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/install-azd).
+**For specific tenants:**
+```shell
+azd auth login --tenant-id <tenant-id>
+```
 
-4. Provide an `azd` environment name (e.g., "ckmapp").
-5. Select a subscription from your Azure account and choose a location that has quota for all the resources. 
-    -- This deployment will take *7-10 minutes* to provision the resources in your account and set up the solution with sample data.
-    - If you encounter an error or timeout during deployment, changing the location may help, as there could be availability constraints for the resources.
+> **Finding Tenant ID:** 
+   > 1. Open the [Azure Portal](https://portal.azure.com/).
+   > 2. Navigate to **Microsoft Entra ID** from the left-hand menu.
+   > 3. Under the **Overview** section, locate the **Tenant ID** field. Copy the value displayed.
 
-6. If you are done trying out the application, you can delete the resources by running `azd down`.
-   > **Note:** If you deployed with `enableRedundancy=true` and Log Analytics workspace replication is enabled, you must first disable replication before running `azd down` else resource group delete will fail. Follow the steps in [Handling Log Analytics Workspace Deletion with Replication Enabled](./LogAnalyticsReplicationDisable.md), wait until replication returns `false`, then run `azd down`.
+### 4.2 Start Deployment
 
-### Post Deployment Script:
+```shell
+azd up
+```
+
+**During deployment, you'll be prompted for:**
+1. **Environment name** (e.g., "conmig") - Must be 3-16 characters long, alphanumeric only
+2. **Azure subscription** selection
+3. **Azure AI Deployment Location** - Select a region with available o3 model quota for AI operations
+4. **Primary location** - Select the region where your infrastructure resources will be deployed
+5. **Resource group** selection (create new or use existing)
+
+**Expected Duration:** 8-10 minutes for default configuration
+
+**⚠️ Deployment Issues:** If you encounter errors or timeouts, try a different region as there may be capacity constraints. For detailed error solutions, see our [Troubleshooting Guide](./TroubleShootingSteps.md).
+
+## Step 5: Post-Deployment Script
 
 The post deployment process is very straightforward and simplified via a single [deployment script](../Deployment/resourcedeployment.ps1) that completes in approximately 20-30 minutes:
 
 ### Automated Deployment Steps:
-1. Configure Kubernetes Infrastructure.
-2. Update Kubernetes configuration files with the FQDN, Container Image Path and Email address for the certificate management.
-3. Configure AKS (deploy Cert Manager, Ingress Controller) and Deploy Images on the kubernetes cluster.
-4. Docker build and push container images to Azure Container Registry.
-5. Display the deployment result and following instructions.
+- Configure Kubernetes Infrastructure.
+- Update Kubernetes configuration files with the FQDN, Container Image Path and Email address for the certificate management.
+- Configure AKS (deploy Cert Manager, Ingress Controller) and Deploy Images on the kubernetes cluster.
+- Docker build and push container images to Azure Container Registry.
+- Display the deployment result and following instructions.
 
-Open PowerShell, change directory where you code cloned, then run the deploy script:  
+### 5.1 Script Execution
 
+1. Follow [Post Deployment Script Execution](./PostDeploymentConfiguration.md)
+2. Wait up to 20-30 minutes for completion of the script.
+
+### 5.2 Verify Deployment
+
+1. Access your application using the URL from Step 5.1
+2. Confirm the application loads successfully
+3. Verify you can sign in with your authenticated account
+
+### 5.3 Test the Application
+
+Follow the detailed workflow to test the migration functionality:
+
+**Quick Test Steps:**
+1. Login to the application using the URL from Step 5.1
+2. In "Chat with documents" options, ask any questions related to uploaded documents
+3. Click on "Details" of any document and go to "chat" option
+4. Ask questions according to document content
+5. Review the responses
+
+## Step 6: Clean Up (Optional)
+
+### Remove All Resources
+```shell
+azd down
 ```
-cd .\Deployment\  
-```  
+> **Note:** If you deployed with `enableRedundancy=true` and Log Analytics workspace replication is enabled, you must first disable replication before running `azd down` else resource group delete will fail. Follow the steps in [Handling Log Analytics Workspace Deletion with Replication Enabled](./LogAnalyticsReplicationDisable.md), wait until replication returns `false`, then run `azd down`.
 
-#### Choose the appropriate command based on your deployment method:
+### Manual Cleanup (if needed)
+If deployment fails or you need to clean up manually:
+- Follow [Delete Resource Group Guide](./DeleteResourceGroup.md)
 
-**If you deployed using `azd up` command:**
+## Managing Multiple Environments
+
+### Recover from Failed Deployment
+
+If your deployment failed or encountered errors, here are the steps to recover:
+
+<details>
+<summary><b>Recover from Failed Deployment</b></summary>
+
+**If your deployment failed or encountered errors:**
+
+1. **Try a different region:** Create a new environment and select a different Azure region during deployment
+2. **Clean up and retry:** Use `azd down` to remove failed resources, then `azd up` to redeploy
+3. **Check troubleshooting:** Review [Troubleshooting Guide](./TroubleShootingSteps.md) for specific error solutions
+4. **Fresh start:** Create a completely new environment with a different name
+
+**Example Recovery Workflow:**
+```shell
+# Remove failed deployment (optional)
+azd down
+
+# Create new environment (3-16 chars, alphanumeric only)
+azd env new conmigretry
+
+# Deploy with different settings/region
+azd up
 ```
-.\resourcedeployment.ps1
+
+</details>
+
+### Creating a New Environment
+
+If you need to deploy to a different region, test different configurations, or create additional environments:
+
+<details>
+<summary><b>Create a New Environment</b></summary>
+
+**Create Environment Explicitly:**
+```shell
+# Create a new named environment (3-16 characters, alphanumeric only)
+azd env new <new-environment-name>
+
+# Select the new environment
+azd env select <new-environment-name>
+
+# Deploy to the new environment
+azd up
 ```
 
-**If you deployed using custom templates, ARM/Bicep deployments, or `az deployment group` commands:**
-```
-.\resourcedeployment.ps1 -ResourceGroupName "<your-resource-group-name>"
-```
+**Example:**
+```shell
+# Create a new environment for production (valid: 3-16 chars)
+azd env new conmigprod
 
-> **Note:** Replace `<your-resource-group-name>` with the actual name of the resource group containing your deployed Azure resources.
+# Switch to the new environment
+azd env select conmigprod
 
-> **💡 Tip**: Since this guide is for azd deployment, you'll typically use the first command without the `-ResourceGroupName` parameter.
-
-If you run into issue with PowerShell script file not being digitally signed, you can execute below command:
-
-```
-powershell.exe -ExecutionPolicy Bypass -File ".\resourcedeployment.ps1"
+# Deploy with fresh settings
+azd up
 ```
 
-You will be prompted for the following parameters with this Screen :  
-<img src="./images/deployment/Deployment_Input_Param_01.png" width="900" alt-text="Input Parameters">
+> **Environment Name Requirements:**
+> - **Length:** 3-16 characters
+> - **Characters:** Alphanumeric only (letters and numbers)
+> - **Valid examples:** `conmig`, `test123`, `myappdev`, `prod2024`
+> - **Invalid examples:** `co` (too short), `my-very-long-environment-name` (too long), `test_env` (underscore not allowed), `myapp-dev` (hyphen not allowed)
 
-1. **Email** - used for issuing certificates in Kubernetes clusters from the [Let's Encrypt](https://letsencrypt.org/) service. Email address should be valid.  
+</details>
 
-<img src="./images/deployment/Deployment_Login_02.png" width="900" alt-text="Login">
+<details>
+<summary><b>Switch Between Environments</b></summary>
 
-2. You will be prompted to Login, Select a account and proceed to Login.
+**List Available Environments:**
+```shell
+azd env list
+```
 
-3. **GO !** - Post Deployment Script executes Azure Infrastructure configuration, Application code compile and publish into Kubernetes Cluster.
+**Switch to Different Environment:**
+```shell
+azd env select <environment-name>
+```
 
-### Manual Deployment Steps:
-**Create Content Filter** - Please follow below steps
-> * Navigate to project in Azure OpenAI, then go to Azure AI Foundry, select Safety + security
-> * Click on Create Content Filter and set the filters to a high threshold for the following categories:
-    ```
-    Hate, Sexual, Self-harm, Violence
-    ```
-> * Please select the checkbox of profanity
-> * Leave all other configurations at their default settings and click on create
+**View Current Environment:**
+```shell
+azd env get-values
+```
 
-### Deployment Complete
-#### 🥳🎉 First, congrats on finishing Deployment!
-Let's check the message and configure your model's TPM rate higher to get better performance.  
-You can check the Application URL from the final console message.  
-Don't miss this Url information. This is the application's endpoint URL and it should be used for your data importing process.  
+</details>
 
-<img src="./images/deployment/Deployment_Screen02.png" alt="Success Deployment" width="900">
+### Best Practices for Multiple Environments
+
+- **Use descriptive names:** `conmigdev`, `conmigprod`, `conmigtest` (remember: 3-16 chars, alphanumeric only)
+- **Different regions:** Deploy to multiple regions for testing quota availability
+- **Separate configurations:** Each environment can have different parameter settings
+- **Clean up unused environments:** Use `azd down` to remove environments you no longer need
 
 ## Next Steps
 
-### 1. Configure Azure OpenAI Rate Limits
+Now that your deployment is complete and tested, explore these resources to enhance your experience:
 
-> **Capacity Note:**
-> * The deployment script creates models with a setting of 1 token per minute (TPM) rate limit.
-> * Faster performance can be achieved by increasing the TPM limit with Azure AI Foundry.
-> * Capacity varies for [regional quota limits](https://learn.microsoft.com/en-us/azure/ai-services/openai/quotas-limits#regional-quota-limits) as well as for [provisioned throughput](https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/provisioned-throughput).
-> * As a starting point, we recommend the following quota threshold be set up for this service run.  
+📚 **Learn More:**
+- [Technical Architecture](./TechnicalArchitecture.md) - Understand the system design and components
+- [Local Development Setup](./LocalSetupGuide.md) - Set up your local development environment
 
-| Model Name             | TPM Threshold |
-|------------------------|---------------|
-| GPT-4.1-mini           | 100K TPM      |
-| text-embedding-3-large | 200K TPM      |
+## Need Help?
 
+- 🐛 **Issues:** Check [Troubleshooting Guide](./TroubleShootingSteps.md)
+- 💬 **Support:** Review [Support Guidelines](../SUPPORT.md)
+- 🔧 **Development:** See [Contributing Guide](../CONTRIBUTING.md)
 
-> **⚠️ Warning:**  **Insufficient quota can cause failures during the upload process.** Please ensure you have the recommended capacity or request for additional capacity before start uploading the files.
+---
 
+## Advanced: Deploy Local Changes
 
-1. Browse to the project in Azure AI Foundry, and select **each of the 2 models** within the `Deployments` menu:  
-<img src="./images/deployment/Control_Model_TPM000.png" alt="Select Model" width="700">
+If you've made local modifications to the code and want to deploy them to Azure, follow these steps to swap the configuration files:
 
-2. Increase the TPM value for **each model** for faster report generation:  
-<img src="./images/deployment/Control_Model_TPM001.png" alt="Set Token per minute" width="700">
+> **Note:** To set up and run the application locally for development, see the [Local Development Setup Guide](./LocalSetupGuide.md).
 
-### 2. Data Uploading and Processing
-After increasing the TPM limit for each model, let's upload and process the sample documents.
+### Step 1: Rename Azure Configuration Files
+
+**In the root directory:**
+1. Rename `azure.yaml` to `azure_custom2.yaml`
+2. Rename `azure_custom.yaml` to `azure.yaml`
+
+### Step 2: Rename Infrastructure Files
+
+**In the `infra` directory:**
+1. Rename `main.bicep` to `main_custom2.bicep`
+2. Rename `main_custom.bicep` to `main.bicep`
+
+### Step 3: Deploy Changes
+
+Run the deployment command:
+```shell
+azd up
 ```
-cd .\Deployment\
-```
 
-Execute uploadfiles.ps1 file with **-EndpointUrl** parameter as URL in console message.
-
-```
-.\uploadfiles.ps1 -EndpointUrl https://kmgs<your dns name>.<datacenter>.cloudapp.azure.com
-```
-
-If you run into issue with PowerShell script file not being digitally signed, you can execute below command:
-
-```
-powershell.exe -ExecutionPolicy Bypass -File ".\uploadfiles.ps1" -EndpointUrl https://kmgs<your dns name>.<datacenter>.cloudapp.azure.com
-```
+> **Note:** These custom files are configured to deploy your local code changes instead of pulling from the GitHub repository.
