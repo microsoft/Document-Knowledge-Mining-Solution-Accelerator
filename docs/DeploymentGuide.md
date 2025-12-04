@@ -105,6 +105,10 @@ Ensure you have access to an [Azure subscription](https://azure.microsoft.com/fr
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
 
+## Step 3: Configure Deployment Settings
+
+Review the configuration options below. You can customize any settings that meet your needs, or leave them as defaults to proceed with a standard deployment.
+
 ### 3.1 Choose Deployment Type (Optional)
 
 | **Aspect** | **Development/Testing (Default)** | **Production** |
