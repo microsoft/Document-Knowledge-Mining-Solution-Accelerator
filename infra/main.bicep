@@ -814,7 +814,7 @@ module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
       defaultAction: enablePrivateNetworking ? 'Deny' : 'Allow'
       bypass: 'AzureServices'
     }
-
+    restrictOutboundNetworkAccess: enablePrivateNetworking ? true : false
     privateEndpoints: enablePrivateNetworking
       ? [
           {
@@ -873,6 +873,7 @@ module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.13.2
       bypass: 'AzureServices'
       defaultAction: enablePrivateNetworking ? 'Deny' : 'Allow'
     }
+    restrictOutboundNetworkAccess: enablePrivateNetworking ? true : false
 
     // Private Endpoint for Form Recognizer
     privateEndpoints: enablePrivateNetworking
@@ -915,6 +916,11 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.
     kubernetesVersion: '1.32.7'
     dnsPrefix: 'aks-${solutionSuffix}'
     enableRBAC: true
+    aadProfile: {
+      aadProfileManaged: true
+      aadProfileEnableAzureRBAC: true
+      aadProfileTenantId: subscription().tenantId
+    }
     disableLocalAccounts: false
     publicNetworkAccess: 'Enabled'
     managedIdentities: {
