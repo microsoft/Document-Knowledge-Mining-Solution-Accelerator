@@ -184,13 +184,20 @@ public sealed class InProcessPipelineOrchestrator : BaseOrchestrator
             }
             else
             {
-                this.Log.LogError("Handler '{0}' failed to process pipeline '{1}/{2}'", currentStepName, pipeline.Index, pipeline.DocumentId);
+                this.Log.LogError(
+                    "Handler {StepName} failed to process pipeline {Index}/{DocumentId}",
+                    currentStepName?.Replace("\r", string.Empty).Replace("\n", string.Empty),
+                    pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty),
+                    pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty));
                 throw new OrchestrationException($"Pipeline error, step {currentStepName} failed");
             }
         }
 
         await this.CleanUpAfterCompletionAsync(pipeline, cancellationToken).ConfigureAwait(false);
 
-        this.Log.LogInformation("Pipeline '{0}/{1}' complete", pipeline.Index, pipeline.DocumentId);
+        this.Log.LogInformation(
+            "Pipeline {Index}/{DocumentId} complete",
+            pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty),
+            pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty));
     }
 }
