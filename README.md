@@ -1,9 +1,3 @@
-<hr>
-<h3 align="center">
-     <b>⚠️ This repository is no longer maintained ⚠️</b>
-</h3>
-<hr>
-
 # Document knowledge mining solution accelerator
 
 Ingest, extract, and classify content from a high volume of assets to gain deeper insights and generate relevant suggestions for quick and easy reasoning. This enables the ability to conduct chat-based insight discovery, analysis, and receive suggested prompt guidance to further explore your data.
