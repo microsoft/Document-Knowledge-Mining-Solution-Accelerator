@@ -347,6 +347,7 @@ jobs:
           fi
 
       - name: Run Post Deployment Script
+        continue-on-error: true
         shell: pwsh
         run: |
           Write-Host "Running post deployment script to upload files..."
@@ -357,13 +358,11 @@ jobs:
             if ($LASTEXITCODE -eq $null -or $LASTEXITCODE -eq 0) {
               Write-Host "✅ Post deployment script completed successfully."
             } else {
-              Write-Host "❌ Post deployment script failed with exit code: $LASTEXITCODE"
-              exit 1
+              Write-Host "⚠️ Post deployment script failed with exit code: $LASTEXITCODE, but pipeline will continue."
             }
           }
           catch {
-            Write-Host "❌ Post deployment script failed with error: $($_.Exception.Message)"
-            exit 1
+            Write-Host "⚠️ Post deployment script failed with error: $($_.Exception.Message), but pipeline will continue."
           }
 
       - name: Logout from Azure
