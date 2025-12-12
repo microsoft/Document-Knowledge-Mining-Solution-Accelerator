@@ -45,7 +45,10 @@ public sealed class KeywordExtractingHandler : IPipelineStepHandler
 
     public async Task<(bool success, DataPipeline updatedPipeline)> InvokeAsync(DataPipeline pipeline, CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Extracting Keywords from the content", pipeline.Index, pipeline.DocumentId);
+        this._log.LogDebug(
+            "Extracting Keywords from the content for pipeline {Index}/{DocumentId}",
+            pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty),
+            pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty));
 
         foreach (FileDetails uploadedFile in pipeline.Files)
         {
