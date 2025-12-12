@@ -64,7 +64,7 @@ internal sealed class DiskFileSystem : IFileSystem
     {
         volume = ValidateVolumeName(volume);
         var path = Path.Join(this._dataPath, volume);
-        this._log.LogWarning("Deleting directory: {0}", path);
+        this._log.LogWarning("Deleting directory: {Path}", path?.Replace("\r", string.Empty).Replace("\n", string.Empty));
         for (int attempt = 1; attempt <= 5; attempt++)
         {
             if (!Directory.Exists(path))
@@ -140,7 +140,7 @@ internal sealed class DiskFileSystem : IFileSystem
         relPath = ValidatePath(relPath);
         fileName = ValidateFileName(fileName);
         path = Path.Join(path, relPath, fileName);
-        this._log.LogTrace("Writing file to {0}", path);
+        this._log.LogTrace("Writing file to {Path}", path?.Replace("\r", string.Empty).Replace("\n", string.Empty));
         BinaryData data = await BinaryData.FromStreamAsync(streamContent, cancellationToken).ConfigureAwait(false);
         await File.WriteAllBytesAsync(path, data.ToArray(), cancellationToken).ConfigureAwait(false);
     }
@@ -200,17 +200,17 @@ internal sealed class DiskFileSystem : IFileSystem
         path = Path.Join(path, fileName);
         if (!File.Exists(path))
         {
-            this._log.LogError("File not found: {0}", path);
+            this._log.LogError("File not found: {Path}", path?.Replace("\r", string.Empty).Replace("\n", string.Empty));
             throw new FileNotFoundException($"File not found: {path}");
         }
 
-        this._log.LogTrace("File exists, reading {0}", path);
+        this._log.LogTrace("File exists, reading {Path}", path?.Replace("\r", string.Empty).Replace("\n", string.Empty));
         FileInfo info = new(path);
         var fileType = this._mimeTypeDetection.GetFileType(fileName);
         Task<Stream> AsyncStreamDelegate() => Task.FromResult<Stream>(info.OpenRead());
         StreamableFileContent result = new(fileName, info.Length, fileType, info.LastWriteTimeUtc, AsyncStreamDelegate);
 
-        this._log.LogTrace("File {0} size: {1} bytes", path, info.Length);
+        this._log.LogTrace("File {Path} size: {Bytes} bytes", path?.Replace("\r", string.Empty).Replace("\n", string.Empty), info.Length);
         return Task.FromResult<StreamableFileContent>(result);
     }
 
@@ -265,7 +265,7 @@ internal sealed class DiskFileSystem : IFileSystem
         volume = ValidateVolumeName(volume);
         relPath = ValidatePath(relPath);
         var path = Path.Join(this._dataPath, volume, relPath, fileName);
-        this._log.LogDebug("Deleting {0}", path);
+        this._log.LogDebug("Deleting {Path}", path?.Replace("\r", string.Empty).Replace("\n", string.Empty));
         if (File.Exists(path)) { File.Delete(path); }
 
         return Task.CompletedTask;
@@ -355,7 +355,7 @@ internal sealed class DiskFileSystem : IFileSystem
             return;
         }
 
-        this._log.LogDebug("Creating directory {0}", path);
+        this._log.LogDebug("Creating directory {Path}", path?.Replace("\r", string.Empty).Replace("\n", string.Empty));
         Directory.CreateDirectory(path);
     }
 
