@@ -143,22 +143,37 @@ jobs:
       
       - name: Run Quota Check
         id: quota-check
+        shell: pwsh
         run: |
-          export AZURE_CLIENT_ID=${{ secrets.AZURE_CLIENT_ID }}
-          export AZURE_TENANT_ID=${{ secrets.AZURE_TENANT_ID }}
-          export AZURE_CLIENT_SECRET=${{ secrets.AZURE_CLIENT_SECRET }}
-          export AZURE_SUBSCRIPTION_ID="${{ secrets.AZURE_SUBSCRIPTION_ID }}"
-          export GPT_MIN_CAPACITY=${{ env.GPT_MIN_CAPACITY }}
-          export TEXT_EMBEDDING_MIN_CAPACITY=${{ env.TEXT_EMBEDDING_MIN_CAPACITY }}
-          export AZURE_REGIONS="${{ vars.AZURE_REGIONS }}"
+          $ErrorActionPreference = "Stop"  # Ensure that any error stops the pipeline
 
-          chmod +x scripts/checkquota.sh
-          if ! scripts/checkquota.sh; then
-            if grep -q "No region with sufficient quota found" scripts/checkquota.sh; then
-              echo "QUOTA_FAILED=true" >> $GITHUB_ENV
-            fi
-            exit 1 
-          fi
+          # Path to the PowerShell script for quota check
+          $quotaCheckScript = "Deployment/checkquota.ps1"
+
+          # Check if the script exists and is executable (not needed for PowerShell like chmod)
+          if (-not (Test-Path $quotaCheckScript)) {
+            Write-Host "❌ Error: Quota check script not found."
+            exit 1
+          }
+
+          # Run the script
+          .\Deployment\checkquota.ps1
+
+          # If the script fails, check for the failure message
+          $quotaFailedMessage = "No region with sufficient quota found"
+          $output = Get-Content "Deployment/checkquota.ps1"
+
+          if ($output -contains $quotaFailedMessage) {
+            echo "QUOTA_FAILED=true" >> $GITHUB_ENV
+          }
+        env:
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          GPT_MIN_CAPACITY: ${{ env.GPT_CAPACITY }}
+          TEXT_EMBEDDING_MIN_CAPACITY: ${{ env.TEXT_EMBEDDING_CAPACITY }}
+          AZURE_REGIONS: "${{ vars.AZURE_REGIONS }}"
 
       - name: Set Quota Failure Output
         id: quota_failure_output
