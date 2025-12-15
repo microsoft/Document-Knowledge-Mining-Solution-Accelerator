@@ -72,7 +72,7 @@ on:
         value: ${{ jobs.azure-setup.outputs.RESOURCE_GROUP_NAME }}
       WEB_APPURL:
         description: "Container Web App URL"
-        value: ${{ jobs.deploy-linux.outputs.WEB_APPURL || jobs.deploy-windows.outputs.WEB_APPURL }}
+        value: ${{ jobs.deploy-windows.outputs.WEB_APPURL }}
       ENV_NAME:
         description: "Environment Name"
         value: ${{ jobs.azure-setup.outputs.ENV_NAME }}
@@ -324,24 +324,6 @@ jobs:
           else
             echo "ℹ️ **Note:** Manual Trigger - Using user-specified configuration" >> $GITHUB_STEP_SUMMARY
           fi
-
-  deploy-linux:
-    name: Deploy on Linux
-    needs: azure-setup
-    if: inputs.runner_os == 'ubuntu-latest' && always() && needs.azure-setup.result == 'success'
-    uses: ./.github/workflows/job-deploy-linux.yml
-    with:
-      ENV_NAME: ${{ needs.azure-setup.outputs.ENV_NAME }}
-      AZURE_ENV_OPENAI_LOCATION: ${{ needs.azure-setup.outputs.AZURE_ENV_OPENAI_LOCATION }}
-      AZURE_LOCATION: ${{ needs.azure-setup.outputs.AZURE_LOCATION }}
-      RESOURCE_GROUP_NAME: ${{ needs.azure-setup.outputs.RESOURCE_GROUP_NAME }}
-      IMAGE_TAG: ${{ needs.azure-setup.outputs.IMAGE_TAG }}
-      BUILD_DOCKER_IMAGE: ${{ inputs.build_docker_image || 'false' }}
-      EXP: ${{ inputs.EXP || 'false' }}
-      WAF_ENABLED: ${{ inputs.waf_enabled == true && 'true' || 'false' }}
-      AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID: ${{ inputs.AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID }}
-      AZURE_EXISTING_AI_PROJECT_RESOURCE_ID: ${{ inputs.AZURE_EXISTING_AI_PROJECT_RESOURCE_ID }}
-    secrets: inherit
 
   deploy-windows:
     name: Deploy on Windows
