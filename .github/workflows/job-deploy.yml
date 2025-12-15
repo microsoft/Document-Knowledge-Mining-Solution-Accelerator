@@ -171,8 +171,8 @@ jobs:
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          GPT_MIN_CAPACITY: ${{ env.GPT_CAPACITY }}
-          TEXT_EMBEDDING_MIN_CAPACITY: ${{ env.TEXT_EMBEDDING_CAPACITY }}
+          GPT_MIN_CAPACITY: ${{ env.GPT_MIN_CAPACITY }}
+          TEXT_EMBEDDING_MIN_CAPACITY: ${{ env.TEXT_EMBEDDING_MIN_CAPACITY }}
           AZURE_REGIONS: "${{ vars.AZURE_REGIONS }}"
 
       - name: Set Quota Failure Output
