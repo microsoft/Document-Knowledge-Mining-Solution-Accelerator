@@ -209,24 +209,24 @@ jobs:
 
       - name: Run Post-Deployment Script
         id: post_deploy
-        env: 
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        shell: bash
+        shell: pwsh
         run: |
-          set -e
-          az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
-
-          echo "Running post-deployment script..."
-
-          bash ./infra/scripts/process_sample_data.sh \
-            "${{ env.STORAGE_ACCOUNT_NAME }}" \
-            "${{ env.STORAGE_CONTAINER_NAME }}" \
-            "${{ env.KEY_VAULT_NAME }}" \
-            "${{ env.AZURE_COSMOSDB_ACCOUNT }}" \
-            "${{ env.RESOURCE_GROUP_NAME }}" \
-            "${{ env.AI_SEARCH_SERVICE_NAME }}" \
-            "${{ secrets.AZURE_CLIENT_ID }}" \
-            "${{ env.AI_FOUNDRY_RESOURCE_ID }}"
+          Write-Host "Running post deployment script to upload files..."
+          cd Deployment
+          try {
+            .\uploadfiles.ps1 -EndpointUrl ${{ env.WEB_APPURL }}
+            Write-Host "ExitCode: $LASTEXITCODE"
+            if ($LASTEXITCODE -eq $null -or $LASTEXITCODE -eq 0) {
+              Write-Host "✅ Post deployment script completed successfully."
+            } else {
+              Write-Host "❌ Post deployment script failed with exit code: $LASTEXITCODE"
+              exit 1
+            }
+          }
+          catch {
+            Write-Host "❌ Post deployment script failed with error: $($_.Exception.Message)"
+            exit 1
+          }
 
       - name: Generate Deploy Job Summary
         if: always()
