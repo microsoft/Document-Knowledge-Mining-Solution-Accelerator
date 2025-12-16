@@ -167,9 +167,18 @@ jobs:
           }
 
           # Deploy using azd up
-          azd up --no-prompt
-          
-          Write-Host "✅ Deployment succeeded."
+          Write-Host "Starting deployment with azd up..."
+          try {
+            azd up --no-prompt
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "❌ Deployment failed with exit code: $LASTEXITCODE"
+              exit 1
+            }
+            Write-Host "✅ Deployment succeeded."
+          } catch {
+            Write-Host "❌ Deployment failed with error: $($_.Exception.Message)"
+            exit 1
+          }
 
           # Get deployment outputs using azd
           Write-Host "Extracting deployment outputs..."
@@ -177,53 +186,147 @@ jobs:
           Write-Host "Deployment output: $($DEPLOY_OUTPUT | ConvertTo-Json -Depth 10)"
           
           if (-not $DEPLOY_OUTPUT) {
-            Write-Host "Error: Deployment output is empty. Please check the deployment logs."
+            Write-Host "❌ Error: Deployment output is empty. Please check the deployment logs."
             exit 1
           }
 
+          # Save all deployment outputs to GITHUB_ENV
+          Write-Host "Saving deployment outputs to environment variables..."
+          "RESOURCE_GROUP_NAME=$($DEPLOY_OUTPUT.RESOURCE_GROUP_NAME)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "AZURE_RESOURCE_GROUP_ID=$($DEPLOY_OUTPUT.AZURE_RESOURCE_GROUP_ID)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "STORAGE_ACCOUNT_NAME=$($DEPLOY_OUTPUT.STORAGE_ACCOUNT_NAME)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "AZURE_SEARCH_SERVICE_NAME=$($DEPLOY_OUTPUT.AZURE_SEARCH_SERVICE_NAME)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "AZURE_AKS_NAME=$($DEPLOY_OUTPUT.AZURE_AKS_NAME)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "AZURE_AKS_MI_ID=$($DEPLOY_OUTPUT.AZURE_AKS_MI_ID)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "AZURE_CONTAINER_REGISTRY_NAME=$($DEPLOY_OUTPUT.AZURE_CONTAINER_REGISTRY_NAME)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "AZURE_COGNITIVE_SERVICE_NAME=$($DEPLOY_OUTPUT.AZURE_COGNITIVE_SERVICE_NAME)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "AZURE_COGNITIVE_SERVICE_ENDPOINT=$($DEPLOY_OUTPUT.AZURE_COGNITIVE_SERVICE_ENDPOINT)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "AZURE_OPENAI_SERVICE_NAME=$($DEPLOY_OUTPUT.AZURE_OPENAI_SERVICE_NAME)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "AZURE_OPENAI_SERVICE_ENDPOINT=$($DEPLOY_OUTPUT.AZURE_OPENAI_SERVICE_ENDPOINT)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "AZURE_COSMOSDB_NAME=$($DEPLOY_OUTPUT.AZURE_COSMOSDB_NAME)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "AZ_GPT4O_MODEL_NAME=$($DEPLOY_OUTPUT.AZ_GPT4O_MODEL_NAME)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "AZ_GPT4O_MODEL_ID=$($DEPLOY_OUTPUT.AZ_GPT4O_MODEL_ID)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "AZ_GPT_EMBEDDING_MODEL_NAME=$($DEPLOY_OUTPUT.AZ_GPT_EMBEDDING_MODEL_NAME)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "AZ_GPT_EMBEDDING_MODEL_ID=$($DEPLOY_OUTPUT.AZ_GPT_EMBEDDING_MODEL_ID)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "AZURE_APP_CONFIG_ENDPOINT=$($DEPLOY_OUTPUT.AZURE_APP_CONFIG_ENDPOINT)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "AZURE_APP_CONFIG_NAME=$($DEPLOY_OUTPUT.AZURE_APP_CONFIG_NAME)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-          $AI_FOUNDRY_RESOURCE_ID = $DEPLOY_OUTPUT.AI_FOUNDRY_RESOURCE_ID
-          "AI_FOUNDRY_RESOURCE_ID=$AI_FOUNDRY_RESOURCE_ID" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          # Get AKS managed resource group (node resource group)
+          Write-Host "Retrieving AKS managed resource group..."
+          $AKS_NAME = $DEPLOY_OUTPUT.AZURE_AKS_NAME
+          $RESOURCE_GROUP = $DEPLOY_OUTPUT.RESOURCE_GROUP_NAME
+          $AKS_NODE_RG = az aks show --name $AKS_NAME --resource-group $RESOURCE_GROUP --query "nodeResourceGroup" -o tsv
+          Write-Host "AKS node resource group: $AKS_NODE_RG"
+          "krg_name=$AKS_NODE_RG" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-          $AI_SEARCH_SERVICE_NAME = $DEPLOY_OUTPUT.AI_SEARCH_SERVICE_NAME
-          "AI_SEARCH_SERVICE_NAME=$AI_SEARCH_SERVICE_NAME" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-          $AZURE_COSMOSDB_ACCOUNT = $DEPLOY_OUTPUT.AZURE_COSMOSDB_ACCOUNT
-          "AZURE_COSMOSDB_ACCOUNT=$AZURE_COSMOSDB_ACCOUNT" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-          $STORAGE_ACCOUNT_NAME = $DEPLOY_OUTPUT.STORAGE_ACCOUNT_NAME
-          "STORAGE_ACCOUNT_NAME=$STORAGE_ACCOUNT_NAME" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-          $STORAGE_CONTAINER_NAME = $DEPLOY_OUTPUT.STORAGE_CONTAINER_NAME
-          "STORAGE_CONTAINER_NAME=$STORAGE_CONTAINER_NAME" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-          $KEY_VAULT_NAME = $DEPLOY_OUTPUT.KEY_VAULT_NAME
-          "KEY_VAULT_NAME=$KEY_VAULT_NAME" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-          $RESOURCE_GROUP_NAME = $DEPLOY_OUTPUT.RESOURCE_GROUP_NAME
-          "RESOURCE_GROUP_NAME=$RESOURCE_GROUP_NAME" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-          $WEB_APP_URL = $DEPLOY_OUTPUT.WEB_APP_URL
-          Write-Host "WEB_APP_URL extracted: $WEB_APP_URL"
+          # Get Web App URL from AKS public IP
+          Write-Host "Retrieving Web App URL from AKS..."
+          $PUBLIC_IP_NAME = az network public-ip list --resource-group $AKS_NODE_RG --query "[?contains(name, 'kubernetes-')].name" -o tsv | Select-Object -First 1
           
-          if ([string]::IsNullOrWhiteSpace($WEB_APP_URL)) {
-            Write-Host "❌ Error: WEB_APP_URL is empty or not found in deployment output."
-            Write-Host "Available output keys: $($DEPLOY_OUTPUT.PSObject.Properties.Name -join ', ')"
+          if ([string]::IsNullOrWhiteSpace($PUBLIC_IP_NAME)) {
+            Write-Host "❌ Error: Could not find public IP in resource group $AKS_NODE_RG"
             exit 1
           }
+          
+          Write-Host "Found public IP: $PUBLIC_IP_NAME"
+          $FQDN = az network public-ip show --resource-group $AKS_NODE_RG --name $PUBLIC_IP_NAME --query "dnsSettings.fqdn" -o tsv
+          
+          if ([string]::IsNullOrWhiteSpace($FQDN)) {
+            Write-Host "❌ Error: Could not retrieve FQDN for public IP $PUBLIC_IP_NAME"
+            exit 1
+          }
+          
+          $WEB_APP_URL = "https://$FQDN"
+          Write-Host "Web App URL: $WEB_APP_URL"
           
           "WEB_APPURL=$WEB_APP_URL" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "WEB_APPURL=$WEB_APP_URL" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
-      - name: Run Post-Deployment Script
-        id: post_deploy
+      - name: Run Deployment Script with Input
+        shell: pwsh
+        run: |
+          cd Deployment
+          $input = @"
+          ${{ secrets.EMAIL }}
+          yes
+          "@
+          $input | pwsh ./resourcedeployment.ps1
+          Write-Host "Resource Group Name is ${{ env.RESOURCE_GROUP_NAME }}"
+          Write-Host "Kubernetes resource group is ${{ env.AZURE_AKS_NAME }}"
+        env:
+          # From GitHub secrets (for login)
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_TENANT_ID:       ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID:       ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET:   ${{ secrets.AZURE_CLIENT_SECRET }}
+
+          # From deployment outputs step (these come from $GITHUB_ENV)
+          RESOURCE_GROUP_NAME:          ${{ env.RESOURCE_GROUP_NAME }}
+          AZURE_RESOURCE_GROUP_ID:       ${{ env.AZURE_RESOURCE_GROUP_ID }}
+          STORAGE_ACCOUNT_NAME:          ${{ env.STORAGE_ACCOUNT_NAME }}
+          AZURE_SEARCH_SERVICE_NAME:     ${{ env.AZURE_SEARCH_SERVICE_NAME }}
+          AZURE_AKS_NAME:                ${{ env.AZURE_AKS_NAME }}
+          AZURE_AKS_MI_ID:               ${{ env.AZURE_AKS_MI_ID }}
+          AZURE_CONTAINER_REGISTRY_NAME: ${{ env.AZURE_CONTAINER_REGISTRY_NAME }}
+          AZURE_COGNITIVE_SERVICE_NAME:  ${{ env.AZURE_COGNITIVE_SERVICE_NAME }}
+          AZURE_COGNITIVE_SERVICE_ENDPOINT: ${{ env.AZURE_COGNITIVE_SERVICE_ENDPOINT }}
+          AZURE_OPENAI_SERVICE_NAME:     ${{ env.AZURE_OPENAI_SERVICE_NAME }}
+          AZURE_OPENAI_SERVICE_ENDPOINT: ${{ env.AZURE_OPENAI_SERVICE_ENDPOINT }}
+          AZURE_COSMOSDB_NAME:           ${{ env.AZURE_COSMOSDB_NAME }}
+          AZ_GPT4O_MODEL_NAME:           ${{ env.AZ_GPT4O_MODEL_NAME }}
+          AZ_GPT4O_MODEL_ID:             ${{ env.AZ_GPT4O_MODEL_ID }}
+          AZ_GPT_EMBEDDING_MODEL_NAME:   ${{ env.AZ_GPT_EMBEDDING_MODEL_NAME }}
+          AZ_GPT_EMBEDDING_MODEL_ID:     ${{ env.AZ_GPT_EMBEDDING_MODEL_ID }}
+          AZURE_APP_CONFIG_ENDPOINT:     ${{ env.AZURE_APP_CONFIG_ENDPOINT }}
+          AZURE_APP_CONFIG_NAME:         ${{ env.AZURE_APP_CONFIG_NAME }}
+
+      - name: Validate Deployment
+        shell: bash
+        run: |
+          webapp_url="${{ env.WEB_APPURL }}"
+          echo "Validating web app at: $webapp_url"
+
+          # Enhanced health check with retry logic
+          max_attempts=7
+          attempt=1
+          success=false
+
+          while [ $attempt -le $max_attempts ] && [ "$success" = false ]; do
+            echo "Attempt $attempt/$max_attempts: Checking web app health..."
+
+            # Check if web app responds
+            http_code=$(curl -s -o /dev/null -w "%{http_code}" "$webapp_url" || echo "000")
+
+            if [ "$http_code" -eq 200 ]; then
+              echo "✅ Web app is healthy (HTTP $http_code)"
+              success=true
+            elif [ "$http_code" -eq 404 ]; then
+              echo "❌ Web app not found (HTTP 404)"
+              break
+            elif [ "$http_code" -eq 503 ] || [ "$http_code" -eq 502 ]; then
+              echo "⚠️ Web app temporarily unavailable (HTTP $http_code), retrying..."
+              sleep 20
+            else
+              echo "⚠️ Web app returned HTTP $http_code, retrying..."
+              sleep 20
+            fi
+
+            attempt=$((attempt + 1))
+          done
+
+          if [ "$success" = false ]; then
+            echo "❌ Web app validation failed after $max_attempts attempts"
+            exit 1
+          fi
+
+      - name: Run Post Deployment Script
         shell: pwsh
         run: |
           Write-Host "Running post deployment script to upload files..."
-          Write-Host "WEB_APPURL value: $env:WEB_APPURL"
+          Write-Host "WEB_APPURL: $env:WEB_APPURL"
           
           if ([string]::IsNullOrWhiteSpace($env:WEB_APPURL)) {
-            Write-Host "❌ Error: WEB_APPURL environment variable is empty."
+            Write-Host "❌ Error: WEB_APPURL is empty"
             exit 1
           }
           
