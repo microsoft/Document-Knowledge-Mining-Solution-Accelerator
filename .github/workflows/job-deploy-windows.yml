@@ -128,7 +128,7 @@ jobs:
         
           # Set additional parameters
           azd env set AZURE_SUBSCRIPTION_ID="${{ secrets.AZURE_SUBSCRIPTION_ID }}"
-          azd env set AZURE_ENV_OPENAI_LOCATION="${{ inputs.AZURE_ENV_OPENAI_LOCATION }}"
+          azd env set AZURE_ENV_OPENAI_LOCATION="${{ inputs.AZURE_LOCATION }}"
           azd env set AZURE_LOCATION="${{ inputs.AZURE_LOCATION }}"
           azd env set AZURE_RESOURCE_GROUP="${{ inputs.RESOURCE_GROUP_NAME }}"
           azd env set AZURE_ENV_IMAGETAG="${{ inputs.IMAGE_TAG }}"
@@ -415,7 +415,7 @@ jobs:
           echo "| **Resource Group** | \`${{ inputs.RESOURCE_GROUP_NAME }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **Configuration Type** | \`${{ inputs.WAF_ENABLED == 'true' && inputs.EXP == 'true' && 'WAF + EXP' || inputs.WAF_ENABLED == 'true' && inputs.EXP != 'true' && 'WAF + Non-EXP' || inputs.WAF_ENABLED != 'true' && inputs.EXP == 'true' && 'Non-WAF + EXP' || 'Non-WAF + Non-EXP' }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **Azure Region (Infrastructure)** | \`${{ inputs.AZURE_LOCATION }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Azure OpenAI Region** | \`${{ inputs.AZURE_ENV_OPENAI_LOCATION }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Azure OpenAI Region** | \`${{ inputs.AZURE_LOCATION }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **Docker Image Tag** | \`${{ inputs.IMAGE_TAG }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [[ "${{ job.status }}" == "success" ]]; then
