@@ -133,8 +133,8 @@ jobs:
           azd env set AZURE_RESOURCE_GROUP="${{ inputs.RESOURCE_GROUP_NAME }}"
           azd env set AZURE_ENV_IMAGETAG="${{ inputs.IMAGE_TAG }}"
           
-          # Set infrastructure parameters that azd expects
-          azd env set aiDeploymentsLocation="${{ inputs.AZURE_ENV_OPENAI_LOCATION }}"
+          # Set infrastructure parameters that azd expects (both use AZURE_LOCATION like CI.yml)
+          azd env set aiDeploymentsLocation="${{ inputs.AZURE_LOCATION }}"
           azd env set location="${{ inputs.AZURE_LOCATION }}"
           
           # Set ACR name only when building Docker image
