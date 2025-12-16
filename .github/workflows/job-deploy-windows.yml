@@ -170,10 +170,10 @@ jobs:
             Write-Host "❌ EXP DISABLED - Skipping EXP parameters"
           }
 
-          # Deploy using azd up
+          # Deploy using azd up with inline parameter for aiDeploymentsLocation
           Write-Host "Starting deployment with azd up..."
           try {
-            azd up --no-prompt
+            azd up --no-prompt --parameter aiDeploymentsLocation="${{ inputs.AZURE_LOCATION }}"
             if ($LASTEXITCODE -ne 0) {
               Write-Host "❌ Deployment failed with exit code: $LASTEXITCODE"
               exit 1
