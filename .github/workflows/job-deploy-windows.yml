@@ -214,7 +214,7 @@ jobs:
           Write-Host "Running post deployment script to upload files..."
           cd Deployment
           try {
-            .\uploadfiles.ps1 -EndpointUrl ${{ env.WEB_APPURL }}
+            .\uploadfiles.ps1 -EndpointUrl $env:WEB_APPURL
             Write-Host "ExitCode: $LASTEXITCODE"
             if ($LASTEXITCODE -eq $null -or $LASTEXITCODE -eq 0) {
               Write-Host "✅ Post deployment script completed successfully."
