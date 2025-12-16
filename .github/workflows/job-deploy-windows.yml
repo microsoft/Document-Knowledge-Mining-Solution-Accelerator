@@ -211,36 +211,13 @@ jobs:
           "AZURE_APP_CONFIG_ENDPOINT=$($DEPLOY_OUTPUT.AZURE_APP_CONFIG_ENDPOINT)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "AZURE_APP_CONFIG_NAME=$($DEPLOY_OUTPUT.AZURE_APP_CONFIG_NAME)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-          # Get AKS managed resource group (node resource group)
+          # Get AKS managed resource group (node resource group) and save for later use
           Write-Host "Retrieving AKS managed resource group..."
           $AKS_NAME = $DEPLOY_OUTPUT.AZURE_AKS_NAME
           $RESOURCE_GROUP = $DEPLOY_OUTPUT.RESOURCE_GROUP_NAME
           $AKS_NODE_RG = az aks show --name $AKS_NAME --resource-group $RESOURCE_GROUP --query "nodeResourceGroup" -o tsv
           Write-Host "AKS node resource group: $AKS_NODE_RG"
           "krg_name=$AKS_NODE_RG" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-          # Get Web App URL from AKS public IP
-          Write-Host "Retrieving Web App URL from AKS..."
-          $PUBLIC_IP_NAME = az network public-ip list --resource-group $AKS_NODE_RG --query "[?contains(name, 'kubernetes-')].name" -o tsv | Select-Object -First 1
-          
-          if ([string]::IsNullOrWhiteSpace($PUBLIC_IP_NAME)) {
-            Write-Host "❌ Error: Could not find public IP in resource group $AKS_NODE_RG"
-            exit 1
-          }
-          
-          Write-Host "Found public IP: $PUBLIC_IP_NAME"
-          $FQDN = az network public-ip show --resource-group $AKS_NODE_RG --name $PUBLIC_IP_NAME --query "dnsSettings.fqdn" -o tsv
-          
-          if ([string]::IsNullOrWhiteSpace($FQDN)) {
-            Write-Host "❌ Error: Could not retrieve FQDN for public IP $PUBLIC_IP_NAME"
-            exit 1
-          }
-          
-          $WEB_APP_URL = "https://$FQDN"
-          Write-Host "Web App URL: $WEB_APP_URL"
-          
-          "WEB_APPURL=$WEB_APP_URL" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "WEB_APPURL=$WEB_APP_URL" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Run Deployment Script with Input
         shell: pwsh
@@ -279,6 +256,82 @@ jobs:
           AZ_GPT_EMBEDDING_MODEL_ID:     ${{ env.AZ_GPT_EMBEDDING_MODEL_ID }}
           AZURE_APP_CONFIG_ENDPOINT:     ${{ env.AZURE_APP_CONFIG_ENDPOINT }}
           AZURE_APP_CONFIG_NAME:         ${{ env.AZURE_APP_CONFIG_NAME }}
+
+      - name: Retrieve Web App URL
+        id: get_webapp_url
+        shell: pwsh
+        run: |
+          Write-Host "Retrieving Web App URL from AKS..."
+          Write-Host "Kubernetes resource group: $env:krg_name"
+          
+          # Get Web App URL from AKS public IP with retry logic
+          $maxAttempts = 12
+          $attempt = 1
+          $PUBLIC_IP_NAME = $null
+          
+          while ($attempt -le $maxAttempts) {
+            Write-Host "Attempt $attempt/$maxAttempts : Checking for public IP..."
+            
+            # List all public IPs in the resource group for debugging
+            $allIPs = az network public-ip list --resource-group $env:krg_name --query "[].name" -o tsv
+            if ($allIPs) {
+              Write-Host "Available public IPs: $($allIPs -join ', ')"
+            } else {
+              Write-Host "No public IPs found yet in resource group $env:krg_name"
+            }
+            
+            # Try to find kubernetes public IP
+            $PUBLIC_IP_NAME = az network public-ip list --resource-group $env:krg_name --query "[?contains(name, 'kubernetes-')].name" -o tsv | Select-Object -First 1
+            
+            if (-not [string]::IsNullOrWhiteSpace($PUBLIC_IP_NAME)) {
+              Write-Host "✅ Found public IP: $PUBLIC_IP_NAME"
+              break
+            }
+            
+            if ($attempt -lt $maxAttempts) {
+              Write-Host "Public IP not found yet, waiting 30 seconds..."
+              Start-Sleep -Seconds 30
+            }
+            $attempt++
+          }
+          
+          if ([string]::IsNullOrWhiteSpace($PUBLIC_IP_NAME)) {
+            Write-Host "❌ Error: Could not find public IP after $maxAttempts attempts in resource group $env:krg_name"
+            exit 1
+          }
+          
+          # Get FQDN with retry
+          Write-Host "Retrieving FQDN for public IP: $PUBLIC_IP_NAME"
+          $FQDN = $null
+          $fqdnAttempts = 5
+          $fqdnAttempt = 1
+          
+          while ($fqdnAttempt -le $fqdnAttempts) {
+            Write-Host "Attempt $fqdnAttempt/$fqdnAttempts : Getting FQDN..."
+            $FQDN = az network public-ip show --resource-group $env:krg_name --name $PUBLIC_IP_NAME --query "dnsSettings.fqdn" -o tsv
+            
+            if (-not [string]::IsNullOrWhiteSpace($FQDN)) {
+              Write-Host "✅ Found FQDN: $FQDN"
+              break
+            }
+            
+            if ($fqdnAttempt -lt $fqdnAttempts) {
+              Write-Host "FQDN not available yet, waiting 15 seconds..."
+              Start-Sleep -Seconds 15
+            }
+            $fqdnAttempt++
+          }
+          
+          if ([string]::IsNullOrWhiteSpace($FQDN)) {
+            Write-Host "❌ Error: Could not retrieve FQDN for public IP $PUBLIC_IP_NAME after $fqdnAttempts attempts"
+            exit 1
+          }
+          
+          $WEB_APP_URL = "https://$FQDN"
+          Write-Host "✅ Web App URL: $WEB_APP_URL"
+          
+          "WEB_APPURL=$WEB_APP_URL" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "WEB_APPURL=$WEB_APP_URL" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Validate Deployment
         shell: bash
