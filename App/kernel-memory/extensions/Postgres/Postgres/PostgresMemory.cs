@@ -232,11 +232,18 @@ public sealed class PostgresMemory : IMemoryDb, IDisposable
     // Note: "_" is allowed in Postgres, but we normalize it to "-" for consistency with other DBs
     private static readonly Regex s_replaceIndexNameCharsRegex = new(@"[\s|\\|/|.|_|:]");
     private const string ValidSeparator = "-";
+    // Only allow 1-63 chars, start with a lowercase letter, then letters, digits, dashes, or underscores.
+    private static readonly Regex s_validIndexNameRegex = new(@"^[a-z][a-z0-9\-_]{0,62}$", RegexOptions.Compiled);
 
     private static string NormalizeIndexName(string index)
     {
         ArgumentNullExceptionEx.ThrowIfNullOrWhiteSpace(index, nameof(index), "The index name is empty");
         index = s_replaceIndexNameCharsRegex.Replace(index.Trim().ToLowerInvariant(), ValidSeparator);
+        // Enforce positive validation for safe Postgres identifier.
+        if (!s_validIndexNameRegex.IsMatch(index))
+        {
+            throw new ArgumentException($"Index name '{index}' is invalid. Must match regex: ^[a-z][a-z0-9\\-_]{{0,62}}$");
+        }
 
         PostgresSchema.ValidateTableName(index);
 
