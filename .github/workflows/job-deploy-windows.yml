@@ -41,7 +41,7 @@ on:
 
 jobs:
   deploy-windows:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     env:
       AZURE_DEV_COLLECT_TELEMETRY: ${{ vars.AZURE_DEV_COLLECT_TELEMETRY }}
     outputs:
@@ -92,27 +92,12 @@ jobs:
           driver: docker
 
       - name: Verify Docker Installation
-        shell: pwsh
+        shell: bash
         run: |
-          Write-Host "Verifying Docker installation..."
+          echo "Verifying Docker installation..."
           docker --version
           docker info
-          Write-Host "✅ Docker is ready"
-
-      - name: Login to Azure Container Registry
-        shell: pwsh
-        run: |
-          Write-Host "Pre-authenticating to ACR..."
-          # Note: Full ACR login will happen in resourcedeployment.ps1
-          # This is just to verify ACR credentials are working
-          if ("${{ inputs.BUILD_DOCKER_IMAGE }}" -eq "true") {
-            $ACR_NAME = "${{ secrets.ACR_TEST_USERNAME }}"
-            Write-Host "ACR Name: $ACR_NAME"
-            az acr login --name $ACR_NAME
-            Write-Host "✅ ACR authentication successful"
-          } else {
-            Write-Host "Skipping ACR pre-authentication (using existing images)"
-          }
+          echo "✅ Docker is ready"
 
       - name: Configure Parameters Based on WAF Setting
         shell: bash
