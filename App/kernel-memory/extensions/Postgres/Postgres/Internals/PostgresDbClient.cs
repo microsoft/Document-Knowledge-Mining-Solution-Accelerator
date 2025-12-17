@@ -315,8 +315,7 @@ internal sealed class PostgresDbClient : IDisposable
                 await using (cmd.ConfigureAwait(false))
                 {
 #pragma warning disable CA2100 // SQL reviewed
-                    // Escape and quote the table name to prevent SQL injection. This expects previous normalization/validation.
-                    cmd.CommandText = $"DROP TABLE IF EXISTS {EscapeIdentifierForPostgres(tableName)}";
+                    cmd.CommandText = $"DROP TABLE IF EXISTS {tableName}";
 #pragma warning restore CA2100
 
                     this._log.LogTrace("Deleting table. SQL: {0}", cmd.CommandText);
@@ -778,14 +777,5 @@ internal sealed class PostgresDbClient : IDisposable
     {
         return BitConverter.ToUInt32(SHA256.HashData(Encoding.UTF8.GetBytes(resourceId)), 0)
                % short.MaxValue;
-    }
-    /// <summary>
-    /// Escape a SQL identifier (such as table or schema name) for use in Postgres queries.
-    /// Assumes the identifier is already validated.
-    /// </summary>
-    private static string EscapeIdentifierForPostgres(string identifier)
-    {
-        // Double quotes in identifiers are escaped by doubling them in PostgreSQL
-        return $"\"{identifier.Replace("\"", "\"\"")}\"";
     }
 }
