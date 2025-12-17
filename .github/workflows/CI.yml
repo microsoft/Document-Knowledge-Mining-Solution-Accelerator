@@ -5,6 +5,11 @@ on:
       - main # Adjust this to the branch you want to trigger the deployment on
       - dev
       - demo
+    paths:
+      - 'infra/**'
+      - 'App/**'
+      - 'Deployment/**'
+      - 'azure.yaml'
   schedule:
     - cron: "0 10,22 * * *" # Runs at 10:00 AM and 10:00 PM GMT
 
