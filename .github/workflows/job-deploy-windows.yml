@@ -45,10 +45,16 @@ jobs:
     env:
       AZURE_DEV_COLLECT_TELEMETRY: ${{ vars.AZURE_DEV_COLLECT_TELEMETRY }}
     outputs:
-      WEB_APPURL: ${{ steps.get_output_windows.outputs.WEB_APPURL }}
+      WEB_APPURL: ${{ steps.get_webapp_url.outputs.WEB_APPURL }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Install Azure CLI
+        shell: bash
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          az --version  # Verify installation
 
       - name: Install Kubernetes CLI (kubectl)
         shell: bash
@@ -91,172 +97,69 @@ jobs:
         with:
           driver: docker
 
-      - name: Verify Docker Installation
-        shell: bash
-        run: |
-          echo "Verifying Docker installation..."
-          docker --version
-          docker info
-          echo "✅ Docker is ready"
-
-      - name: Configure Parameters Based on WAF Setting
-        shell: bash
-        run: |
-          if [[ "${{ inputs.WAF_ENABLED }}" == "true" ]]; then
-            cp infra/main.waf.parameters.json infra/main.parameters.json
-            echo "✅ Successfully copied WAF parameters to main parameters file"
-          else
-            echo "🔧 Configuring Non-WAF deployment - using default main.parameters.json..."
-          fi
-
-      - name: Setup Azure Developer CLI (Windows)
+      - name: Setup Azure Developer CLI
         uses: Azure/setup-azd@v2
 
-      - name: Login to AZD
-        id: login-azure
-        shell: bash
+      - name: Login to Azure
         run: |
           az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
           az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           azd auth login --client-id ${{ secrets.AZURE_CLIENT_ID }} --client-secret ${{ secrets.AZURE_CLIENT_SECRET }} --tenant-id ${{ secrets.AZURE_TENANT_ID }}
 
 
-      - name: Deploy using azd up and extract values (Windows)
-        id: get_output_windows
-        shell: pwsh
+      - name: Deploy using azd up
+        id: azd_deploy
         run: |
-          $ErrorActionPreference = "Stop"
-
-          Write-Host "Creating environment..."
+          # Create azd environment
           azd env new ${{ inputs.ENV_NAME }} --no-prompt
-          Write-Host "Environment created: ${{ inputs.ENV_NAME }}"
-
-          Write-Host "Setting default subscription..."
+          
+          # Set environment variables
           azd config set defaults.subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        
-          # Set additional parameters
           azd env set AZURE_SUBSCRIPTION_ID="${{ secrets.AZURE_SUBSCRIPTION_ID }}"
           azd env set AZURE_ENV_OPENAI_LOCATION="${{ inputs.AZURE_ENV_OPENAI_LOCATION }}"
           azd env set AZURE_LOCATION="${{ inputs.AZURE_LOCATION }}"
           azd env set AZURE_RESOURCE_GROUP="${{ inputs.RESOURCE_GROUP_NAME }}"
           azd env set AZURE_ENV_IMAGETAG="${{ inputs.IMAGE_TAG }}"
           
-          # Set ACR name only when building Docker image
-          if ("${{ inputs.BUILD_DOCKER_IMAGE }}" -eq "true") {
-            $ACR_NAME = "${{ secrets.ACR_TEST_USERNAME }}"
-            azd env set AZURE_ENV_ACR_NAME="$ACR_NAME"
-            Write-Host "Set ACR name to: $ACR_NAME"
-          } else {
-            Write-Host "Skipping ACR name configuration (using existing image)"
-          }
-
-          if ("${{ inputs.EXP }}" -eq "true") {
-            Write-Host "✅ EXP ENABLED - Setting EXP parameters..."
-            
-            # Set EXP variables dynamically
-            if ("${{ inputs.AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID }}" -ne "") {
-              $EXP_LOG_ANALYTICS_ID = "${{ inputs.AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID }}"
-            } else {
-              $EXP_LOG_ANALYTICS_ID = "${{ secrets.AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID }}"
-            }
-            
-            if ("${{ inputs.AZURE_EXISTING_AI_PROJECT_RESOURCE_ID }}" -ne "") {
-              $EXP_AI_PROJECT_ID = "${{ inputs.AZURE_EXISTING_AI_PROJECT_RESOURCE_ID }}"
-            } else {
-              $EXP_AI_PROJECT_ID = "${{ secrets.AZURE_EXISTING_AI_PROJECT_RESOURCE_ID }}"
-            }
-            
-            Write-Host "AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID: $EXP_LOG_ANALYTICS_ID"
-            Write-Host "AZURE_EXISTING_AI_PROJECT_RESOURCE_ID: $EXP_AI_PROJECT_ID"
-            azd env set AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID="$EXP_LOG_ANALYTICS_ID"
-            azd env set AZURE_EXISTING_AI_PROJECT_RESOURCE_ID="$EXP_AI_PROJECT_ID"
-          } else {
-            Write-Host "❌ EXP DISABLED - Skipping EXP parameters"
-          }
-
-          # Deploy using azd up
-          Write-Host "Starting deployment with azd up..."
-          try {
-            azd up --no-prompt
-            if ($LASTEXITCODE -ne 0) {
-              Write-Host "❌ Deployment failed with exit code: $LASTEXITCODE"
-              exit 1
-            }
-            Write-Host "✅ Deployment succeeded."
-          } catch {
-            Write-Host "❌ Deployment failed with error: $($_.Exception.Message)"
-            exit 1
-          }
-
-          # Get deployment outputs using azd
-          Write-Host "Extracting deployment outputs..."
-          $DEPLOY_OUTPUT = azd env get-values --output json | ConvertFrom-Json
-          Write-Host "Deployment output: $($DEPLOY_OUTPUT | ConvertTo-Json -Depth 10)"
+          # Deploy
+          azd up --no-prompt
           
-          if (-not $DEPLOY_OUTPUT) {
-            Write-Host "❌ Error: Deployment output is empty. Please check the deployment logs."
-            exit 1
-          }
+          echo "✅ azd deployment completed"
 
-          # Save all deployment outputs to GITHUB_ENV
-          Write-Host "Saving deployment outputs to environment variables..."
-          "RESOURCE_GROUP_NAME=$($DEPLOY_OUTPUT.RESOURCE_GROUP_NAME)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "AZURE_RESOURCE_GROUP_ID=$($DEPLOY_OUTPUT.AZURE_RESOURCE_GROUP_ID)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "STORAGE_ACCOUNT_NAME=$($DEPLOY_OUTPUT.STORAGE_ACCOUNT_NAME)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "AZURE_SEARCH_SERVICE_NAME=$($DEPLOY_OUTPUT.AZURE_SEARCH_SERVICE_NAME)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "AZURE_AKS_NAME=$($DEPLOY_OUTPUT.AZURE_AKS_NAME)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "AZURE_AKS_MI_ID=$($DEPLOY_OUTPUT.AZURE_AKS_MI_ID)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "AZURE_CONTAINER_REGISTRY_NAME=$($DEPLOY_OUTPUT.AZURE_CONTAINER_REGISTRY_NAME)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "AZURE_COGNITIVE_SERVICE_NAME=$($DEPLOY_OUTPUT.AZURE_COGNITIVE_SERVICE_NAME)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "AZURE_COGNITIVE_SERVICE_ENDPOINT=$($DEPLOY_OUTPUT.AZURE_COGNITIVE_SERVICE_ENDPOINT)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "AZURE_OPENAI_SERVICE_NAME=$($DEPLOY_OUTPUT.AZURE_OPENAI_SERVICE_NAME)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "AZURE_OPENAI_SERVICE_ENDPOINT=$($DEPLOY_OUTPUT.AZURE_OPENAI_SERVICE_ENDPOINT)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "AZURE_COSMOSDB_NAME=$($DEPLOY_OUTPUT.AZURE_COSMOSDB_NAME)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "AZ_GPT4O_MODEL_NAME=$($DEPLOY_OUTPUT.AZ_GPT4O_MODEL_NAME)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "AZ_GPT4O_MODEL_ID=$($DEPLOY_OUTPUT.AZ_GPT4O_MODEL_ID)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "AZ_GPT_EMBEDDING_MODEL_NAME=$($DEPLOY_OUTPUT.AZ_GPT_EMBEDDING_MODEL_NAME)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "AZ_GPT_EMBEDDING_MODEL_ID=$($DEPLOY_OUTPUT.AZ_GPT_EMBEDDING_MODEL_ID)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "AZURE_APP_CONFIG_ENDPOINT=$($DEPLOY_OUTPUT.AZURE_APP_CONFIG_ENDPOINT)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "AZURE_APP_CONFIG_NAME=$($DEPLOY_OUTPUT.AZURE_APP_CONFIG_NAME)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-          # Get AKS managed resource group (node resource group) and save for later use
-          Write-Host "Retrieving AKS managed resource group..."
-          $AKS_NAME = $DEPLOY_OUTPUT.AZURE_AKS_NAME
-          $RESOURCE_GROUP = $DEPLOY_OUTPUT.RESOURCE_GROUP_NAME
-          $AKS_NODE_RG = az aks show --name $AKS_NAME --resource-group $RESOURCE_GROUP --query "nodeResourceGroup" -o tsv
-          Write-Host "AKS node resource group: $AKS_NODE_RG"
-          "krg_name=$AKS_NODE_RG" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Get Deployment Outputs
+        id: get_output
+        run: |
+          # Get outputs from azd
+          azd env get-values --output json > /tmp/azd_output.json
+          cat /tmp/azd_output.json
+          
+          # Extract values and write to GITHUB_ENV using bash
+          while IFS='=' read -r key value; do
+            # Remove quotes from value
+            value=$(echo "$value" | tr -d '"')
+            echo "${key}=${value}" >> $GITHUB_ENV
+          done < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' /tmp/azd_output.json)
+          
+          # Get AKS node resource group if AKS exists
+          if [ -n "$AZURE_AKS_NAME" ]; then
+            krg_name=$(az aks show --name "$AZURE_AKS_NAME" --resource-group "$RESOURCE_GROUP_NAME" --query "nodeResourceGroup" -o tsv || echo "")
+            if [ -n "$krg_name" ]; then
+              echo "krg_name=$krg_name" >> $GITHUB_ENV
+              echo "AKS node resource group: $krg_name"
+            fi
+          fi
 
       - name: Run Deployment Script with Input
         shell: pwsh
         run: |
-          $ErrorActionPreference = "Stop"
-          
-          # Verify Docker is still running
-          Write-Host "Verifying Docker before deployment..."
-          docker ps
-          
           cd Deployment
           $input = @"
           ${{ secrets.EMAIL }}
           yes
           "@
-          
-          Write-Host "Starting resourcedeployment.ps1..."
           $input | pwsh ./resourcedeployment.ps1
-          
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "❌ resourcedeployment.ps1 failed with exit code: $LASTEXITCODE"
-            exit 1
-          }
-          
-          Write-Host "✅ resourcedeployment.ps1 completed successfully"
           Write-Host "Resource Group Name is ${{ env.RESOURCE_GROUP_NAME }}"
           Write-Host "Kubernetes resource group is ${{ env.AZURE_AKS_NAME }}"
-          
-          # Verify pods are created
-          Write-Host "Checking pod status..."
-          kubectl get pods -n ns-km
         env:
           # From GitHub secrets (for login)
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
@@ -286,151 +189,32 @@ jobs:
 
       - name: Retrieve Web App URL
         id: get_webapp_url
-        shell: pwsh
-        run: |
-          Write-Host "Retrieving Web App URL from AKS..."
-          Write-Host "Kubernetes resource group: $env:krg_name"
-          
-          # Get Web App URL from AKS public IP with retry logic
-          $maxAttempts = 12
-          $attempt = 1
-          $PUBLIC_IP_NAME = $null
-          
-          while ($attempt -le $maxAttempts) {
-            Write-Host "Attempt $attempt/$maxAttempts : Checking for public IP..."
-            
-            # List all public IPs in the resource group for debugging
-            $allIPs = az network public-ip list --resource-group $env:krg_name --query "[].name" -o tsv
-            if ($allIPs) {
-              Write-Host "Available public IPs: $($allIPs -join ', ')"
-            } else {
-              Write-Host "No public IPs found yet in resource group $env:krg_name"
-            }
-            
-            # Try to find kubernetes public IP
-            $PUBLIC_IP_NAME = az network public-ip list --resource-group $env:krg_name --query "[?contains(name, 'kubernetes-')].name" -o tsv | Select-Object -First 1
-            
-            if (-not [string]::IsNullOrWhiteSpace($PUBLIC_IP_NAME)) {
-              Write-Host "✅ Found public IP: $PUBLIC_IP_NAME"
-              break
-            }
-            
-            if ($attempt -lt $maxAttempts) {
-              Write-Host "Public IP not found yet, waiting 30 seconds..."
-              Start-Sleep -Seconds 30
-            }
-            $attempt++
-          }
-          
-          if ([string]::IsNullOrWhiteSpace($PUBLIC_IP_NAME)) {
-            Write-Host "❌ Error: Could not find public IP after $maxAttempts attempts in resource group $env:krg_name"
-            exit 1
-          }
-          
-          # Get FQDN with retry
-          Write-Host "Retrieving FQDN for public IP: $PUBLIC_IP_NAME"
-          $FQDN = $null
-          $fqdnAttempts = 5
-          $fqdnAttempt = 1
-          
-          while ($fqdnAttempt -le $fqdnAttempts) {
-            Write-Host "Attempt $fqdnAttempt/$fqdnAttempts : Getting FQDN..."
-            $FQDN = az network public-ip show --resource-group $env:krg_name --name $PUBLIC_IP_NAME --query "dnsSettings.fqdn" -o tsv
-            
-            if (-not [string]::IsNullOrWhiteSpace($FQDN)) {
-              Write-Host "✅ Found FQDN: $FQDN"
-              break
-            }
-            
-            if ($fqdnAttempt -lt $fqdnAttempts) {
-              Write-Host "FQDN not available yet, waiting 15 seconds..."
-              Start-Sleep -Seconds 15
-            }
-            $fqdnAttempt++
-          }
-          
-          if ([string]::IsNullOrWhiteSpace($FQDN)) {
-            Write-Host "❌ Error: Could not retrieve FQDN for public IP $PUBLIC_IP_NAME after $fqdnAttempts attempts"
-            exit 1
-          }
-          
-          $WEB_APP_URL = "https://$FQDN"
-          Write-Host "✅ Web App URL: $WEB_APP_URL"
-          
-          "WEB_APPURL=$WEB_APP_URL" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "WEB_APPURL=$WEB_APP_URL" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-
-      - name: Verify ACR Images
         shell: bash
         run: |
-          echo "🔍 Checking if Docker images exist in ACR..."
-          ACR_NAME="${{ env.AZURE_CONTAINER_REGISTRY_NAME }}"
-          
-          echo "Listing all repositories in ACR: $ACR_NAME"
-          az acr repository list --name "$ACR_NAME" --output table || echo "No repositories found"
-          
-          echo ""
-          echo "Checking for required images (kmgs namespace)..."
-          for repo in aiservice kernelmemory frontapp; do
-            echo "Checking kmgs/$repo..."
-            tags=$(az acr repository show-tags --name "$ACR_NAME" --repository "kmgs/$repo" --output table 2>/dev/null || echo "NOT FOUND")
-            if [ "$tags" = "NOT FOUND" ]; then
-              echo "❌ Image kmgs/$repo not found in ACR!"
-            else
-              echo "✅ Found tags: $tags"
-            fi
-          done
-
-      - name: Check Pod Status and Logs
-        shell: bash
-        run: |
-          echo "🔍 Checking Kubernetes pod status..."
-          kubectl get pods -n ns-km -o wide
-          
-          echo ""
-          echo "📊 Checking pod events..."
-          kubectl get events -n ns-km --sort-by='.lastTimestamp' | tail -20
-          
-          # Check if any pods are in ImagePullBackOff or Error state
-          failed_pods=$(kubectl get pods -n ns-km -o json | jq -r '.items[] | select(.status.phase != "Running") | .metadata.name')
-          
-          if [ -n "$failed_pods" ]; then
-            echo "⚠️ Found pods not in Running state:"
-            echo "$failed_pods"
-            
-            # Describe each failed pod for detailed error information
-            for pod in $failed_pods; do
-              echo ""
-              echo "📋 Describing pod: $pod"
-              kubectl describe pod "$pod" -n ns-km | tail -30
-              
-              echo ""
-              echo "📄 Checking pod logs (if available):"
-              kubectl logs "$pod" -n ns-km --tail=50 || echo "No logs available yet"
-            done
-            
-            # Check if ImagePullBackOff is the issue
-            image_pull_errors=$(kubectl get pods -n ns-km -o json | jq -r '.items[] | select(.status.containerStatuses[].state.waiting.reason == "ImagePullBackOff") | .metadata.name')
-            
-            if [ -n "$image_pull_errors" ]; then
-              echo ""
-              echo "❌ ERROR: Pods are failing to pull Docker images!"
-              echo "This usually means:"
-              echo "1. Docker images weren't built/pushed to ACR"
-              echo "2. AKS doesn't have permission to pull from ACR"
-              echo "3. Image tags are incorrect"
-              echo ""
-              echo "Failing pods: $image_pull_errors"
-              exit 1
-            fi
+          if az account show &> /dev/null; then
+            echo "Azure CLI is authenticated."
           else
-            echo "✅ All pods are running successfully"
+            echo "Azure CLI is not authenticated. Logging in..."
+            az login --service-principal --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+          fi
+          az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+          # Get the Web App URL and save it to GITHUB_OUTPUT
+          echo "Retrieving Web App URL..."
+          public_ip_name=$(az network public-ip list --resource-group ${{ env.krg_name }} --query "[?contains(name, 'kubernetes-')].name" -o tsv)
+          fqdn=$(az network public-ip show --resource-group ${{ env.krg_name }} --name $public_ip_name --query "dnsSettings.fqdn" -o tsv)
+          if [ -n "$fqdn" ]; then
+            echo "WEB_APPURL=https://$fqdn" >> $GITHUB_OUTPUT
+            echo "Web App URL is https://$fqdn"
+          else
+            echo "Failed to retrieve Web App URL."
+            exit 1
           fi
 
       - name: Validate Deployment
         shell: bash
         run: |
-          webapp_url="${{ env.WEB_APPURL }}"
+          webapp_url="${{ steps.get_webapp_url.outputs.WEB_APPURL }}"
           echo "Validating web app at: $webapp_url"
 
           # Enhanced health check with retry logic
@@ -471,29 +255,20 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "Running post deployment script to upload files..."
-          Write-Host "WEB_APPURL: $env:WEB_APPURL"
-          
-          if ([string]::IsNullOrWhiteSpace($env:WEB_APPURL)) {
-            Write-Host "❌ Error: WEB_APPURL is empty"
-            exit 1
-          }
-          
           cd Deployment
           try {
-            .\uploadfiles.ps1 -EndpointUrl $env:WEB_APPURL
+            .\uploadfiles.ps1 -EndpointUrl ${{ steps.get_webapp_url.outputs.WEB_APPURL }}
             Write-Host "ExitCode: $LASTEXITCODE"
             if ($LASTEXITCODE -eq $null -or $LASTEXITCODE -eq 0) {
               Write-Host "✅ Post deployment script completed successfully."
             } else {
-              Write-Host "⚠️ Post deployment script failed with exit code: $LASTEXITCODE"
-              Write-Host "⚠️ This is non-critical - deployment will continue"
-              exit 0
+              Write-Host "❌ Post deployment script failed with exit code: $LASTEXITCODE"
+              exit 1
             }
           }
           catch {
-            Write-Host "⚠️ Post deployment script failed with error: $($_.Exception.Message)"
-            Write-Host "⚠️ This is non-critical - deployment will continue"
-            exit 0
+            Write-Host "❌ Post deployment script failed with error: $($_.Exception.Message)"
+            exit 1
           }
 
       - name: Generate Deploy Job Summary
