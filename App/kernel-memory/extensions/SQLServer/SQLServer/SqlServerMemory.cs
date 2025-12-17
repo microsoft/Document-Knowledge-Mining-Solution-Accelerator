@@ -10,11 +10,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.KernelMemory.AI;
 using Microsoft.KernelMemory.Diagnostics;
 using Microsoft.KernelMemory.MemoryStorage;
-using System.Text.RegularExpressions;
 
 namespace Microsoft.KernelMemory.MemoryDb.SQLServer;
-// Accepts only [a-zA-Z_][a-zA-Z0-9_]{0,127}
-    private static readonly Regex s_safeSqlIdentifierRegex = new Regex(@"^[a-zA-Z_][a-zA-Z0-9_]{0,127}$", RegexOptions.Compiled);
+
 /// <summary>
 /// Represents a memory store implementation that uses a SQL Server database as its backing store.
 /// </summary>
@@ -764,11 +762,6 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
         ArgumentNullExceptionEx.ThrowIfNullOrWhiteSpace(index, nameof(index), "The index name is empty");
 
         index = s_replaceIndexNameCharsRegex.Replace(index.Trim().ToLowerInvariant(), ValidSeparator);
-         // Only allow index names that are valid SQL identifiers (start with a letter or underscore, followed by letters, digits, or underscores, max 128 chars)
-        if (!s_safeSqlIdentifierRegex.IsMatch(index))
-        {
-            throw new ArgumentException("Invalid index name. Allowed: letters, digits, underscores, max length 128, cannot start with digit.", nameof(index));
-        }
 
         return index;
     }
