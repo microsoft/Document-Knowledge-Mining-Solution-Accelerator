@@ -91,6 +91,29 @@ jobs:
         with:
           driver: docker
 
+      - name: Verify Docker Installation
+        shell: pwsh
+        run: |
+          Write-Host "Verifying Docker installation..."
+          docker --version
+          docker info
+          Write-Host "✅ Docker is ready"
+
+      - name: Login to Azure Container Registry
+        shell: pwsh
+        run: |
+          Write-Host "Pre-authenticating to ACR..."
+          # Note: Full ACR login will happen in resourcedeployment.ps1
+          # This is just to verify ACR credentials are working
+          if ("${{ inputs.BUILD_DOCKER_IMAGE }}" -eq "true") {
+            $ACR_NAME = "${{ secrets.ACR_TEST_USERNAME }}"
+            Write-Host "ACR Name: $ACR_NAME"
+            az acr login --name $ACR_NAME
+            Write-Host "✅ ACR authentication successful"
+          } else {
+            Write-Host "Skipping ACR pre-authentication (using existing images)"
+          }
+
       - name: Configure Parameters Based on WAF Setting
         shell: bash
         run: |
@@ -222,14 +245,33 @@ jobs:
       - name: Run Deployment Script with Input
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
+          
+          # Verify Docker is still running
+          Write-Host "Verifying Docker before deployment..."
+          docker ps
+          
           cd Deployment
           $input = @"
           ${{ secrets.EMAIL }}
           yes
           "@
+          
+          Write-Host "Starting resourcedeployment.ps1..."
           $input | pwsh ./resourcedeployment.ps1
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "❌ resourcedeployment.ps1 failed with exit code: $LASTEXITCODE"
+            exit 1
+          }
+          
+          Write-Host "✅ resourcedeployment.ps1 completed successfully"
           Write-Host "Resource Group Name is ${{ env.RESOURCE_GROUP_NAME }}"
           Write-Host "Kubernetes resource group is ${{ env.AZURE_AKS_NAME }}"
+          
+          # Verify pods are created
+          Write-Host "Checking pod status..."
+          kubectl get pods -n ns-km
         env:
           # From GitHub secrets (for login)
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
@@ -332,6 +374,73 @@ jobs:
           
           "WEB_APPURL=$WEB_APP_URL" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "WEB_APPURL=$WEB_APP_URL" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Verify ACR Images
+        shell: bash
+        run: |
+          echo "🔍 Checking if Docker images exist in ACR..."
+          ACR_NAME="${{ env.AZURE_CONTAINER_REGISTRY_NAME }}"
+          
+          echo "Listing all repositories in ACR: $ACR_NAME"
+          az acr repository list --name "$ACR_NAME" --output table || echo "No repositories found"
+          
+          echo ""
+          echo "Checking for required images (kmgs namespace)..."
+          for repo in aiservice kernelmemory frontapp; do
+            echo "Checking kmgs/$repo..."
+            tags=$(az acr repository show-tags --name "$ACR_NAME" --repository "kmgs/$repo" --output table 2>/dev/null || echo "NOT FOUND")
+            if [ "$tags" = "NOT FOUND" ]; then
+              echo "❌ Image kmgs/$repo not found in ACR!"
+            else
+              echo "✅ Found tags: $tags"
+            fi
+          done
+
+      - name: Check Pod Status and Logs
+        shell: bash
+        run: |
+          echo "🔍 Checking Kubernetes pod status..."
+          kubectl get pods -n ns-km -o wide
+          
+          echo ""
+          echo "📊 Checking pod events..."
+          kubectl get events -n ns-km --sort-by='.lastTimestamp' | tail -20
+          
+          # Check if any pods are in ImagePullBackOff or Error state
+          failed_pods=$(kubectl get pods -n ns-km -o json | jq -r '.items[] | select(.status.phase != "Running") | .metadata.name')
+          
+          if [ -n "$failed_pods" ]; then
+            echo "⚠️ Found pods not in Running state:"
+            echo "$failed_pods"
+            
+            # Describe each failed pod for detailed error information
+            for pod in $failed_pods; do
+              echo ""
+              echo "📋 Describing pod: $pod"
+              kubectl describe pod "$pod" -n ns-km | tail -30
+              
+              echo ""
+              echo "📄 Checking pod logs (if available):"
+              kubectl logs "$pod" -n ns-km --tail=50 || echo "No logs available yet"
+            done
+            
+            # Check if ImagePullBackOff is the issue
+            image_pull_errors=$(kubectl get pods -n ns-km -o json | jq -r '.items[] | select(.status.containerStatuses[].state.waiting.reason == "ImagePullBackOff") | .metadata.name')
+            
+            if [ -n "$image_pull_errors" ]; then
+              echo ""
+              echo "❌ ERROR: Pods are failing to pull Docker images!"
+              echo "This usually means:"
+              echo "1. Docker images weren't built/pushed to ACR"
+              echo "2. AKS doesn't have permission to pull from ACR"
+              echo "3. Image tags are incorrect"
+              echo ""
+              echo "Failing pods: $image_pull_errors"
+              exit 1
+            fi
+          else
+            echo "✅ All pods are running successfully"
+          fi
 
       - name: Validate Deployment
         shell: bash
