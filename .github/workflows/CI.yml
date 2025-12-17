@@ -10,6 +10,9 @@ on:
       - 'App/**'
       - 'Deployment/**'
       - 'azure.yaml'
+      - '.github/workflows/CI.yml'
+      - '.github/workflows/test-automation.yml'
+      - ' tests/**'
   schedule:
     - cron: "0 10,22 * * *" # Runs at 10:00 AM and 10:00 PM GMT
 
