@@ -50,6 +50,16 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Configure Parameters Based on WAF Setting
+        shell: bash
+        run: |
+          if [[ "${{ inputs.WAF_ENABLED }}" == "true" ]]; then
+            cp infra/main.waf.parameters.json infra/main.parameters.json
+            echo "✅ Successfully copied WAF parameters to main parameters file"
+          else
+            echo "🔧 Configuring Non-WAF deployment - using default main.parameters.json..."
+          fi
+
       - name: Install Azure CLI
         shell: bash
         run: |
@@ -124,6 +134,22 @@ jobs:
           # Set AI model capacity parameters
           azd env set AZURE_ENV_MODEL_CAPACITY="150"
           azd env set AZURE_ENV_EMBEDDING_MODEL_CAPACITY="200"
+
+          if ("${{ inputs.EXP }}" -eq "true") {
+            Write-Host "✅ EXP ENABLED - Setting EXP parameters..."
+           
+            # Set EXP variables dynamically
+            if ("${{ inputs.AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID }}" -ne "") {
+              $EXP_LOG_ANALYTICS_ID = "${{ inputs.AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID }}"
+            } else {
+              $EXP_LOG_ANALYTICS_ID = "${{ secrets.AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID }}"
+            }
+           
+            Write-Host "AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID: $EXP_LOG_ANALYTICS_ID"
+            azd env set AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID="$EXP_LOG_ANALYTICS_ID"
+          } else {
+            Write-Host "❌ EXP DISABLED - Skipping EXP parameters"
+          }
           
           # Deploy
           azd up --no-prompt
