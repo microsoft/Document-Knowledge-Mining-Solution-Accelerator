@@ -1,12 +1,12 @@
-name: Test Automation DocGen-v2
+name: Test Automation Dkm-v2
 
 on:
     workflow_call:
         inputs:
-          DOCGEN_URL:
+          Test_URL:
             required: true
             type: string
-            description: "Web URL for DocGen"
+            description: "Web URL for Dkm"
           TEST_SUITE:
             required: false
             type: string
@@ -21,8 +21,8 @@ on:
             value: ${{ jobs.test.outputs.TEST_REPORT_URL }}
 
 env:
-    url: ${{ inputs.DOCGEN_URL }}
-    accelerator_name: "DocGen"
+    url: ${{ inputs.Test_URL }}
+    accelerator_name: "Dkm"
     test_suite: ${{ inputs.TEST_SUITE }}
 
 jobs:

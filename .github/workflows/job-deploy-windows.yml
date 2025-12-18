@@ -319,7 +319,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           if [[ "${{ job.status }}" == "success" ]]; then
             echo "### ✅ Deployment Details" >> $GITHUB_STEP_SUMMARY
-            echo "- **Web App URL**: [${{ steps.get_output_windows.outputs.WEB_APPURL }}](${{ steps.get_output_windows.outputs.WEB_APPURL }})" >> $GITHUB_STEP_SUMMARY
+            echo "- **Web App URL**: [${{ steps.get_output.outputs.WEB_APPURL }}](${{ steps.get_output.outputs.WEB_APPURL }})" >> $GITHUB_STEP_SUMMARY
             echo "- Successfully deployed to Azure with all resources configured" >> $GITHUB_STEP_SUMMARY
             echo "- Post-deployment scripts executed successfully" >> $GITHUB_STEP_SUMMARY
           else
