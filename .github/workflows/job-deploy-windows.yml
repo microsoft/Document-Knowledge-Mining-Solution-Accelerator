@@ -119,6 +119,7 @@ jobs:
 
       - name: Deploy using azd up
         id: azd_deploy
+        shell: pwsh
         run: |
           # Create azd environment
           azd env new ${{ inputs.ENV_NAME }} --no-prompt
