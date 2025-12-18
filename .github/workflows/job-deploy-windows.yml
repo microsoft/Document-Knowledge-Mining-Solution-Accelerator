@@ -121,6 +121,10 @@ jobs:
           azd env set AZURE_RESOURCE_GROUP="${{ inputs.RESOURCE_GROUP_NAME }}"
           azd env set AZURE_ENV_IMAGETAG="${{ inputs.IMAGE_TAG }}"
           
+          # Set AI model capacity parameters
+          azd env set AZURE_ENV_MODEL_CAPACITY="150"
+          azd env set AZURE_ENV_EMBEDDING_MODEL_CAPACITY="200"
+          
           # Deploy
           azd up --no-prompt
           
