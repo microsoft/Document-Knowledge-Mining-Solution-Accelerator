@@ -18,9 +18,6 @@ on:
       IMAGE_TAG:
         required: true
         type: string
-      BUILD_DOCKER_IMAGE:
-        required: true
-        type: string
       EXP:
         required: true
         type: string
@@ -29,9 +26,6 @@ on:
         type: string
         default: 'false'
       AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID:
-        required: false
-        type: string
-      AZURE_EXISTING_AI_PROJECT_RESOURCE_ID:
         required: false
         type: string
     outputs:
