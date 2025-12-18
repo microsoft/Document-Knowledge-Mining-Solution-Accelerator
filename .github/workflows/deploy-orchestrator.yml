@@ -3,10 +3,6 @@ name: Deployment orchestrator
 on:
   workflow_call:
     inputs:
-      runner_os:
-        description: 'Runner OS (ubuntu-latest or windows-latest)'
-        required: true
-        type: string
       azure_location:
         description: 'Azure Location For Deployment'
         required: false
@@ -79,7 +75,6 @@ jobs:
     uses: ./.github/workflows/job-deploy.yml
     with:
       trigger_type: ${{ inputs.trigger_type }}
-      runner_os: ${{ inputs.runner_os }}
       azure_location: ${{ inputs.azure_location }}
       resource_group_name: ${{ inputs.resource_group_name }}
       waf_enabled: ${{ inputs.waf_enabled }}
@@ -126,7 +121,6 @@ jobs:
     needs: [docker-build, deploy, e2e-test]
     uses: ./.github/workflows/job-cleanup-deployment.yml
     with:
-      runner_os: ${{ inputs.runner_os }}
       trigger_type: ${{ inputs.trigger_type }}
       cleanup_resources: ${{ inputs.cleanup_resources }}
       existing_webapp_url: ${{ inputs.existing_webapp_url }}

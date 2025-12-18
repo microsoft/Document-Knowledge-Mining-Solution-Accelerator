@@ -2,10 +2,6 @@ name: Cleanup Deployment Job
 on:
   workflow_call:
     inputs:
-      runner_os:
-        description: 'Runner OS (ubuntu-latest or windows-latest)'
-        required: true
-        type: string
       trigger_type:
         description: 'Trigger type (workflow_dispatch, pull_request, schedule)'
         required: true
@@ -43,7 +39,7 @@ on:
 
 jobs:
   cleanup-deployment:
-    runs-on: ${{ inputs.runner_os }}
+    runs-on: ubuntu-latest
     continue-on-error: true
     env:
       RESOURCE_GROUP_NAME: ${{ inputs.RESOURCE_GROUP_NAME }}
