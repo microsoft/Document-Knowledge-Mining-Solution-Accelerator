@@ -215,7 +215,7 @@ jobs:
                 enableRedundancy=false \
                 enableScalability=false \
                 createdBy="Pipeline" \
-                tags="{'SecurityControl':'Ignore','Purpose':'Deploying and Cleaning Up Resources for Validation','CreatedDate':'$current_date'}"
+                tags="{'Purpose':'Deploying and Cleaning Up Resources for Validation','CreatedDate':'$current_date'}"
 
       - name: Get Deployment Output and extract Values
         id: get_output
