@@ -167,10 +167,10 @@ jobs:
           
           # Get AKS node resource group if AKS exists
           if [ -n "$AZURE_AKS_NAME" ]; then
-            aks_node_resource_group=$(az aks show --name "$AZURE_AKS_NAME" --resource-group "${{ inputs.RESOURCE_GROUP_NAME }}" --query "nodeResourceGroup" -o tsv || echo "")
-            if [ -n "$aks_node_resource_group" ]; then
-              echo "aks_node_resource_group=$aks_node_resource_group" >> $GITHUB_ENV
-              echo "AKS node resource group: $aks_node_resource_group"
+            krg_name=$(az aks show --name "$AZURE_AKS_NAME" --resource-group "${{ inputs.RESOURCE_GROUP_NAME }}" --query "nodeResourceGroup" -o tsv || echo "")
+            if [ -n "$krg_name" ]; then
+              echo "krg_name=$krg_name" >> $GITHUB_ENV
+              echo "AKS node resource group: $krg_name"
             fi
           fi
 
@@ -185,7 +185,7 @@ jobs:
           $input | pwsh ./resourcedeployment.ps1
           Write-Host "Resource Group: ${{ inputs.RESOURCE_GROUP_NAME }}"
           Write-Host "AKS Cluster Name: ${{ env.AZURE_AKS_NAME }}"
-          Write-Host "AKS Node Resource Group: ${{ env.aks_node_resource_group }}"
+          Write-Host "AKS Node Resource Group: ${{ env.krg_name }}"
         env:
           # From GitHub secrets (for login)
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
@@ -219,8 +219,8 @@ jobs:
         run: |
           # Get the Web App URL and save it to GITHUB_OUTPUT
           echo "Retrieving Web App URL..."
-          public_ip_name=$(az network public-ip list --resource-group ${{ env.aks_node_resource_group }} --query "[?contains(name, 'kubernetes-')].name" -o tsv)
-          fqdn=$(az network public-ip show --resource-group ${{ env.aks_node_resource_group }} --name $public_ip_name --query "dnsSettings.fqdn" -o tsv)
+          public_ip_name=$(az network public-ip list --resource-group ${{ env.krg_name }} --query "[?contains(name, 'kubernetes-')].name" -o tsv)
+          fqdn=$(az network public-ip show --resource-group ${{ env.krg_name }} --name $public_ip_name --query "dnsSettings.fqdn" -o tsv)
           if [ -n "$fqdn" ]; then
             echo "WEB_APPURL=https://$fqdn" >> $GITHUB_OUTPUT
             echo "Web App URL is https://$fqdn"
