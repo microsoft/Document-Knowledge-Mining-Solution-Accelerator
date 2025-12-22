@@ -94,22 +94,23 @@ jobs:
       QUOTA_FAILED: ${{ steps.quota_failure_output.outputs.QUOTA_FAILED }}
       
     steps:
-      - name: Validate and Auto-Configure EXP
+      - name: Validate EXP Configuration
         shell: bash
         run: |
           echo "🔍 Validating EXP configuration..."
           
-          if [[ "${{ inputs.EXP }}" != "true" ]]; then
-            if [[ -n "${{ inputs.AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID }}" ]]; then
-              echo "🔧 AUTO-ENABLING EXP: EXP parameter values were provided but EXP was not explicitly enabled."
-              echo ""
-              echo "You provided values for:"
-              [[ -n "${{ inputs.AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID }}" ]] && echo "  - Azure Log Analytics Workspace ID: '${{ inputs.AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID }}'"
-              echo ""
-              echo "✅ Automatically enabling EXP to use these values."
-              echo "EXP=true" >> $GITHUB_ENV
-              echo "📌 EXP has been automatically enabled for this deployment."
-            fi
+          if [[ "${{ inputs.EXP }}" == "false" && -n "${{ inputs.AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID }}" ]]; then
+            echo "⚠️ WARNING: EXP is disabled but Log Analytics Workspace ID was provided."
+            echo "The provided workspace ID will be ignored unless EXP is enabled."
+            echo ""
+            echo "Provided but unused:"
+            echo "  - Azure Log Analytics Workspace ID: '${{ inputs.AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID }}'"
+            echo ""
+            echo "To use these values, set EXP=true in your workflow dispatch."
+          elif [[ "${{ inputs.EXP }}" == "true" ]]; then
+            echo "✅ EXP is enabled"
+          else
+            echo "ℹ️ EXP is disabled"
           fi
           
       - name: Checkout Code
@@ -247,18 +248,18 @@ jobs:
           if [[ "$BRANCH_NAME" == "main" ]]; then
             IMAGE_TAG="latest_waf"
             echo "Using main branch - image tag: latest_waf"
-            elif [[ "$BRANCH_NAME" == "dev" ]]; then
-              IMAGE_TAG="dev"
-              echo "Using dev branch - image tag: dev"
-            elif [[ "$BRANCH_NAME" == "demo" ]]; then
-              IMAGE_TAG="demo"
-              echo "Using demo branch - image tag: demo"
-            else
-              IMAGE_TAG="latest_waf"
-              echo "Using default for branch '$BRANCH_NAME' - image tag: latest_waf"
-            fi
-            
-            echo "Using existing Docker image tag: $IMAGE_TAG"
+          elif [[ "$BRANCH_NAME" == "dev" ]]; then
+            IMAGE_TAG="dev"
+            echo "Using dev branch - image tag: dev"
+          elif [[ "$BRANCH_NAME" == "demo" ]]; then
+            IMAGE_TAG="demo"
+            echo "Using demo branch - image tag: demo"
+          else
+            IMAGE_TAG="latest_waf"
+            echo "Using default for branch '$BRANCH_NAME' - image tag: latest_waf"
+          fi
+          
+          echo "Using existing Docker image tag: $IMAGE_TAG"
           
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT

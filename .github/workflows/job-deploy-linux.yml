@@ -149,7 +149,7 @@ jobs:
           # Deploy
           azd up --no-prompt
           
-          echo "✅ azd deployment completed"
+          echo "✅ Azure Developer CLI (azd) deployment completed"
 
       - name: Get Deployment Outputs
         id: get_output
@@ -167,10 +167,10 @@ jobs:
           
           # Get AKS node resource group if AKS exists
           if [ -n "$AZURE_AKS_NAME" ]; then
-            krg_name=$(az aks show --name "$AZURE_AKS_NAME" --resource-group "${{ inputs.RESOURCE_GROUP_NAME }}" --query "nodeResourceGroup" -o tsv || echo "")
-            if [ -n "$krg_name" ]; then
-              echo "krg_name=$krg_name" >> $GITHUB_ENV
-              echo "AKS node resource group: $krg_name"
+            aks_node_resource_group=$(az aks show --name "$AZURE_AKS_NAME" --resource-group "${{ inputs.RESOURCE_GROUP_NAME }}" --query "nodeResourceGroup" -o tsv || echo "")
+            if [ -n "$aks_node_resource_group" ]; then
+              echo "aks_node_resource_group=$aks_node_resource_group" >> $GITHUB_ENV
+              echo "AKS node resource group: $aks_node_resource_group"
             fi
           fi
 
@@ -183,8 +183,9 @@ jobs:
           yes
           "@
           $input | pwsh ./resourcedeployment.ps1
-          Write-Host "Resource Group Name is ${{ env.RESOURCE_GROUP_NAME }}"
-          Write-Host "Kubernetes resource group is ${{ env.AZURE_AKS_NAME }}"
+          Write-Host "Resource Group: ${{ inputs.RESOURCE_GROUP_NAME }}"
+          Write-Host "AKS Cluster Name: ${{ env.AZURE_AKS_NAME }}"
+          Write-Host "AKS Node Resource Group: ${{ env.aks_node_resource_group }}"
         env:
           # From GitHub secrets (for login)
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
@@ -192,8 +193,8 @@ jobs:
           AZURE_CLIENT_ID:       ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET:   ${{ secrets.AZURE_CLIENT_SECRET }}
 
-          # From deployment outputs step (these come from $GITHUB_ENV)
-          RESOURCE_GROUP_NAME:          ${{ env.RESOURCE_GROUP_NAME }}
+          # From workflow inputs and deployment outputs
+          RESOURCE_GROUP_NAME:          ${{ inputs.RESOURCE_GROUP_NAME }}
           AZURE_RESOURCE_GROUP_ID:       ${{ env.AZURE_RESOURCE_GROUP_ID }}
           STORAGE_ACCOUNT_NAME:          ${{ env.STORAGE_ACCOUNT_NAME }}
           AZURE_SEARCH_SERVICE_NAME:     ${{ env.AZURE_SEARCH_SERVICE_NAME }}
@@ -218,8 +219,8 @@ jobs:
         run: |
           # Get the Web App URL and save it to GITHUB_OUTPUT
           echo "Retrieving Web App URL..."
-          public_ip_name=$(az network public-ip list --resource-group ${{ env.krg_name }} --query "[?contains(name, 'kubernetes-')].name" -o tsv)
-          fqdn=$(az network public-ip show --resource-group ${{ env.krg_name }} --name $public_ip_name --query "dnsSettings.fqdn" -o tsv)
+          public_ip_name=$(az network public-ip list --resource-group ${{ env.aks_node_resource_group }} --query "[?contains(name, 'kubernetes-')].name" -o tsv)
+          fqdn=$(az network public-ip show --resource-group ${{ env.aks_node_resource_group }} --name $public_ip_name --query "dnsSettings.fqdn" -o tsv)
           if [ -n "$fqdn" ]; then
             echo "WEB_APPURL=https://$fqdn" >> $GITHUB_OUTPUT
             echo "Web App URL is https://$fqdn"

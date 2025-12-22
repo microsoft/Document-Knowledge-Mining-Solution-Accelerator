@@ -3,7 +3,7 @@ name: Test Automation Dkm-v2
 on:
     workflow_call:
         inputs:
-          Test_URL:
+          TEST_URL:
             required: true
             type: string
             description: "Web URL for Dkm"
@@ -21,7 +21,7 @@ on:
             value: ${{ jobs.test.outputs.TEST_REPORT_URL }}
 
 env:
-    url: ${{ inputs.Test_URL }}
+    url: ${{ inputs.TEST_URL }}
     accelerator_name: "DKM"
     test_suite: ${{ inputs.TEST_SUITE }}
 
