@@ -118,7 +118,7 @@ jobs:
       - name: Login to Azure
         shell: bash
         run: |
-          az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+          az login --service-principal --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
           az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       
       - name: Run Quota Check
@@ -130,21 +130,20 @@ jobs:
           # Path to the PowerShell script for quota check
           $quotaCheckScript = "Deployment/checkquota.ps1"
 
-          # Check if the script exists and is executable (not needed for PowerShell like chmod)
+          # Check if the script exists
           if (-not (Test-Path $quotaCheckScript)) {
             Write-Host "❌ Error: Quota check script not found."
             exit 1
           }
 
-          # Run the script
-          .\Deployment\checkquota.ps1
+          # Run the script and capture its output (stdout and stderr)
+          $output = & $quotaCheckScript 2>&1
+          $exitCode = $LASTEXITCODE
 
-          # If the script fails, check for the failure message
+          # Check the execution output for the quota failure message
           $quotaFailedMessage = "No region with sufficient quota found"
-          $output = Get-Content "Deployment/checkquota.ps1"
-
-          if ($output -contains $quotaFailedMessage) {
-            echo "QUOTA_FAILED=true" >> $GITHUB_ENV
+          if ($output -match [Regex]::Escape($quotaFailedMessage) -or $exitCode -ne 0) {
+            echo "QUOTA_FAILED=true" >> $env:GITHUB_ENV
           }
         env:
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
@@ -311,8 +310,8 @@ jobs:
   deploy-linux:
     name: Deploy
     needs: azure-setup
-    if: "!Cancelled() && needs.azure-setup.result == 'success'"
-    uses: ./.github/workflows/job-deploy-windows.yml
+    if: "!cancelled() && needs.azure-setup.result == 'success'"
+    uses: ./.github/workflows/job-deploy-linux.yml
     with:
       ENV_NAME: ${{ needs.azure-setup.outputs.ENV_NAME }}
       AZURE_ENV_OPENAI_LOCATION: ${{ needs.azure-setup.outputs.AZURE_ENV_OPENAI_LOCATION }}

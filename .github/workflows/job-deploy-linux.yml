@@ -31,10 +31,10 @@ on:
     outputs:
       WEB_APPURL:
         description: "Container Web App URL"
-        value: ${{ jobs.deploy-windows.outputs.WEB_APPURL }}
+        value: ${{ jobs.deploy-linux.outputs.WEB_APPURL }}
 
 jobs:
-  deploy-windows:
+  deploy-linux:
     runs-on: ubuntu-latest
     env:
       AZURE_DEV_COLLECT_TELEMETRY: ${{ vars.AZURE_DEV_COLLECT_TELEMETRY }}
@@ -70,10 +70,10 @@ jobs:
         shell: bash
         run: |
           # If helm is already available on the runner, print version and skip installation
-              if command -v helm >/dev/null 2>&1; then
-              echo "helm already installed: $(helm version --short 2>/dev/null || true)"
-              exit 0
-            fi
+          if command -v helm >/dev/null 2>&1; then
+            echo "helm already installed: $(helm version --short 2>/dev/null || true)"
+            exit 0
+          fi
 
           # Ensure prerequisites are present
             sudo apt-get update
@@ -106,7 +106,7 @@ jobs:
 
       - name: Login to Azure
         run: |
-          az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+          az login --service-principal --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
           az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           azd auth login --client-id ${{ secrets.AZURE_CLIENT_ID }} --client-secret ${{ secrets.AZURE_CLIENT_SECRET }} --tenant-id ${{ secrets.AZURE_TENANT_ID }}
 
@@ -124,7 +124,7 @@ jobs:
           azd env set AZURE_ENV_OPENAI_LOCATION="${{ inputs.AZURE_ENV_OPENAI_LOCATION }}"
           azd env set AZURE_LOCATION="${{ inputs.AZURE_LOCATION }}"
           azd env set AZURE_RESOURCE_GROUP="${{ inputs.RESOURCE_GROUP_NAME }}"
-          azd env set AZURE_ENV_IMAGETAG="${{ inputs.IMAGE_TAG }}"
+          azd env set AZURE_ENV_IMAGE_TAG="${{ inputs.IMAGE_TAG }}"
           
           # Set AI model capacity parameters
           azd env set AZURE_ENV_MODEL_CAPACITY="150"
@@ -167,7 +167,7 @@ jobs:
           
           # Get AKS node resource group if AKS exists
           if [ -n "$AZURE_AKS_NAME" ]; then
-            krg_name=$(az aks show --name "$AZURE_AKS_NAME" --resource-group "$RESOURCE_GROUP_NAME" --query "nodeResourceGroup" -o tsv || echo "")
+            krg_name=$(az aks show --name "$AZURE_AKS_NAME" --resource-group "${{ inputs.RESOURCE_GROUP_NAME }}" --query "nodeResourceGroup" -o tsv || echo "")
             if [ -n "$krg_name" ]; then
               echo "krg_name=$krg_name" >> $GITHUB_ENV
               echo "AKS node resource group: $krg_name"
@@ -216,14 +216,6 @@ jobs:
         id: get_webapp_url
         shell: bash
         run: |
-          if az account show &> /dev/null; then
-            echo "Azure CLI is authenticated."
-          else
-            echo "Azure CLI is not authenticated. Logging in..."
-            az login --service-principal --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
-          fi
-          az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
           # Get the Web App URL and save it to GITHUB_OUTPUT
           echo "Retrieving Web App URL..."
           public_ip_name=$(az network public-ip list --resource-group ${{ env.krg_name }} --query "[?contains(name, 'kubernetes-')].name" -o tsv)
@@ -300,7 +292,7 @@ jobs:
         if: always()
         shell: bash
         run: |
-          echo "## 🚀 Deploy Job Summary (Windows)" >> $GITHUB_STEP_SUMMARY
+          echo "## 🚀 Deploy Job Summary (Linux)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
@@ -308,7 +300,7 @@ jobs:
           echo "| **Resource Group** | \`${{ inputs.RESOURCE_GROUP_NAME }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **Configuration Type** | \`${{ inputs.WAF_ENABLED == 'true' && inputs.EXP == 'true' && 'WAF + EXP' || inputs.WAF_ENABLED == 'true' && inputs.EXP != 'true' && 'WAF + Non-EXP' || inputs.WAF_ENABLED != 'true' && inputs.EXP == 'true' && 'Non-WAF + EXP' || 'Non-WAF + Non-EXP' }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **Azure Region (Infrastructure)** | \`${{ inputs.AZURE_LOCATION }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Azure OpenAI Region** | \`${{ inputs.AZURE_LOCATION }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Azure OpenAI Region** | \`${{ inputs.AZURE_ENV_OPENAI_LOCATION }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **Docker Image Tag** | \`${{ inputs.IMAGE_TAG }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [[ "${{ job.status }}" == "success" ]]; then

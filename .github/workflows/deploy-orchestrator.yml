@@ -53,7 +53,7 @@ env:
 
 jobs:
   deploy:
-    if: always() && (inputs.trigger_type != 'workflow_dispatch' || inputs.existing_webapp_url == '' || inputs.existing_webapp_url == null)
+    if: "!cancelled() && (inputs.trigger_type != 'workflow_dispatch' || inputs.existing_webapp_url == '' || inputs.existing_webapp_url == null)"
     uses: ./.github/workflows/job-deploy.yml
     with:
       trigger_type: ${{ inputs.trigger_type }}
@@ -68,7 +68,7 @@ jobs:
     secrets: inherit
 
   e2e-test:
-    if: always() && ((needs.deploy.result == 'success' && needs.deploy.outputs.WEB_APPURL != '') || (inputs.existing_webapp_url != '' && inputs.existing_webapp_url != null)) && (inputs.trigger_type != 'workflow_dispatch' || (inputs.run_e2e_tests != 'None' && inputs.run_e2e_tests != '' && inputs.run_e2e_tests != null))
+    if: "!cancelled() && ((needs.deploy.result == 'success' && needs.deploy.outputs.WEB_APPURL != '') || (inputs.existing_webapp_url != '' && inputs.existing_webapp_url != null)) && (inputs.trigger_type != 'workflow_dispatch' || (inputs.run_e2e_tests != 'None' && inputs.run_e2e_tests != '' && inputs.run_e2e_tests != null))"
     needs: [deploy]
     uses: ./.github/workflows/test-automation-v2.yml
     with:
@@ -77,7 +77,7 @@ jobs:
     secrets: inherit
 
   send-notification:
-    if: always()
+    if: "!cancelled()"
     needs: [deploy, e2e-test]
     uses: ./.github/workflows/job-send-notification.yml
     with:
@@ -96,7 +96,7 @@ jobs:
     secrets: inherit
 
   cleanup-deployment:
-    if: always() && needs.deploy.result == 'success' && needs.deploy.outputs.RESOURCE_GROUP_NAME != '' && inputs.existing_webapp_url == '' && (inputs.trigger_type != 'workflow_dispatch' || inputs.cleanup_resources)
+    if: "!cancelled() && needs.deploy.result == 'success' && needs.deploy.outputs.RESOURCE_GROUP_NAME != '' && inputs.existing_webapp_url == '' && (inputs.trigger_type != 'workflow_dispatch' || inputs.cleanup_resources)"
     needs: [deploy, e2e-test]
     uses: ./.github/workflows/job-cleanup-deployment.yml
     with:
