@@ -41,6 +41,11 @@ const useStyles = makeStyles({
         ...shorthands.padding("0px", "0px"),
         rowGap: "20px",
     },
+
+    aiKnowledgeTab:{
+        height:"calc(100vh - 150px) !important",
+        overflow:"auto"
+    }
 });
 
 interface DocDialogProps {
@@ -61,8 +66,7 @@ interface Cell {
 }
 
 export function DocDialog(
-    { metadata, isOpen, allChunkTexts, clearChatFlag, onClose }: DocDialogProps,
-    props: Partial<TabListProps>
+    { metadata, isOpen, allChunkTexts, clearChatFlag, onClose, ...props }: DocDialogProps & Partial<TabListProps>
 ) {
     const {t} = useTranslation();
     const styles = useStyles();
@@ -284,6 +288,7 @@ export function DocDialog(
                     )}
 
 {selectedTab === "AI Knowledge" && (
+    <div className={`flex h-[150%] w-[200%] justify-between ${styles.aiKnowledgeTab}`}>
     <AIKnowledgeTab 
         metadata={metadata?.keywords ? Object.fromEntries(
             Object.entries(metadata.keywords).map(([key, value]) => [
@@ -291,7 +296,9 @@ export function DocDialog(
                 Array.isArray(value) ? value : [value]  // Ensure all values are arrays
             ])
         ) : {}}
+        
     />
+    </div>
 )}
 
 

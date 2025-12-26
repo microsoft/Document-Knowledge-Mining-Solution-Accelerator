@@ -7,6 +7,6 @@ This project contains the
 [LLama](https://ai.meta.com/blog/large-language-model-llama-meta-ai/)
 LLM connector to access to LLama LLM models and generate text,
 leveraging the
-[LLamaSharp]((https://scisharp.github.io/LLamaSharp)) project.
+[LLamaSharp](https://scisharp.github.io/LLamaSharp) project.
 
 

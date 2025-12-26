@@ -45,8 +45,8 @@ Write-Host "✅ Azure subscription set successfully."
 
 # Define models and their minimum required capacities
 $MIN_CAPACITY = @{
-    "OpenAI.Standard.gpt-4o-mini" = $GPT_MIN_CAPACITY
-    "OpenAI.Standard.text-embedding-3-large" = $TEXT_EMBEDDING_MIN_CAPACITY
+    "OpenAI.GlobalStandard.gpt4.1-mini" = $GPT_MIN_CAPACITY
+    "OpenAI.GlobalStandard.text-embedding-3-large" = $TEXT_EMBEDDING_MIN_CAPACITY
 }
 
 $VALID_REGION = ""
@@ -66,11 +66,12 @@ foreach ($REGION in $REGIONS) {
 
     foreach ($MODEL in $MIN_CAPACITY.Keys) {
 
-        $MODEL_INFO = $QUOTA_INFO | Where-Object { $_.Name -eq $MODEL }  
+        $MODEL_INFO = $QUOTA_INFO | Where-Object { $_.Name.Value -eq $MODEL }  
         
         if (-not $MODEL_INFO) {
             Write-Host "⚠️ WARNING: No quota information found for model: $MODEL in $REGION. Skipping."
-            continue
+            $INSUFFICIENT_QUOTA = $true
+            break
         }
 
         $CURRENT_VALUE = [int]$MODEL_INFO.CurrentValue

@@ -1,0 +1,64 @@
+.panel-resizer {
+  width: 8px;
+  background: #f0f0f0;
+  border-left: 1px solid #ddd;
+  border-right: 1px solid #ddd;
+  cursor: col-resize;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+  user-select: none;
+  flex-shrink: 0;
+  
+  &:hover {
+    background: #e0e0e0;
+  }
+  
+  &.dragging {
+    background: #d0d0d0;
+    cursor: col-resize;
+  }
+}
+
+.resizer-handle {
+  height: 60px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.resizer-dots {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+}
+
+.dot {
+  width: 3px;
+  height: 3px;
+  background-color: #999;
+  border-radius: 50%;
+}
+
+.panel-resizer:hover .dot {
+  background-color: #666;
+}
+
+.panel-resizer.dragging .dot {
+  background-color: #333;
+}
+
+/* Global cursor override when dragging */
+body.resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+body.resizing * {
+  pointer-events: none !important;
+}

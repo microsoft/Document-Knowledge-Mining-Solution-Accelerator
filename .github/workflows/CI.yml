@@ -1,244 +1,494 @@
-name: Validate Deployment
+name: Deploy-Test-Cleanup Pipeline
 on:
   push:
     branches:
-      - main  # Adjust this to the branch you want to trigger the deployment on
+      - main # Adjust this to the branch you want to trigger the deployment on
       - dev
       - demo
   schedule:
-    - cron: '0 10,22 * * *'  # Runs at 10:00 AM and 10:00 PM GMT
- 
+    - cron: "0 10,22 * * *" # Runs at 10:00 AM and 10:00 PM GMT
+
+env:
+  GPT_CAPACITY: 150
+  TEXT_EMBEDDING_CAPACITY: 200
 
 jobs:
   deploy:
-    runs-on: windows-latest  # Use a Windows runner for PowerShell scripts
+    runs-on: ubuntu-latest
+    outputs:
+      RESOURCE_GROUP_NAME: ${{ steps.get_webapp_url.outputs.RESOURCE_GROUP_NAME }}
+      KUBERNETES_RESOURCE_GROUP_NAME: ${{ steps.get_webapp_url.outputs.KUBERNETES_RESOURCE_GROUP_NAME }}
+      WEBAPP_URL: ${{ steps.get_webapp_url.outputs.WEBAPP_URL }}
+      OPENAI_RESOURCE_NAME: ${{ steps.get_webapp_url.outputs.OPENAI_RESOURCE_NAME }}
+      DOCUMENT_INTELLIGENCE_RESOURCE_NAME: ${{ steps.get_webapp_url.outputs.DOCUMENT_INTELLIGENCE_RESOURCE_NAME }}
+      VALID_REGION: ${{ steps.get_webapp_url.outputs.VALID_REGION }}
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4  # Checks out your repository
-      # Install Azure CLI
-    - name: Install Azure CLI
-      shell: pwsh
-      run: |
-          Invoke-WebRequest -Uri https://aka.ms/installazurecliwindows -OutFile AzureCLI.msi
-          Start-Process msiexec.exe -ArgumentList '/I AzureCLI.msi /quiet' -Wait
+      - name: Checkout Code
+        uses: actions/checkout@v5 # Checks out your repository
 
-    # Install kubectl (Windows method)
-    - name: Install kubectl
-      shell: pwsh
-      run: |
-        Invoke-WebRequest -Uri https://dl.k8s.io/release/v1.28.0/bin/windows/amd64/kubectl.exe -OutFile kubectl.exe
-        Move-Item -Path ./kubectl.exe -Destination "C:\kubectl.exe"
-        [Environment]::SetEnvironmentVariable('PATH', $env:PATH + ';C:\', [System.EnvironmentVariableTarget]::Machine)
+      - name: Install Azure CLI
+        shell: bash
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          az --version  # Verify installation
 
+      - name: Install Kubernetes CLI (kubectl)
+        shell: bash
+        run: |
+          az aks install-cli
+          az extension add --name aks-preview
 
-      # Install Helm (Windows method)
-    - name: Install Helm
-      shell: pwsh
-      run: |
-          Invoke-WebRequest -Uri https://get.helm.sh/helm-v3.13.0-windows-amd64.zip -OutFile helm.zip
-          Expand-Archive helm.zip -DestinationPath helm
-          Move-Item -Path ./helm/windows-amd64/helm.exe -Destination "C:\helm.exe"
-          [Environment]::SetEnvironmentVariable('PATH', $env:PATH + ';C:\', [System.EnvironmentVariableTarget]::Machine)
+      - name: Install Helm
+        shell: bash
+        run: |
+          # If helm is already available on the runner, print version and skip installation
+              if command -v helm >/dev/null 2>&1; then
+              echo "helm already installed: $(helm version --short 2>/dev/null || true)"
+              exit 0
+            fi
 
+          # Ensure prerequisites are present
+            sudo apt-get update
+            sudo apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
 
-    - name: Set Docker environment variables
-      run: echo "DOCKER_BUILDKIT=0" >> $GITHUB_ENV
+          # Ensure keyrings dir exists
+          sudo mkdir -p /usr/share/keyrings
 
-      # Set up Docker
-    - name: Set up Docker
-      uses: docker/setup-buildx-action@v3
-      with:
-       driver: docker
+          # Add Helm GPG key (use -fS to fail fast on curl errors)
+          curl -fsSL https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg >/dev/null
 
-    - name: Setup PowerShell
-      shell: pwsh
-      run: |
-        $PSVersionTable.PSVersion
+          # Add the Helm apt repository
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
 
-    # Run Quota Check Script
-    - name: Run Quota Check
-      id: quota-check
-      shell: pwsh
-      run: |
-        $ErrorActionPreference = "Stop"  # Ensure that any error stops the pipeline
-        
-        # Path to the PowerShell script for quota check
-        $quotaCheckScript = "Deployment/checkquota.ps1"
-    
-        # Check if the script exists and is executable (not needed for PowerShell like chmod)
-        if (-not (Test-Path $quotaCheckScript)) {
-          Write-Host "❌ Error: Quota check script not found."
-          exit 1
-        }
-    
-        # Run the script
-        .\Deployment\checkquota.ps1
-    
-        # If the script fails, check for the failure message
-        $quotaFailedMessage = "No region with sufficient quota found"
-        $output = Get-Content "Deployment/checkquota.ps1"
-    
-        if ($output -contains $quotaFailedMessage) {
-          echo "QUOTA_FAILED=true" >> $GITHUB_ENV
-        }
-      env:
-        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-        AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-        GPT_MIN_CAPACITY: '10'
-        TEXT_EMBEDDING_MIN_CAPACITY: '10'
-        AZURE_REGIONS: "${{ vars.AZURE_REGIONS }}"
-  
+          # Install helm
+          sudo apt-get update
+          sudo apt-get install -y helm
 
-    # Send Notification on Quota Failure
-    - name: Send Notification on Quota Failure
-      if: env.QUOTA_FAILED == 'true'
-      shell: pwsh
-      run: |
-        $RUN_URL = "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          # Verify
+          echo "Installed helm version:"
+          helm version          
 
-        # Construct the email body
-        $EMAIL_BODY = @"
-        {
-          "body": "<p>Dear Team,</p><p>The quota check has failed, and the pipeline cannot proceed.</p><p><strong>Build URL:</strong> $RUN_URL</p><p>Please take necessary action.</p><p>Best regards,<br>Your Automation Team</p>"
-        }
-        "@
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
 
-        # Send the notification
-        try {
-          $response = Invoke-RestMethod -Uri "${{ secrets.LOGIC_APP_URL }}" -Method Post -ContentType "application/json" -Body $EMAIL_BODY
-          Write-Host "Notification sent successfully."
-        } catch {
-          Write-Host "❌ Failed to send notification."
-        }
+      - name: Run Quota Check
+        id: quota-check
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"  # Ensure that any error stops the pipeline
 
-    - name: Fail Pipeline if Quota Check Fails
-      if: env.QUOTA_FAILED == 'true'
-      run: exit 1
+          # Path to the PowerShell script for quota check
+          $quotaCheckScript = "Deployment/checkquota.ps1"
 
-    - name: Run Deployment Script with Input
-      shell: pwsh
-      run: |
-        cd Deployment
-        $input = @"
-        ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        CanadaCentral
-        ${{ env.VALID_REGION }}
-        ${{ secrets.EMAIL }}
-        yes
-        "@
-        $input | pwsh ./resourcedeployment.ps1
-        echo "Resource Group Name is ${{ env.rg_name }}"
-        echo "Kubernetes resource group are ${{ env.krg_name }}"
-      env:
-        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-        AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-    - name: Cleanup Resource Group
-      if: always()  # Ensures this step runs even if the deployment fails
-      shell: pwsh
-      run: |
-          az login --service-principal --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
-          az group delete --name ${{ env.rg_name }} --yes --no-wait
-          az group delete --name ${{ env.krg_name }} --yes --no-wait
-      env:
+          # Check if the script exists and is executable (not needed for PowerShell like chmod)
+          if (-not (Test-Path $quotaCheckScript)) {
+            Write-Host "❌ Error: Quota check script not found."
+            exit 1
+          }
+
+          # Run the script
+          .\Deployment\checkquota.ps1
+
+          # If the script fails, check for the failure message
+          $quotaFailedMessage = "No region with sufficient quota found"
+          $output = Get-Content "Deployment/checkquota.ps1"
+
+          if ($output -contains $quotaFailedMessage) {
+            echo "QUOTA_FAILED=true" >> $GITHUB_ENV
+          }
+        env:
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          GPT_MIN_CAPACITY: ${{ env.GPT_CAPACITY }}
+          TEXT_EMBEDDING_MIN_CAPACITY: ${{ env.TEXT_EMBEDDING_CAPACITY }}
+          AZURE_REGIONS: "${{ vars.AZURE_REGIONS }}"
 
-    - name: Wait for Resource Deletion to Complete
-      shell: pwsh
-      run: |
-            $retries = 0
-            $maxRetries = 3
-            $sleepIntervals = @(700, 200, 200)
-    
-            while ($retries -lt $maxRetries) {
-              $rgStatus = az group exists --name ${{ env.rg_name }}
-              $krgStatus = az group exists --name ${{ env.krg_name }}
-              
-    
-              # if (-not $rgStatus -and -not $krgStatus) {
-              #   Write-Host "Both resource groups deleted successfully."
-              #   break
-              # }
-              if ($rgStatus -eq "false" -and $krgStatus -eq "false") {
-                Write-Host "Both resource groups deleted successfully."
-                break
-              }
-    
-              $retries++
-              if ($retries -eq $maxRetries) {
-                Write-Host "Resource groups deletion not confirmed after $maxRetries attempts. Exiting."
-                exit 1
-              }
-    
-              Write-Host "Resource groups still exist. Retrying in $($sleepIntervals[$retries - 1]) seconds..."
-              Start-Sleep -Seconds $sleepIntervals[$retries - 1]
-            }
-    
-    - name: Purging the Resources
-      if: success()
-      shell: pwsh
-      run: |
-                  # Set variables using GitHub Actions environment values
-                  $solutionPrefix = "${{ env.SOLUTION_PREFIX }}"
-                  $subscriptionId = "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
-                  $resourceGroupName = "${{ env.rg_name }}"
-                  
-                  $openai_name = "openaiservice-$solutionPrefix"
-                  $cognitiveservice_name = "cognitiveservice-$solutionPrefix"
-          
-                  # Debug: Print resource names
-                  Write-Host "Purging OpenAI resource: $openai_name"
-                  Write-Host "Purging CognitiveService Account: $cognitiveservice_name"
-          
-                  # Construct resource IDs
-                  $openaiResourceId = "/subscriptions/$subscriptionId/providers/Microsoft.CognitiveServices/locations/${{ env.VALID_REGION }}/resourceGroups/$resourceGroupName/deletedAccounts/$openai_name"
-                  $cognitiveResourceId = "/subscriptions/$subscriptionId/providers/Microsoft.CognitiveServices/locations/${{ env.VALID_REGION }}/resourceGroups/$resourceGroupName/deletedAccounts/$cognitiveservice_name"
-          
-                  # Debug: Print constructed resource IDs
-                  Write-Host "Command to purge OpenAI resource: az resource delete --ids `"$openaiResourceId`" --verbose"
-                  Write-Host "Command to purge CognitiveService Account: az resource delete --ids `"$cognitiveResourceId`" --verbose"
-                    # Purge OpenAI Resource
-                      az resource delete --ids $openaiResourceId --verbose
-                      if (-not $?) {
-                          Write-Host "Failed to purge OpenAI resource: $openaiResourceId"
-                      }
+      - name: Send Notification on Quota Failure
+        if: env.QUOTA_FAILED == 'true'
+        shell: pwsh
+        run: |
+          $RUN_URL = "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-                      # Purge CognitiveService Account
-    
+          # Construct the email body
+          $EMAIL_BODY = @"
+          {
+            "body": "<p>Dear Team,</p><p>The quota check has failed, and the pipeline cannot proceed.</p><p><strong>Build URL:</strong> <a href='$RUN_URL'>$RUN_URL</a></p><p>Please take necessary action.</p><p>Best regards,<br>Your Automation Team</p>"
+          }
+          "@
 
-                      az resource delete --ids $cognitiveResourceId --verbose
-                      if (-not $?) {
-                          Write-Host "Failed to purge CognitiveService Account."
-                      }
-                          
+          # Send the notification
+          try {
+            $response = Invoke-RestMethod -Uri "${{ secrets.LOGIC_APP_URL }}" -Method Post -ContentType "application/json" -Body $EMAIL_BODY
+            Write-Host "Notification sent successfully."
+          } catch {
+            Write-Host "❌ Failed to send notification."
+          }
+
+      - name: Fail Pipeline if Quota Check Fails
+        if: env.QUOTA_FAILED == 'true'
+        run: exit 1
         
-    - name: Send Notification on Failure
-      if: failure()
-      shell: pwsh
-      run: |
-                            # Define the RUN_URL variable
-                            $RUN_URL = "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                    
-                            # Construct the email body using a Here-String
-                            $EMAIL_BODY = @"
-                            {
-                              "body": "<p>Dear Team,</p><p>The Document Knowledge Mining Automation process encountered an issue.</p><p><strong>Build URL:</strong> <a href='$RUN_URL'>$RUN_URL</a></p><p>Please investigate promptly.</p><p>Best regards,<br>Your Automation Team</p>"
-                            }
-                            "@
-                    
-                            # Send the notification with error handling
-                            try {
-                                curl -X POST "${{ secrets.LOGIC_APP_URL }}" `
-                                     -H "Content-Type: application/json" `
-                                     -d "$EMAIL_BODY"
-                            } catch {
-                                Write-Output "Failed to send notification."
-                            }
-                  
+      - name: Install Bicep CLI
+        run: az bicep install
+
+      - name: Install Azure Developer CLI
+        run: |
+          curl -fsSL https://aka.ms/install-azd.sh | bash
+        shell: bash
+        
+      - name: Set Deployment Region
+        run: |
+          echo "Selected Region: $VALID_REGION"
+          echo "AZURE_LOCATION=$VALID_REGION" >> $GITHUB_ENV
+
+      - name: Generate Resource Group Name
+        id: generate_rg_name
+        run: |
+          echo "Generating a unique resource group name..."
+          ACCL_NAME="dkm"  # Account name as specified
+          SHORT_UUID=$(uuidgen | cut -d'-' -f1)
+          UNIQUE_RG_NAME="arg-${ACCL_NAME}-${SHORT_UUID}"
+          echo "RESOURCE_GROUP_NAME=${UNIQUE_RG_NAME}" >> $GITHUB_ENV
+          echo "Generated RESOURCE_GROUP_NAME: ${UNIQUE_RG_NAME}"
+
+      - name: Login to Azure
+        run: |
+          az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+          az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Check and Create Resource Group
+        id: check_create_rg
+        run: |
+          set -e  
+          echo "Checking if resource group exists..."
+          rg_exists=$(az group exists --name ${{ env.RESOURCE_GROUP_NAME }})
+          if [ "$rg_exists" = "false" ]; then
+            echo "Resource group does not exist. Creating..."
+            az group create --name ${{ env.RESOURCE_GROUP_NAME }} --location ${{ env.AZURE_LOCATION }} || { echo "Error creating resource group"; exit 1; }
+          else
+            echo "Resource group already exists."
+          fi
+          echo "RESOURCE_GROUP_NAME=${{ env.RESOURCE_GROUP_NAME }}" >> $GITHUB_OUTPUT      
+
+      - name: Generate Unique Solution Prefix
+        id: generate_solution_prefix
+        run: |
+          set -e
+          COMMON_PART="psldkm"
+          TIMESTAMP=$(date +%s)  
+          UPDATED_TIMESTAMP=$(echo $TIMESTAMP | tail -c 6) 
+          UNIQUE_SOLUTION_PREFIX="${COMMON_PART}${UPDATED_TIMESTAMP}"
+          echo "SOLUTION_PREFIX=${UNIQUE_SOLUTION_PREFIX}" >> $GITHUB_ENV
+          echo "Generated SOLUTION_PREFIX: ${UNIQUE_SOLUTION_PREFIX}" 
+
+      - name: Deploy Bicep Template
+        id: deploy
+        run: |
+          set -e
+
+          # Generate current timestamp in desired format: YYYY-MM-DDTHH:MM:SS.SSSSSSSZ
+            current_date=$(date -u +"%Y-%m-%dT%H:%M:%S.%7NZ")
+          
+          az deployment group create \
+            --name ${{ env.SOLUTION_PREFIX }}-deployment \
+            --resource-group ${{ env.RESOURCE_GROUP_NAME }} \
+            --template-file infra/main.bicep \
+            --parameters \
+                solutionName="${{ env.SOLUTION_PREFIX }}" \
+                location=${{ env.AZURE_LOCATION }} \
+                aiDeploymentsLocation=${{ env.AZURE_LOCATION }} \
+                gptModelDeploymentType="GlobalStandard" \
+                gptModelName="gpt-4.1-mini" \
+                gptModelCapacity=${{ env.GPT_CAPACITY }} \
+                gptModelVersion="2025-04-14" \
+                embeddingModelName="text-embedding-3-large" \
+                embeddingModelCapacity=${{ env.TEXT_EMBEDDING_CAPACITY }} \
+                embeddingModelVersion="1" \
+                enablePrivateNetworking=false \
+                enableMonitoring=false \
+                enableTelemetry=true \
+                enableRedundancy=false \
+                enableScalability=false \
+                createdBy="Pipeline" \
+                tags="{'Purpose':'Deploying and Cleaning Up Resources for Validation','CreatedDate':'$current_date'}"
+
+      - name: Get Deployment Output and extract Values
+        id: get_output
+        run: |
+          set -e
+          echo "Fetching deployment output..."
+          BICEP_OUTPUT=$(az deployment group show \
+            --name ${{ env.SOLUTION_PREFIX }}-deployment \
+            --resource-group ${{ env.RESOURCE_GROUP_NAME }} \
+            --query "properties.outputs" -o json)
+
+          echo "Deployment outputs:"
+          echo "$BICEP_OUTPUT"
+
+          # Write outputs to GitHub env
+          # Loop through keys, normalize to uppercase, and export
+          for key in $(echo "$BICEP_OUTPUT" | jq -r 'keys[]'); do
+            value=$(echo "$BICEP_OUTPUT" | jq -r ".[\"$key\"].value")
+            upper_key=$(echo "$key" | tr '[:lower:]' '[:upper:]')
+            echo "$upper_key=$value" >> $GITHUB_ENV
+          done
+
+      - name: Run Deployment Script with Input
+        shell: pwsh
+        run: |
+          cd Deployment
+          $input = @"
+          ${{ secrets.EMAIL }}
+          yes
+          "@
+          $input | pwsh ./resourcedeployment.ps1
+          Write-Host "Resource Group Name is ${{ env.RESOURCE_GROUP_NAME }}"
+          Write-Host "Kubernetes resource group is ${{ env.AZURE_AKS_NAME }}"
+        env:
+          # From GitHub secrets (for login)
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_TENANT_ID:       ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID:       ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET:   ${{ secrets.AZURE_CLIENT_SECRET }}
+
+          # From deployment outputs step (these come from $GITHUB_ENV)
+          RESOURCE_GROUP_NAME:          ${{ env.RESOURCE_GROUP_NAME }}
+          AZURE_RESOURCE_GROUP_ID:       ${{ env.AZURE_RESOURCE_GROUP_ID }}
+          STORAGE_ACCOUNT_NAME:          ${{ env.STORAGE_ACCOUNT_NAME }}
+          AZURE_SEARCH_SERVICE_NAME:     ${{ env.AZURE_SEARCH_SERVICE_NAME }}
+          AZURE_AKS_NAME:                ${{ env.AZURE_AKS_NAME }}
+          AZURE_AKS_MI_ID:               ${{ env.AZURE_AKS_MI_ID }}
+          AZURE_CONTAINER_REGISTRY_NAME: ${{ env.AZURE_CONTAINER_REGISTRY_NAME }}
+          AZURE_COGNITIVE_SERVICE_NAME:  ${{ env.AZURE_COGNITIVE_SERVICE_NAME }}
+          AZURE_COGNITIVE_SERVICE_ENDPOINT: ${{ env.AZURE_COGNITIVE_SERVICE_ENDPOINT }}
+          AZURE_OPENAI_SERVICE_NAME:     ${{ env.AZURE_OPENAI_SERVICE_NAME }}
+          AZURE_OPENAI_SERVICE_ENDPOINT: ${{ env.AZURE_OPENAI_SERVICE_ENDPOINT }}
+          AZURE_COSMOSDB_NAME:           ${{ env.AZURE_COSMOSDB_NAME }}
+          AZ_GPT4O_MODEL_NAME:           ${{ env.AZ_GPT4O_MODEL_NAME }}
+          AZ_GPT4O_MODEL_ID:             ${{ env.AZ_GPT4O_MODEL_ID }}
+          AZ_GPT_EMBEDDING_MODEL_NAME:   ${{ env.AZ_GPT_EMBEDDING_MODEL_NAME }}
+          AZ_GPT_EMBEDDING_MODEL_ID:     ${{ env.AZ_GPT_EMBEDDING_MODEL_ID }}
+          AZURE_APP_CONFIG_ENDPOINT:     ${{ env.AZURE_APP_CONFIG_ENDPOINT }}
+          AZURE_APP_CONFIG_NAME:         ${{ env.AZURE_APP_CONFIG_NAME }}
+
+      - name: Extract Web App URL and Increase TPM
+        id: get_webapp_url
+        shell: bash
+        run: |
+          # Save the resource group name and Kubernetes resource group name to GITHUB_OUTPUT
+          echo "RESOURCE_GROUP_NAME=${{ env.RESOURCE_GROUP_NAME }}" >> $GITHUB_OUTPUT
+          echo "KUBERNETES_RESOURCE_GROUP_NAME=${{ env.krg_name }}" >> $GITHUB_OUTPUT
+          echo "VALID_REGION=${{ env.VALID_REGION }}" >> $GITHUB_OUTPUT
+          echo "OPENAI_RESOURCE_NAME=${{ env.AZURE_OPENAI_SERVICE_NAME }}" >> $GITHUB_OUTPUT
+          echo "DOCUMENT_INTELLIGENCE_RESOURCE_NAME=${{ env.AZURE_COGNITIVE_SERVICE_NAME }}" >> $GITHUB_OUTPUT
+
+          if az account show &> /dev/null; then
+            echo "Azure CLI is authenticated."
+          else
+            echo "Azure CLI is not authenticated. Logging in..."
+            az login --service-principal --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+          fi
+          az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+          # Get the Web App URL and save it to GITHUB_OUTPUT
+          echo "Retrieving Web App URL..."
+          public_ip_name=$(az network public-ip list --resource-group ${{ env.krg_name }} --query "[?contains(name, 'kubernetes-')].name" -o tsv)
+          fqdn=$(az network public-ip show --resource-group ${{ env.krg_name }} --name $public_ip_name --query "dnsSettings.fqdn" -o tsv)
+          if [ -n "$fqdn" ]; then
+            echo "WEBAPP_URL=https://$fqdn" >> $GITHUB_OUTPUT
+            echo "Web App URL is https://$fqdn"
+          else
+            echo "Failed to retrieve Web App URL."
+            exit 1
+          fi
+
+      - name: Validate Deployment
+        shell: bash
+        run: |
+          webapp_url="${{ steps.get_webapp_url.outputs.WEBAPP_URL }}"
+          echo "Validating web app at: $webapp_url"
+
+          # Enhanced health check with retry logic
+          max_attempts=7
+          attempt=1
+          success=false
+
+          while [ $attempt -le $max_attempts ] && [ "$success" = false ]; do
+            echo "Attempt $attempt/$max_attempts: Checking web app health..."
+
+            # Check if web app responds
+            http_code=$(curl -s -o /dev/null -w "%{http_code}" "$webapp_url" || echo "000")
+
+            if [ "$http_code" -eq 200 ]; then
+              echo "✅ Web app is healthy (HTTP $http_code)"
+              success=true
+            elif [ "$http_code" -eq 404 ]; then
+              echo "❌ Web app not found (HTTP 404)"
+              break
+            elif [ "$http_code" -eq 503 ] || [ "$http_code" -eq 502 ]; then
+              echo "⚠️ Web app temporarily unavailable (HTTP $http_code), retrying..."
+              sleep 20
+            else
+              echo "⚠️ Web app returned HTTP $http_code, retrying..."
+              sleep 20
+            fi
+
+            attempt=$((attempt + 1))
+          done
+
+          if [ "$success" = false ]; then
+            echo "❌ Web app validation failed after $max_attempts attempts"
+            exit 1
+          fi
+
+      - name: Run Post Deployment Script
+        shell: pwsh
+        run: |
+          Write-Host "Running post deployment script to upload files..."
+          cd Deployment
+          try {
+            .\uploadfiles.ps1 -EndpointUrl ${{ steps.get_webapp_url.outputs.WEBAPP_URL }}
+            Write-Host "ExitCode: $LASTEXITCODE"
+            if ($LASTEXITCODE -eq $null -or $LASTEXITCODE -eq 0) {
+              Write-Host "✅ Post deployment script completed successfully."
+            } else {
+              Write-Host "❌ Post deployment script failed with exit code: $LASTEXITCODE"
+              exit 1
+            }
+          }
+          catch {
+            Write-Host "❌ Post deployment script failed with error: $($_.Exception.Message)"
+            exit 1
+          }
+
+      - name: Logout from Azure
+        if: always()
+        shell: bash
+        run: |
+          if az account show &> /dev/null; then
+            echo "Logging out from Azure..."
+            az logout
+            echo "Logged out from Azure successfully."
+          else
+            echo "Azure CLI is not authenticated. Skipping logout."
+          fi
+
+  e2e-test:
+    needs: deploy
+    uses: ./.github/workflows/test-automation.yml
+    with:
+      DKM_URL: ${{ needs.deploy.outputs.WEBAPP_URL }}
+    secrets: inherit
+
+
+  cleanup-deployment:
+    if: always()
+    needs: [deploy, e2e-test]
+    runs-on: ubuntu-latest
+    env:
+      RESOURCE_GROUP_NAME: ${{ needs.deploy.outputs.RESOURCE_GROUP_NAME }}
+      KUBERNETES_RESOURCE_GROUP_NAME: ${{ needs.deploy.outputs.KUBERNETES_RESOURCE_GROUP_NAME }}
+      OPENAI_RESOURCE_NAME: ${{ needs.deploy.outputs.OPENAI_RESOURCE_NAME }}
+      DOCUMENT_INTELLIGENCE_RESOURCE_NAME: ${{ needs.deploy.outputs.DOCUMENT_INTELLIGENCE_RESOURCE_NAME }}
+      VALID_REGION: ${{ needs.deploy.outputs.VALID_REGION }}
+
+    steps:
+      - name: Install Azure CLI
+        shell: bash
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          az --version  # Verify installation
+          
+      - name: Login to Azure
+        shell: bash
+        run: |
+          az login --service-principal --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+          az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+
+      - name: Delete Resource Groups
+        if: env.RESOURCE_GROUP_NAME != ''
+        shell: bash
+        run: |
+          az group delete --name ${{ env.RESOURCE_GROUP_NAME }} --yes --no-wait
+          az group delete --name ${{ env.KUBERNETES_RESOURCE_GROUP_NAME }} --yes --no-wait
+
+      - name: Wait for Resource Deletion to Complete
+        shell: bash
+        run: |
+          echo "Waiting for Azure OpenaAI and Document Intelligence resources to be deleted..."
+          sleep 60 
+          retries=0
+          max_retries=3
+          sleep_duration=60
+          while [ $retries -lt $max_retries ]; do
+            aoai_exists=$(az resource list --resource-group ${{ env.RESOURCE_GROUP_NAME }} --name ${{ env.OPENAI_RESOURCE_NAME }} --query "[0].name" -o tsv)
+            di_exists=$(az resource list --resource-group ${{ env.RESOURCE_GROUP_NAME }} --name ${{ env.DOCUMENT_INTELLIGENCE_RESOURCE_NAME }} --query "[0].name" -o tsv)
+
+            if [ -z "$aoai_exists" ] && [ -z "$di_exists" ]; then
+              echo "Resources deleted successfully."
+              break
+            else
+              echo "Resources still exist, retrying in $((sleep_duration * (retries + 1))) seconds..."
+              sleep $((sleep_duration * (retries + 1)))
+              retries=$((retries + 1))
+            fi
+          done
+
+      - name: Purging the Resources
+        if: success()
+        shell: bash
+        run: |
+          echo "Purging the Azure OpenAI and Document Intelligence resources..."
+          if [ -z "${{ env.OPENAI_RESOURCE_NAME }}" ]; then
+            echo "No Azure OpenAI resource to purge."
+          else
+            echo "Purging Azure OpenAI resource..."
+            az cognitiveservices account purge --name ${{ env.OPENAI_RESOURCE_NAME }} --resource-group ${{ env.RESOURCE_GROUP_NAME }} --location ${{ env.VALID_REGION }}
+          fi
+
+          if [ -z "${{ env.DOCUMENT_INTELLIGENCE_RESOURCE_NAME }}" ]; then
+            echo "No Azure Document Intelligence resource to purge."
+          else
+            echo "Purging Azure Document Intelligence resources..."
+            az cognitiveservices account purge --name ${{ env.DOCUMENT_INTELLIGENCE_RESOURCE_NAME }} --resource-group ${{ env.RESOURCE_GROUP_NAME }} --location ${{ env.VALID_REGION }}
+          fi
+
+      - name: Send Notification on Failure
+        if: failure() || needs.deploy.result == 'failure'
+        shell: pwsh
+        run: |
+          # Define the RUN_URL variable
+          $RUN_URL = "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          # Construct the email body using a Here-String
+          $EMAIL_BODY = @"
+          {
+            "body": "<p>Dear Team,</p><p>The Document Knowledge Mining Automation process encountered an issue.</p><p><strong>Build URL:</strong> <a href='$RUN_URL'>$RUN_URL</a></p><p>Please investigate promptly.</p><p>Best regards,<br>Your Automation Team</p>"
+          }
+          "@
+
+          # Send the notification with error handling
+          try {
+              curl -X POST "${{ secrets.LOGIC_APP_URL }}" `
+                   -H "Content-Type: application/json" `
+                   -d "$EMAIL_BODY"
+          } catch {
+              Write-Output "Failed to send notification."
+          }
+
+      - name: Logout from Azure
+        if: always()
+        shell: bash
+        run: |
+          if az account show &> /dev/null; then
+            echo "Logging out from Azure..."
+            az logout
+            echo "Logged out from Azure successfully."
+          else
+            echo "Azure CLI is not authenticated. Skipping logout."
+          fi

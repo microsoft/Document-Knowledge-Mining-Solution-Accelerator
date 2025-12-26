@@ -2,6 +2,13 @@
 # Licensed under the MIT license.
 
 #https://patorjk.com/software/taag
+
+
+param (
+    [Parameter(Mandatory=$false)]
+    [string]$ResourceGroupName
+)
+
 function startBanner() {
     Write-Host "  _____                                        _                                               "
     Write-Host " |  __ \                                      | |                                              "
@@ -73,51 +80,13 @@ function ValidateVariableIsNullOrEmpty {
 # Function to prompt for parameters with kind messages
 function PromptForParameters {
     param(
-        [string]$subscriptionID,
-        [string]$location,
-        [string]$modelLocation,
         [string]$email
-    )
-
+)
     Clear-Host
 
     # Display banner
     
     startBanner
-
-    $availableRegions = @(
-        'EastUS', 'EastUS2', 'WestUS', 'WestUS2', 'WestUS3', 'CentralUS', 'NorthCentralUS', 'SouthCentralUS', 
-        'WestEurope', 'NorthEurope', 'SoutheastAsia', 'EastAsia', 'JapanEast', 'JapanWest', 
-        'AustraliaEast', 'AustraliaSoutheast', 'CentralIndia', 'SouthIndia', 'CanadaCentral', 
-        'CanadaEast', 'UKSouth', 'UKWest', 'FranceCentral', 'FranceSouth', 'KoreaCentral', 
-        'KoreaSouth', 'GermanyWestCentral', 'GermanyNorth', 'NorwayWest', 'NorwayEast', 
-        'SwitzerlandNorth', 'SwitzerlandWest', 'UAENorth', 'UAECentral', 'SouthAfricaNorth', 
-        'SouthAfricaWest', 'BrazilSouth', 'BrazilSoutheast', 'QatarCentral', 'ChinaNorth', 
-        'ChinaEast', 'ChinaNorth2', 'ChinaEast2'
-    )
-
-    $availableModelRegions = @(
-        'EastUS', 'EastUS2', 'SwedenCentral', 'WestUS3'
-    )
-
-    if (-not $subscriptionID) {
-        Write-Host "Please enter your Azure subscription ID to deploy your resources" -ForegroundColor Cyan
-        $subscriptionID = Read-Host -Prompt '> '
-    }
-
-    if (-not $location) {
-        Write-Host "Please enter the Azure Data Center Region to deploy your resources" -ForegroundColor Cyan
-        Write-Host "Available regions are:" -ForegroundColor Cyan
-        Write-Host ($availableRegions -join ', ') -ForegroundColor Yellow
-        $location = Read-Host -Prompt '> '
-    }
-
-    if (-not $modelLocation) {
-        Write-Host "Please enter the Azure Data Center Region to deploy your GPT model" -ForegroundColor Cyan
-        Write-Host "Available regions are:" -ForegroundColor Cyan
-        Write-Host ($availableModelRegions -join ', ') -ForegroundColor Yellow
-        $modelLocation = Read-Host -Prompt '> '
-    }
 
     if (-not $email) {
         Write-Host "Please enter your email address for certificate management" -ForegroundColor Cyan
@@ -125,117 +94,72 @@ function PromptForParameters {
     }
 
     return @{
-        subscriptionID = $subscriptionID
-        location = $location
-        modelLocation = $modelLocation
         email = $email
     }
 }
 
 # Prompt for parameters with kind messages
-$params = PromptForParameters -subscriptionID $subscriptionID -location $location -modelLocation $modelLocation -email $email
-# Assign the parameters to variables
-$subscriptionID = $params.subscriptionID
-$location = $params.location
-$modelLocation = $params.modelLocation
+ $params = PromptForParameters -email $email
 $email = $params.email
 
-function LoginAzure([string]$subscriptionID) {
-          Write-Host "Log in to Azure.....`r`n" -ForegroundColor Yellow
-        if ($env:CI -eq "true"){
-      
-        az login --service-principal `
-        --username $env:AZURE_CLIENT_ID `
-        --password $env:AZURE_CLIENT_SECRET `
-        --tenant $env:AZURE_TENANT_ID
-        write-host "CI deployment mode"
-        }
-        else{
-              az login
-        write-host "manual deployment mode"
-        }
-        az account set --subscription $subscriptionID
-        Write-Host "Switched subscription to '$subscriptionID' `r`n" -ForegroundColor Yellow
-}
+$script:alreadyLoggedIn = $false
 
-function DeployAzureResources([string]$location, [string]$modelLocation) {
-    Write-Host "Started Deploying Knowledge Mining Solution Accelerator Service Azure resources.....`r`n" -ForegroundColor Yellow
-    
-    try {
-        # Generate a random number between 0 and 99999
-        $randomNumber = Get-Random -Minimum 0 -Maximum 99999
-        # Pad the number with leading zeros to ensure it is 5 digits long
-        $randomNumberPadded = $randomNumber.ToString("D5")
-        # Make deployment name unique by appending random number
-        $deploymentName = "KM_SA_Deployment$randomNumberPadded"
-
-        # Perform a what-if deployment to preview changes
-        Write-Host "Evaluating Deployment resource availabilities to preview changes..." -ForegroundColor Yellow
-        $whatIfResult = az deployment sub what-if --template-file .\main.bicep --location $location --name $deploymentName --parameters modeldatacenter=$modelLocation
-
+function LoginAzure([string]$tenantId, [string]$subscriptionID) {
+    Write-Host "Log in to Azure.....`r`n" -ForegroundColor Yellow
+    if ([string]::IsNullOrEmpty($tenantId) -or [string]::IsNullOrEmpty($subscriptionID)) {
+        az login
         if ($LASTEXITCODE -ne 0) {
-            Write-Host "There might be something wrong with your deployment." -ForegroundColor Red
-            Write-Host $whatIfResult -ForegroundColor Red
-            failureBanner
-            exit 1            
-        }
-        # Proceed with the actual deployment
-        Write-Host "Proceeding with Deployment..." -ForegroundColor Yellow
-        $deploymentResult = az deployment sub create --template-file .\main.bicep --location $location --name $deploymentName --parameters modeldatacenter=$modelLocation
-        # Check if deploymentResult is valid        
-        ValidateVariableIsNullOrEmpty -variableValue $deploymentResult -variableName "Deployment Result"  
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "Deployment failed. Stopping execution." -ForegroundColor Red
-            Write-Host $deploymentResult -ForegroundColor Red
+            Write-Host "Failed to log in to Azure. Please check your credentials." -ForegroundColor Red
             failureBanner
             exit 1
         }
-
-        $joinedString = $deploymentResult -join "" 
-        $jsonString = ConvertFrom-Json $joinedString 
-        
-        return $jsonString
-    } catch {
-        Write-Host "An error occurred during the deployment process:" -ForegroundColor Red
-        Write-Host $_.Exception.Message -ForegroundColor Red
-        Write-Host $_.InvocationInfo.PositionMessage -ForegroundColor Red
-        Write-Host $_.ScriptStackTrace -ForegroundColor Red
-        failureBanner
-        exit 1
+        else{
+            Write-Host "Logged in to Azure successfully." -ForegroundColor Green
+            $script:alreadyLoggedIn = $true
+            return
+        }
     }
+    if ($env:CI -eq "true"){
+        az login --service-principal `
+            --username $env:AZURE_CLIENT_ID `
+            --password $env:AZURE_CLIENT_SECRET `
+            --tenant $env:AZURE_TENANT_ID `
+        Write-Host "CI deployment mode"
+    }
+    else{
+        az login --tenant $tenantId
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Failed to log in to Azure with tenant ID '$tenantId'. Please check your credentials." -ForegroundColor Red
+            failureBanner
+            exit 1
+        }
+        else{
+            Write-Host "Logged in to Azure with tenant ID '$tenantId' successfully." -ForegroundColor Green
+        }
+        Write-Host "manual deployment mode"
+    }
+    az account set --subscription $subscriptionID
+    Write-Host "Switched subscription to '$subscriptionID' `r`n" -ForegroundColor Yellow  
 }
 
-function DisplayResult([pscustomobject]$jsonString) {
-    $resourcegroupName = $jsonString.properties.outputs.gs_resourcegroup_name.value
-    $solutionPrefix = $jsonString.properties.outputs.gs_solution_prefix.value
-
-    $storageAccountName = $jsonString.properties.outputs.gs_storageaccount_name.value
-    $azsearchServiceName = $jsonString.properties.outputs.gs_azsearch_name.value
-    $aksName = $jsonString.properties.outputs.gs_aks_name.value
-
-    $containerRegistryName = $jsonString.properties.outputs.gs_containerregistry_name.value
-    $azcognitiveserviceName = $jsonString.properties.outputs.gs_azcognitiveservice_name.value
-    $azopenaiServiceName = $jsonString.properties.outputs.gs_openaiservice_name.value
-    $azcosmosDBName = $jsonString.properties.outputs.gs_cosmosdb_name.value
-    $azappConfigEndpoint = $jsonString.properties.outputs.gs_appconfig_endpoint.value    
-
-    # Display banner
+function DisplayResult([DeploymentResult]$displayResult) {
     Write-Host "********************************************************************************" -ForegroundColor Blue
     Write-Host "*                 Deployed Azure Resources Information                         *" -ForegroundColor Blue
     Write-Host "********************************************************************************" -ForegroundColor Blue
-    Write-Host "* Subscription Id: " -ForegroundColor Yellow -NoNewline; Write-Host "$subscriptionID" -ForegroundColor Green
-    Write-Host "* Knowledge Mining Digital Asset resource group: " -ForegroundColor Yellow -NoNewline; Write-Host "$resourcegroupName" -ForegroundColor Green
-    Write-Host "* Azure Kubernetes Account " -ForegroundColor Yellow -NoNewline; Write-Host "$aksName" -ForegroundColor Green
-    Write-Host "* Azure Container Registry " -ForegroundColor Yellow -NoNewline; Write-Host "$containerRegistryName" -ForegroundColor Green
-    Write-Host "* Azure Search Service " -ForegroundColor Yellow -NoNewline; Write-Host "$azsearchServiceName" -ForegroundColor Green
-    Write-Host "* Azure Open AI Service " -ForegroundColor Yellow -NoNewline; Write-Host "$azopenaiServiceName" -ForegroundColor Green
-    Write-Host "* Azure Cognitive Service " -ForegroundColor Yellow -NoNewline; Write-Host "$azcognitiveserviceName" -ForegroundColor Green
-    Write-Host "* Azure Storage Account " -ForegroundColor Yellow -NoNewline; Write-Host "$storageAccountName" -ForegroundColor Green
-    Write-Host "* Azure Cosmos DB " -ForegroundColor Yellow -NoNewline; Write-Host "$azcosmosDBName" -ForegroundColor Green
-    Write-Host "* Azure App Configuration Endpoint " -ForegroundColor Yellow -NoNewline; Write-Host "$azappConfigEndpoint" -ForegroundColor Green
-    Write-Output "rg_name=$resourcegroupName" >> $Env:GITHUB_ENV
+    Write-Host "* Tenant Id: " -ForegroundColor Yellow -NoNewline; Write-Host "$($displayResult.TenantId)" -ForegroundColor Green
+    Write-Host "* Subscription Id: " -ForegroundColor Yellow -NoNewline; Write-Host "$($displayResult.SubscriptionId)" -ForegroundColor Green
+    Write-Host "* Knowledge Mining Digital Asset resource group: " -ForegroundColor Yellow -NoNewline; Write-Host "$($displayResult.ResourceGroupName)" -ForegroundColor Green
+    Write-Host "* Azure Kubernetes Account " -ForegroundColor Yellow -NoNewline; Write-Host "$($displayResult.AksName)" -ForegroundColor Green
+    Write-Host "* Azure Container Registry " -ForegroundColor Yellow -NoNewline; Write-Host "$($displayResult.AzContainerRegistryName)" -ForegroundColor Green
+    Write-Host "* Azure Search Service " -ForegroundColor Yellow -NoNewline; Write-Host "$($displayResult.AzSearchServiceName)" -ForegroundColor Green
+    Write-Host "* Azure Open AI Service " -ForegroundColor Yellow -NoNewline; Write-Host "$($displayResult.AzOpenAIServiceName)" -ForegroundColor Green
+    Write-Host "* Azure Cognitive Service " -ForegroundColor Yellow -NoNewline; Write-Host "$($displayResult.AzCognitiveServiceName)" -ForegroundColor Green
+    Write-Host "* Azure Storage Account " -ForegroundColor Yellow -NoNewline; Write-Host "$($displayResult.StorageAccountName)" -ForegroundColor Green
+    Write-Host "* Azure Cosmos DB " -ForegroundColor Yellow -NoNewline; Write-Host "$($displayResult.AzCosmosDBName)" -ForegroundColor Green
+    Write-Host "* Azure App Configuration Endpoint " -ForegroundColor Yellow -NoNewline; Write-Host "$($displayResult.AzAppConfigEndpoint)" -ForegroundColor Green
+    Write-Output "rg_name=$($displayResult.ResourceGroupName)" >> $Env:GITHUB_ENV
 
-    Write-Output "SOLUTION_PREFIX=$solutionPrefix" >> $Env:GITHUB_ENV
+    Write-Output "SOLUTION_PREFIX=$($displayResult.SolutionPrefix)" >> $Env:GITHUB_ENV
 }
 
 # Function to replace placeholders in a template with actual values
@@ -292,19 +216,55 @@ function Show-Banner {
     Write-Host $borderLine -ForegroundColor Blue
 }
 
+# Get all environment values
+if (!$ResourceGroupName) {
+    $envValues = azd env get-values --output json | ConvertFrom-Json
+}
+
+function Get-AzdEnvValueOrDefault {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$KeyName,
+
+        [Parameter(Mandatory = $false)]
+        [string]$DefaultValue = "",
+
+        [Parameter(Mandatory = $false)]
+        [bool]$Required = $false
+    )
+
+    # Check if key exists
+    if ($envValues.PSObject.Properties.Name -contains $KeyName) {
+        return $envValues.$KeyName
+    }
+
+     # Step 2: Try from GitHub Action environment variables (system env)
+     $githubValue = [System.Environment]::GetEnvironmentVariable($KeyName, "Process")
+    if ($githubValue) {
+        return $githubValue
+    }
+
+    # Key doesn't exist
+    if ($Required) {
+        Write-Error "Required environment key '$KeyName' not found in azd environment."
+        exit 1
+    } else {
+        return $DefaultValue
+    }
+}
+
 class DeploymentResult {
+    [string]$TenantId
+    [string]$SubscriptionId
     [string]$ResourceGroupName
     [string]$ResourceGroupId
     [string]$StorageAccountName
-    [string]$StorageAccountConnectionString
     [string]$AzSearchServiceName
     [string]$AzSearchServicEndpoint
-    [string]$AzSearchAdminKey
     [string]$AksName
     [string]$AksMid
     [string]$AzContainerRegistryName
     [string]$AzCognitiveServiceName
-    [string]$AzCognitiveServiceKey
     [string]$AzCognitiveServiceEndpoint
     [string]$AzOpenAiServiceName
     [string]$AzGPT4oModelName
@@ -312,7 +272,6 @@ class DeploymentResult {
     [string]$AzGPTEmbeddingModelName
     [string]$AzGPTEmbeddingModelId
     [string]$AzOpenAiServiceEndpoint
-    [string]$AzOpenAiServiceKey
     [string]$AzCosmosDBName
     [string]$AzCosmosDBConnectionString
     [string]$AzAppConfigEndpoint
@@ -320,15 +279,15 @@ class DeploymentResult {
 
     DeploymentResult() {
         # Resource Group
+        $this.TenantId = ""
+        $this.SubscriptionId = ""
         $this.ResourceGroupName = ""
         $this.ResourceGroupId = ""
         # Storage Account
         $this.StorageAccountName = ""
-        $this.StorageAccountConnectionString = ""
         # Azure Search
         $this.AzSearchServiceName = ""
         $this.AzSearchServicEndpoint = ""
-        $this.AzSearchAdminKey = ""
         # AKS
         $this.AksName = ""
         $this.AksMid = ""
@@ -337,11 +296,9 @@ class DeploymentResult {
         # Cognitive Service - Azure AI Intelligence Document Service
         $this.AzCognitiveServiceName = ""
         $this.AzCognitiveServiceEndpoint = ""
-        $this.AzCognitiveServiceKey = ""
         # Open AI Service
         $this.AzOpenAiServiceName = ""
         $this.AzOpenAiServiceEndpoint = ""
-        $this.AzOpenAiServiceKey = ""
         # Model - GPT4o
         $this.AzGPT4oModelName = ""
         $this.AzGPT4oModelId = ""
@@ -358,57 +315,157 @@ class DeploymentResult {
 
     }
 
-    [void]MapResult([pscustomobject]$jsonString) {
+    [void]MapResultAzd() {
+
+        # Replace direct $envValues lookups with function calls
+        $this.TenantId                = Get-AzdEnvValueOrDefault -KeyName "AZURE_TENANT_ID" -Required $true
+        $this.SubscriptionId          = Get-AzdEnvValueOrDefault -KeyName "AZURE_SUBSCRIPTION_ID" -Required $true
+
         # Add your code here
-        $this.ResourceGroupName = $jsonString.properties.outputs.gs_resourcegroup_name.value
-        $this.ResourceGroupId = $jsonString.properties.outputs.gs_resourcegroup_id.value
+        $this.ResourceGroupName       = Get-AzdEnvValueOrDefault -KeyName "RESOURCE_GROUP_NAME" -Required $true
+        $this.ResourceGroupId         = Get-AzdEnvValueOrDefault -KeyName "AZURE_RESOURCE_GROUP_ID" -Required $true
+
         # Storage Account
-        $this.StorageAccountName = $jsonString.properties.outputs.gs_storageaccount_name.value
+        $this.StorageAccountName      = Get-AzdEnvValueOrDefault -KeyName "STORAGE_ACCOUNT_NAME"
+
         # Azure Search
-        $this.AzSearchServiceName = $jsonString.properties.outputs.gs_azsearch_name.value
-        $this.AzSearchServicEndpoint =  "https://$($this.AzSearchServiceName).search.windows.net"
+        $this.AzSearchServiceName     = Get-AzdEnvValueOrDefault -KeyName "AZURE_SEARCH_SERVICE_NAME"
+        $this.AzSearchServicEndpoint  = "https://$($this.AzSearchServiceName).search.windows.net"
+
         # Azure Kubernetes
-        $this.AksName = $jsonString.properties.outputs.gs_aks_name.value
-        $this.AksMid = $jsonString.properties.outputs.gs_aks_serviceprincipal_id.value
+        $this.AksName                 = Get-AzdEnvValueOrDefault -KeyName "AZURE_AKS_NAME"
+        $this.AksMid                  = Get-AzdEnvValueOrDefault -KeyName "AZURE_AKS_MI_ID"
+
         # Azure Container Registry
-        $this.AzContainerRegistryName = $jsonString.properties.outputs.gs_containerregistry_name.value
+        $this.AzContainerRegistryName = Get-AzdEnvValueOrDefault -KeyName "AZURE_CONTAINER_REGISTRY_NAME"
 
         # Azure Cognitive Service - Azure AI Document Intelligence Service
-        $this.AzCognitiveServiceName = $jsonString.properties.outputs.gs_azcognitiveservice_name.value
-        $this.AzCognitiveServiceEndpoint = $jsonString.properties.outputs.gs_azcognitiveservice_endpoint.value
+        $this.AzCognitiveServiceName     = Get-AzdEnvValueOrDefault -KeyName "AZURE_COGNITIVE_SERVICE_NAME"
+        $this.AzCognitiveServiceEndpoint = Get-AzdEnvValueOrDefault -KeyName "AZURE_COGNITIVE_SERVICE_ENDPOINT"
 
         # Azure Open AI Service
-        $this.AzOpenAiServiceName = $jsonString.properties.outputs.gs_openaiservice_name.value
-        $this.AzOpenAiServiceEndpoint = $jsonString.properties.outputs.gs_openaiservice_endpoint.value
-        $this.AzOpenAiServiceKey = $jsonString.properties.outputs.gs_openaiservice_key.value
-        # Azure Cosmos DB
-        $this.AzCosmosDBName = $jsonString.properties.outputs.gs_cosmosdb_name.value
-        # Azure Open AI Service Models
-        $this.AzGPT4oModelName = $jsonString.properties.outputs.gs_openaiservicemodels_gpt4o_model_name.value
-        $this.AzGPT4oModelId = $jsonString.properties.outputs.gs_openaiservicemodels_gpt4o_model_id.value
-        $this.AzGPTEmbeddingModelName = $jsonString.properties.outputs.gs_openaiservicemodels_text_embedding_model_name.value
-        $this.AzGPTEmbeddingModelId = $jsonString.properties.outputs.gs_openaiservicemodels_text_embedding_model_id.value
-        # Azure App Configuration
-        $this.AzAppConfigEndpoint = $jsonString.properties.outputs.gs_appconfig_endpoint.value
-        # App Config Name 
-        $this.AzAppConfigName = "appconfig" + $this.ResourceGroupName
+        $this.AzOpenAiServiceName     = Get-AzdEnvValueOrDefault -KeyName "AZURE_OPENAI_SERVICE_NAME"
+        $this.AzOpenAiServiceEndpoint = Get-AzdEnvValueOrDefault -KeyName "AZURE_OPENAI_SERVICE_ENDPOINT"
 
+        # Azure Cosmos DB
+        $this.AzCosmosDBName          = Get-AzdEnvValueOrDefault -KeyName "AZURE_COSMOSDB_NAME"
+
+        # Azure Open AI Service Models
+        $this.AzGPT4oModelName        = Get-AzdEnvValueOrDefault -KeyName "AZ_GPT4O_MODEL_NAME"
+        $this.AzGPT4oModelId          = Get-AzdEnvValueOrDefault -KeyName "AZ_GPT4O_MODEL_ID"
+        $this.AzGPTEmbeddingModelName = Get-AzdEnvValueOrDefault -KeyName "AZ_GPT_EMBEDDING_MODEL_NAME"
+        $this.AzGPTEmbeddingModelId   = Get-AzdEnvValueOrDefault -KeyName "AZ_GPT_EMBEDDING_MODEL_ID"
+
+        # Azure App Configuration
+        $this.AzAppConfigEndpoint     = Get-AzdEnvValueOrDefault -KeyName "AZURE_APP_CONFIG_ENDPOINT"
+        $this.AzAppConfigName         = Get-AzdEnvValueOrDefault -KeyName "AZURE_APP_CONFIG_NAME"
+    }
+
+    [void]MapResultAz([string]$resourceGroupName) {
+        # Get deployment outputs
+        $deploymentName=$(az group show --name "$resourceGroupName" --query "tags.DeploymentName" -o tsv)
+        if (!$deploymentName) {
+            Write-Error "Deployment name not found in the resource group tags."
+            exit 1
+        }
+    
+        $deploymentOutputs=$(az deployment group show --resource-group "$resourceGroupName" --name "$deploymentName" --query "properties.outputs" -o json | ConvertFrom-Json)
+    
+        # Helper function to get value from deployment outputs with fallback
+        function Get-DeploymentOutputValue {
+            param (
+                [Parameter(Mandatory=$true)]
+                $outputs,
+                [Parameter(Mandatory=$true)]
+                [string]$primaryKey,
+                [Parameter(Mandatory=$true)]
+                [string]$fallbackKey
+            )
+            
+            $value = $null
+            
+            # Try primary key first (old convention)
+            if ($outputs.PSObject.Properties.Name -contains $primaryKey) {
+                $value = $outputs.$primaryKey.value
+            }
+            
+            # If not found or empty, try fallback key (new convention)
+            if ([string]::IsNullOrEmpty($value) -and ($outputs.PSObject.Properties.Name -contains $fallbackKey)) {
+                $value = $outputs.$fallbackKey.value
+            }
+            
+            return $value
+        }
+    
+        # Tenant ID
+        $this.TenantId = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_TENANT_ID" -fallbackKey "azureTenantId"
+        if (!$this.TenantId) {
+            $this.TenantId = $(az account show --query tenantId -o tsv)
+        }
+    
+        $this.SubscriptionId = $(az account show --query id -o tsv)
+    
+        # Resource Group
+        $this.ResourceGroupName = $resourceGroupName
+        $this.ResourceGroupId = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_RESOURCE_GROUP_ID" -fallbackKey "azureResourceGroupId"
+        if (!$this.ResourceGroupId) {
+            Write-Error "Required value 'AZURE_RESOURCE_GROUP_ID' or 'azureResourceGroupId' not found in the deployment outputs."
+            exit 1
+        }
+    
+        # Storage Account
+        $this.StorageAccountName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "storagE_ACCOUNT_NAME" -fallbackKey "storageAccountName"
+    
+        # Search Service
+        $this.AzSearchServiceName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_SEARCH_SERVICE_NAME" -fallbackKey "azureSearchServiceName"
+        $this.AzSearchServicEndpoint = "https://$($this.AzSearchServiceName).search.windows.net"
+    
+        # AKS
+        $this.AksName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_AKS_NAME" -fallbackKey "azureAksName"
+        $this.AksMid = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_AKS_MI_ID" -fallbackKey "azureAksMiId"
+    
+        # Container Registry
+        $this.AzContainerRegistryName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_CONTAINER_REGISTRY_NAME" -fallbackKey "azureContainerRegistryName"
+    
+        # Cognitive Service - Azure AI Document Intelligence Service
+        $this.AzCognitiveServiceName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_COGNITIVE_SERVICE_NAME" -fallbackKey "azureCognitiveServiceName"
+        $this.AzCognitiveServiceEndpoint = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_COGNITIVE_SERVICE_ENDPOINT" -fallbackKey "azureCognitiveServiceEndpoint"
+    
+        # Open AI Service
+        $this.AzOpenAiServiceName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_OPENAI_SERVICE_NAME" -fallbackKey "azureOpenAiServiceName"
+        $this.AzOpenAiServiceEndpoint = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_OPENAI_SERVICE_ENDPOINT" -fallbackKey "azureOpenAiServiceEndpoint"
+    
+        # Cosmos DB
+        $this.AzCosmosDBName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_COSMOSDB_NAME" -fallbackKey "azureCosmosDbName"
+    
+        # Open AI Service Models
+        $this.AzGPT4oModelName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "aZ_GPT4O_MODEL_NAME" -fallbackKey "azGpt4oModelName"
+        $this.AzGPT4oModelId = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "aZ_GPT4O_MODEL_ID" -fallbackKey "azGpt4oModelId"
+        $this.AzGPTEmbeddingModelName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "aZ_GPT_EMBEDDING_MODEL_NAME" -fallbackKey "azGptEmbeddingModelName"
+        $this.AzGPTEmbeddingModelId = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "aZ_GPT_EMBEDDING_MODEL_ID" -fallbackKey "azGptEmbeddingModelId"
+    
+        # App Configuration
+        $this.AzAppConfigEndpoint = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_APP_CONFIG_ENDPOINT" -fallbackKey "azureAppConfigEndpoint"
+        $this.AzAppConfigName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_APP_CONFIG_NAME" -fallbackKey "azureAppConfigName"
     }
 }
 
 function Check-Docker {
     try {
-         # Try to get Docker info to check if Docker daemon is running
-         $dockerInfo = docker info 2>&1
-        if ($dockerInfo -match "ERROR: error during connect") {
+        # Try to get Docker info to check if Docker daemon is running
+        $dockerInfo = docker info 2>&1
+        if ($LASTEXITCODE -ne 0 -or $dockerInfo -match "error during connect") {
             return $false
-        } else {
+        }
+        else {
             return $true
         }
-    } catch {
+    }
+    catch {
         Write-Host "An error occurred while checking Docker status." -ForegroundColor Red
         Write-Host $_.Exception.Message -ForegroundColor Red
-        return $false    }
+        return $false    
+    }
 }
 
 # Check if Docker is running before proceeding
@@ -430,36 +487,29 @@ try {
     Show-Banner -Title "Step 1 : Deploy Azure resources"
     ###############################################################
     $deploymentResult = [DeploymentResult]::new()
-    LoginAzure($subscriptionID)
+    
     # Deploy Azure Resources
-    Write-Host "Deploying Azure resources in $location region.....`r`n" -ForegroundColor Yellow
+    Write-Host "Retrieving the deployment details.....`r`n" -ForegroundColor Yellow
 
-    $resultJson = DeployAzureResources -location $location -modelLocation $modelLocation
-    # Map the deployment result to DeploymentResult object
-    $deploymentResult.MapResult($resultJson)
+    # Map the deployment result to DeploymentResult object from .env file
+    if ($ResourceGroupName) {
+        LoginAzure "" ""
+        $deploymentResult.MapResultAz($ResourceGroupName.Trim())
+    }
+    else {
+        $deploymentResult.MapResultAzd()
+    }
+
+    if (-not $script:alreadyLoggedIn) {
+        LoginAzure $deploymentResult.TenantId $deploymentResult.SubscriptionId
+    }
+
     # Display the deployment result
-    DisplayResult($resultJson)
+    DisplayResult($deploymentResult)
 
-    ###############################################################
-    # Step 2 : Get Secrets from Azure resources
-    Show-Banner -Title "Step 2 : Get Secrets from Azure resources"
-    ###############################################################
+    # Step 1.2 Validate the deployment result
     # Validate if the Storage Account Name is empty or null    
     ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.StorageAccountName -variableName "Storage Account Name"
-
-    # Get the storage account key
-    $storageAccountKey = az storage account keys list --account-name $deploymentResult.StorageAccountName --resource-group $deploymentResult.ResourceGroupName --query "[0].value" -o tsv
-    
-    # Validate if the storage account key is empty or null
-    ValidateVariableIsNullOrEmpty -variableValue $storageAccountKey -variableName "Storage account key"  
-    
-    ## Construct the connection string manually
-    $storageAccountConnectionString = "DefaultEndpointsProtocol=https;AccountName=$($deploymentResult.StorageAccountName);AccountKey=$storageAccountKey;EndpointSuffix=core.windows.net"
-    # Validate if the Storage Account Connection String is empty or null
-    ValidateVariableIsNullOrEmpty -variableValue $storageAccountConnectionString -variableName "Storage Account Connection String"
-    
-    ## Assign the connection string to the deployment result object
-    $deploymentResult.StorageAccountConnectionString = $storageAccountConnectionString  
 
     # Check if ResourceGroupName is valid
     ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.ResourceGroupName -variableName "Resource group name"  
@@ -478,29 +528,15 @@ try {
       
     # Get MongoDB connection string
     $deploymentResult.AzCosmosDBConnectionString = az cosmosdb keys list --name $deploymentResult.AzCosmosDBName --resource-group $deploymentResult.ResourceGroupName --type connection-strings --query "connectionStrings[0].connectionString" -o tsv
-    # Get Azure Cognitive Service API Key
-    $deploymentResult.AzCognitiveServiceKey = az cognitiveservices account keys list --name $deploymentResult.AzCognitiveServiceName --resource-group $deploymentResult.ResourceGroupName --query "key1" -o tsv
-    # Get Azure Search Service Admin Key
-    $deploymentResult.AzSearchAdminKey = az search admin-key show --service-name $deploymentResult.AzSearchServiceName --resource-group $deploymentResult.ResourceGroupName --query "primaryKey" -o tsv
-    # Get Azure Open AI Service API Key
-    $deploymentResult.AzOpenAiServiceKey = az cognitiveservices account keys list --name $deploymentResult.AzOpenAiServiceName --resource-group $deploymentResult.ResourceGroupName --query "key1" -o tsv
 
-    Write-Host "Secrets have been retrieved successfully." -ForegroundColor Green
+    Write-Host "Validation Completed" -ForegroundColor Green
 
-    ######################################################################################################################
-    # Step 3 : Update App Configuration files with Secrets and information for AI Service and Kernel Memory Service.
-    Show-Banner -Title "Step 3 : Update App Configuration files with Secrets and information for AI Service and Kernel Memory Service."
-    ######################################################################################################################
-    # Step 3-1 Loading aiservice's configution file template then replace the placeholder with the actual values
+    # Step 1-3 Loading aiservice's configution file template then replace the placeholder with the actual values
     # Define the placeholders and their corresponding values for AI service configuration
     
     $aiServicePlaceholders = @{
         '{gpt-4o-mini-endpoint}' = $deploymentResult.AzOpenAiServiceEndpoint
-        '{gpt-4o-mini-apikey}' = $deploymentResult.AzOpenAiServiceKey
-        '{azureaisearch-apikey}' = $deploymentResult.AzSearchAdminKey
-        '{documentintelligence-apikey}' = $deploymentResult.AzCognitiveServiceKey 
         '{cosmosmongo-connection-string}' = $deploymentResult.AzCosmosDBConnectionString 
-        '{azureblobs-connection-string}' = $deploymentResult.StorageAccountConnectionString 
         '{azureblobs-account}' = $deploymentResult.StorageAccountName
         '{azureaisearch-endpoint}' = $deploymentResult.AzSearchServicEndpoint 
         '{gpt-4o-mini-modelname}' = $deploymentResult.AzGPT4oModelId  
@@ -509,12 +545,7 @@ try {
         '{azureopenaiembedding-endpoint}' = $deploymentResult.AzOpenAiServiceEndpoint
         '{azureopenaitext-endpoint}' = $deploymentResult.AzOpenAiServiceEndpoint
         '{azureopenaitext-deployment}' = $deploymentResult.AzGPT4oModelId 
-        '{gpt-4o-key}' = $deploymentResult.AzOpenAiServiceKey
-        '{textembedding-key}' = $deploymentResult.AzOpenAiServiceKey
-        '{azureopenaiembedding-apikey}' = $deploymentResult.AzOpenAiServiceKey
-        '{azureopenaitext-apikey}' = $deploymentResult.AzOpenAiServiceKey
         '{textembedding-modelname}' = $deploymentResult.AzGPTEmbeddingModelName
-        '{azureaidocintel-apikey}' =  $deploymentResult.AzCognitiveServiceKey 
         '{cosmosmongo-chat-history-collection}' = "ChatHistory"
         '{cosmosmongo-chat-history-database}' = "DPS"
         '{cosmosmongo-document-manager-collection}' = "Documents"
@@ -523,58 +554,20 @@ try {
         '{documentintelligence-endpoint}' = $deploymentResult.AzCognitiveServiceEndpoint 
         '{azureblobs-container}' = "smemory"
         '{azurequeues-account}' = $deploymentResult.StorageAccountName
-        '{azurequeues-connection-string}' = $deploymentResult.StorageAccountConnectionString
         '{gpt-4o-modelname}' = $deploymentResult.AzGPT4oModelName 
         '{azureopenaiembedding-deployment}' = $deploymentResult.AzGPTEmbeddingModelName 
         '{kernelmemory-endpoint}' = "http://kernelmemory-service" 
-        }
+    }
 
     ## Load and update the AI service configuration template
     $aiServiceConfigTemplate = Get-Content -Path .\appconfig\aiservice\appconfig.jsonl -Raw
     $aiServiceConfigTemplate = Invoke-PlaceholdersReplacement $aiServiceConfigTemplate $aiServicePlaceholders
 
-    ## Save the updated AI service configuration file
-    $aiServiceConfigPath = ".\appconfig\aiservice\appsettings.dev.jsonl"
-    $aiServiceConfigTemplate | Set-Content -Path $aiServiceConfigPath -Force
-    Write-Host "Knowledge Mining Solution Accelerator Service Application Configuration file has been updated successfully." -ForegroundColor Green
-
-    ## Set error action preference to silently continue
-    $ErrorActionPreference = "SilentlyContinue"
-    ## Get the current script directory dynamically
-    $scriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Definition
-
-    ## Construct the relative path to the JSON file
-    $filePath = Join-Path $scriptDirectory ".\appconfig\aiservice\appsettings.dev.jsonl"
-
-    ## Other variables
-    $appConfigName = $deploymentResult.AzAppConfigName -replace "rg-", "-"
-
-    ## Output the file path for verification
-    #write-host "Using file path: $filePath"
-
-    ## Execute the az appconfig kv import command using PowerShell
-    az appconfig kv import `
-        --name $appConfigName `
-        --source file `
-        --path $filePath `
-        --format json `
-        --separator "," `
-        --content-type "application/x-ndjson" `
-        --yes
-
-    ## Check if the file exists and delete it
-    if (Test-Path $aiServiceConfigPath) {
-        Remove-Item $aiServiceConfigPath -Force
-        #Write-Host "File '$aiServiceConfigPath' has been deleted."
-    } else {
-        Write-Host "File '$aiServiceConfigPath' does not exist."
-    }
-    $ErrorActionPreference = "Continue"
-
+    Write-Host "Update Configuration files Completed." -ForegroundColor Green
     
     ######################################################################################################################
-    # Step 4 : Configure Kubernetes Infrastructure
-    Show-Banner -Title "Step 4 : Configure Kubernetes Infrastructure"
+    # Step 2 : Configure Kubernetes Infrastructure
+    Show-Banner -Title "Step 2 : Configure Kubernetes Infrastructure"
     ######################################################################################################################
     # 0. Attach Container Registry to AKS
     Write-Host "Attach Container Registry to AKS" -ForegroundColor Green
@@ -628,9 +621,40 @@ try {
         exit 1
     }
 
-
     # 2.Connect to AKS cluster
     try {
+        Write-Host "Checking if user already has AKS Cluster Admin role..." -ForegroundColor Cyan
+        # -----------------------------------------
+        # Check and assign AKS RBAC Cluster Admin role
+        # -----------------------------------------
+
+        $subscriptionId = (az account show --query id -o tsv)
+        $resourceGroup = $deploymentResult.ResourceGroupName
+        $aksName = $deploymentResult.AksName
+
+        # Get current signed-in user
+        $currentUser = az ad signed-in-user show --query id -o tsv
+
+        # Get AKS resource ID
+        $aksResourceId = az aks show --resource-group $resourceGroup --name $aksName --subscription $subscriptionId --query id -o tsv
+
+        # Check if role already assigned
+        $roleCheck = az role assignment list `
+            --assignee $currentUser `
+            --role "Azure Kubernetes Service RBAC Cluster Admin" `
+            --scope $aksResourceId `
+            --query "[].id" -o tsv
+
+        if (-not $roleCheck) {
+            Write-Host "Assigning 'Azure Kubernetes Service RBAC Cluster Admin' role to current user..."
+            az role assignment create `
+                --assignee $currentUser `
+                --role "Azure Kubernetes Service RBAC Cluster Admin" `
+                --scope $aksResourceId | Out-Null
+            Write-Host "Role assignment complete."
+        } else {
+            Write-Host "User already has 'Azure Kubernetes Service RBAC Cluster Admin' role."
+        }
         Write-Host "Connecting to AKS cluster..." -ForegroundColor Cyan
         az aks get-credentials --resource-group $deploymentResult.ResourceGroupName --name $deploymentResult.AksName --overwrite-existing
         Write-Host "Connected to AKS cluster." -ForegroundColor Green
@@ -702,14 +726,12 @@ try {
      
     # Validate if the FQDN is null or empty
     ValidateVariableIsNullOrEmpty -variableValue $fqdn -variableName "FQDN"    
-        
-    # 7. Assign the role for aks system assigned managed identity to App Configuration Data Reader role with the scope of Resourcegroup
-    Write-Host "Assign the role for aks system assigned managed identity to App Configuration Data Reader role" -ForegroundColor Green
+
     # Ensure that the required fields are not null or empty
     ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.ResourceGroupName -variableName "Resource group name"    
     
     ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.AksName -variableName "AKS cluster name"    
-        
+    
     # Get vmss resource group name
     $vmssResourceGroupName = $(az aks show --resource-group $deploymentResult.ResourceGroupName --name $deploymentResult.AksName --query nodeResourceGroup --output tsv)
     
@@ -724,23 +746,40 @@ try {
         
     # Create System Assigned Managed Identity
     $systemAssignedIdentity = $(az vmss identity assign --resource-group $vmssResourceGroupName --name $vmssName --query systemAssignedIdentity --output tsv)
-    
+
     # Validate if System Assigned Identity is null or empty
     ValidateVariableIsNullOrEmpty -variableValue $systemAssignedIdentity -variableName "System-assigned managed identity"    
     
-     # Validate if ResourceGroupId is null or empty
+    # Validate if ResourceGroupId is null or empty
     ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.ResourceGroupId -variableName "ResourceGroupId"    
  
     # Assign the role for aks system assigned managed identity to App Configuration Data Reader role with the scope of Resourcegroup
+    Write-Host "Assign the role for aks system assigned managed identity to App Configuration Data Reader role" -ForegroundColor Green
     az role assignment create --assignee $systemAssignedIdentity --role "App Configuration Data Reader" --scope $deploymentResult.ResourceGroupId
-
+    
     # Assign the role for aks system assigned managed identity to Azure blob storage Data Contributor role with the scope of Storage Account
     Write-Host "Assign the role for aks system assigned managed identity to App Storage Blob Data Contributor role" -ForegroundColor Green
-    az role assignment create --assignee $systemAssignedIdentity --role "Storage Blob Data Contributor" --scope "/subscriptions/$subscriptionID/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.Storage/storageAccounts/$($deploymentResult.StorageAccountName)"
+    az role assignment create --assignee $systemAssignedIdentity --role "Storage Blob Data Contributor" --scope "/subscriptions/$($deploymentResult.SubscriptionId)/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.Storage/storageAccounts/$($deploymentResult.StorageAccountName)"
 
     # Assign the role for aks system assigned managed identity to Azure Queue Data Contributor role with the scope of Storage Account
     Write-Host "Assign the role for aks system assigned managed identity to App Storage Queue Data Contributor role" -ForegroundColor Green
-    az role assignment create --assignee $systemAssignedIdentity --role "Storage Queue Data Contributor" --scope "/subscriptions/$subscriptionID/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.Storage/storageAccounts/$($deploymentResult.StorageAccountName)"
+    az role assignment create --assignee $systemAssignedIdentity --role "Storage Queue Data Contributor" --scope "/subscriptions/$($deploymentResult.SubscriptionId)/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.Storage/storageAccounts/$($deploymentResult.StorageAccountName)"
+
+    # Assign the role for aks system assigned managed identity to Azure Queue Data Contributor role with the scope of Storage Account
+    Write-Host "Assign the role for aks system assigned managed identity to App Cognitive Services OpenAI User role" -ForegroundColor Green
+    az role assignment create --assignee $systemAssignedIdentity --role "Cognitive Services OpenAI User" --scope "/subscriptions/$($deploymentResult.SubscriptionId)/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.CognitiveServices/accounts/$($deploymentResult.AzOpenAiServiceName)"
+
+    # Assign the role for aks system assigned managed identity to Azure Queue Data Contributor role with the scope of Storage Account
+    Write-Host "Assign the role for aks system assigned managed identity to App Search Index Data Contributor role" -ForegroundColor Green
+    az role assignment create --assignee $systemAssignedIdentity --role "Search Index Data Contributor" --scope "/subscriptions/$($deploymentResult.SubscriptionId)/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.Search/searchServices/$($deploymentResult.AzSearchServiceName)"
+
+    # Assign the role for aks system assigned managed identity to Azure Queue Data Contributor role with the scope of Storage Account
+    Write-Host "Assign the role for aks system assigned managed identity to App Search Service Contributor role" -ForegroundColor Green
+    az role assignment create --assignee $systemAssignedIdentity --role "Search Service Contributor" --scope "/subscriptions/$($deploymentResult.SubscriptionId)/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.Search/searchServices/$($deploymentResult.AzSearchServiceName)"
+
+    # Assign the role for aks system assigned managed identity to Azure Queue Data Contributor role with the scope of Storage Account
+    Write-Host "Assign the role for aks system assigned managed identity to App Cognitive Services User role" -ForegroundColor Green
+    az role assignment create --assignee $systemAssignedIdentity --role "Cognitive Services User" --scope "/subscriptions/$($deploymentResult.SubscriptionId)/resourceGroups/$($deploymentResult.ResourceGroupName)/providers/Microsoft.CognitiveServices/accounts/$($deploymentResult.AzCognitiveServiceName)"
 
     # 8. Update aks nodepools to updated new role
     try {
@@ -750,7 +789,6 @@ try {
             Write-Host "Upgrading node pool: $nodePool" -ForegroundColor Cyan
             Write-Host "Node pool $nodePool upgrade initiated." -ForegroundColor Green
             az aks nodepool upgrade --resource-group $deploymentResult.ResourceGroupName --cluster-name $deploymentResult.AksName --name $nodePool 
-            
         }
     }
     catch {
@@ -763,18 +801,18 @@ try {
     }
 
     #########################################################################################################################################
-    # Step 5 : Update Kubernetes configuration files with the FQDN, Container Image Path and Email address for the certificate management
-    #Write-Host "Step 5 : Update Kubernetes yaml files with Container Image Path and Email address for the certificate management" -ForegroundColor Yellow
-    Show-Banner -Title "Step 5 : Update Kubernetes yaml files with Container Image Path and Email address for the certificate management"
+    # Step 3 : Update Kubernetes configuration files with the FQDN, Container Image Path and Email address for the certificate management
+    #Write-Host "Step 3 : Update Kubernetes yaml files with Container Image Path and Email address for the certificate management" -ForegroundColor Yellow
+    Show-Banner -Title "Step 3 : Update Kubernetes yaml files with Container Image Path and Email address for the certificate management"
     #########################################################################################################################################
 
-    # 5.1 Update deploy.certclusterissuer.yaml.template file and save as deploy.certclusterissuer.yaml
+    # 3.1 Update deploy.certclusterissuer.yaml.template file and save as deploy.certclusterissuer.yaml
     $certManagerTemplate = Get-Content -Path .\kubernetes\deploy.certclusterissuer.yaml.template -Raw
     $certManagerTemplate = $certManagerTemplate -replace '{{ your-email }}', $email
     $certManagerPath = ".\kubernetes\deploy.certclusterissuer.yaml"
     $certManagerTemplate | Set-Content -Path $certManagerPath -Force
 
-    # 5.2 Update deploy.ingress.yaml.template file and save as deploy.ingress.yaml
+    # 3.2 Update deploy.ingress.yaml.template file and save as deploy.ingress.yaml
     # webfront / apibackend
     $ingressPlaceholders = @{
         '{{ fqdn }}' = $fqdn
@@ -787,7 +825,7 @@ try {
     Write-Host "Ingress Controller configuration file have been updated successfully." -ForegroundColor Green
 
 
-    # 5.3 Update deploy.deployment.yaml.template file and save as deploy.deployment.yaml
+    # 3.3 Update deploy.deployment.yaml.template file and save as deploy.deployment.yaml
     # Validate AzContainerRegistryName IsNull Or Empty.
     ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.AzContainerRegistryName -variableName "Azure Container Registry Name"
 
@@ -816,9 +854,9 @@ try {
     $deployment | Set-Content -Path $deploymentPath -Force
 
     ########################################################################################################################################################
-    # Step 6 : Configure AKS (deploy Cert Manager, Ingress Controller) and Deploy Images on the kubernetes cluster
-    #Write-Host "Step 6 : Configure AKS (deploy Cert Manager) and Deploy Images on the kubernetes cluster" -ForegroundColor Yellow
-    Show-Banner -Title "Step 6 : Configure AKS (deploy Cert Manager) and Deploy Images on the kubernetes cluster"
+    # Step 4 : Configure AKS (deploy Cert Manager, Ingress Controller) and Deploy Images on the kubernetes cluster
+    #Write-Host "Step 4 : Configure AKS (deploy Cert Manager) and Deploy Images on the kubernetes cluster" -ForegroundColor Yellow
+    Show-Banner -Title "Step 4 : Configure AKS (deploy Cert Manager) and Deploy Images on the kubernetes cluster"
     ########################################################################################################################################################
     function Wait-ForCertManager {
         Write-Host "Waiting for Cert-Manager to be ready..." -ForegroundColor Cyan
@@ -835,7 +873,7 @@ try {
     }
     
     Write-Host "Deploying Cert Manager" -ForegroundColor Green
-    # 6.1. Install Cert Manager and nginx ingress controller in Kubernetes for SSL/TLS certificate
+    # 4.1. Install Cert Manager and nginx ingress controller in Kubernetes for SSL/TLS certificate
     # Install Cert-Manager
     Write-Host "Deploying...." -ForegroundColor Green
     helm repo add jetstack https://charts.jetstack.io --force-update
@@ -845,7 +883,7 @@ try {
     Wait-ForCertManager
 
 
-#======================================================================================================================================================================
+    #======================================================================================================================================================================
     # Validate AzAppConfigEndpoint IsNull Or Empty.
     ValidateVariableIsNullOrEmpty -variableValue $deploymentResult.AzAppConfigEndpoint -variableName "Azure App Configuration Endpoint"
     # App Deployment after finishing the AKS infrastructure setup
@@ -902,8 +940,8 @@ try {
     Copy-Item -Path $frontAppConfigPath -Destination "..\App\frontend-app\.env" -Force
 
     ######################################################################################################################
-    # Step 7 : docker build and push container images to Azure Container Registry
-    Show-Banner -Title "Step 7 : docker build and push container images to Azure Container Registry"
+    # Step 5 : docker build and push container images to Azure Container Registry
+    Show-Banner -Title "Step 5 : docker build and push container images to Azure Container Registry"
     ######################################################################################################################
     # $acrNamespace = "kmgs"
     # $acrAIServiceTag = "$($deploymentResult.AzContainerRegistryName).azurecr.io/$acrNamespace/aiservice"
@@ -930,18 +968,18 @@ try {
     docker build "../App/frontend-app/." --no-cache -t $acrFrontAppTag
     docker push $acrFrontAppTag
 
-#======================================================================================================================================================================
+    #======================================================================================================================================================================
 
-    # 7.2. Deploy ClusterIssuer in Kubernetes for SSL/TLS certificate
+    # 5.2. Deploy ClusterIssuer in Kubernetes for SSL/TLS certificate
     kubectl apply -f "./kubernetes/deploy.certclusterissuer.yaml"
 
-    # 7.3. Deploy Deployment in Kubernetes
+    # 5.3. Deploy Deployment in Kubernetes
     kubectl apply -f "./kubernetes/deploy.deployment.yaml" -n $kubenamespace
 
-    # 7.4. Deploy Services in Kubernetes
+    # 5.4. Deploy Services in Kubernetes
     kubectl apply -f "./kubernetes/deploy.service.yaml" -n $kubenamespace
 
-    # 7.5. Deploy Ingress Controller in Kubernetes for external access
+    # 5.5. Deploy Ingress Controller in Kubernetes for external access
     kubectl apply -f "./kubernetes/deploy.ingress.yaml" -n $kubenamespace
 
     # #####################################################################
@@ -953,18 +991,18 @@ try {
 
 
     #####################################################################
-    # Step 8 : Display the deployment result and following instructions
+    # Step 6 : Display the deployment result and following instructions
     #####################################################################
     #Write-Host "Deployment has been completed successfully." -ForegroundColor Green
     successBanner
 
     $messageString = "Please find the deployment details below: `r`n" +
-                    "1. Check Front Web Application with this URL - https://${fqdn} `n`r" +
-                    "2. Check GPT Model's TPM rate in your resource group - $($deploymentResult.ResourceGroupName) `n`r" +
-                    "Please set each value high as much as you can set`n`r" +
-                    "`t- Open AI Resource Name - $($deploymentResult.AzOpenAiServiceName) `n`r" +
-                    "`t- GPT4o Model - $($deploymentResult.AzGPT4oModelName) `n`r" +
-                    "`t- GPT Embedding Model - $($deploymentResult.AzGPTEmbeddingModelName) `n`r"
+    "1. Check Front Web Application with this URL - https://${fqdn} `n`r" +
+    "2. Check GPT Model's TPM rate in your resource group - $($deploymentResult.ResourceGroupName) `n`r" +
+    "Please set each value high as much as you can set`n`r" +
+    "`t- Open AI Resource Name - $($deploymentResult.AzOpenAiServiceName) `n`r" +
+    "`t- GPT Model - $($deploymentResult.AzGPT4oModelName) `n`r" +
+    "`t- GPT Embedding Model - $($deploymentResult.AzGPTEmbeddingModelName) `n`r"
     Write-Host $messageString -ForegroundColor Yellow
     Write-Host "Don't forget to control the TPM rate for your GPT and Embedding Model in Azure Open AI Studio Deployments section." -ForegroundColor Red
     Write-Host "After controlling the TPM rate for your GPT and Embedding Model, let's start Data file import process with this command." -ForegroundColor Yellow
@@ -976,4 +1014,3 @@ catch {
     Write-Host $_.Exception.Message -ForegroundColor Red
     Write-Host $_.Exception.StackTrace -ForegroundColor Red
 }
-

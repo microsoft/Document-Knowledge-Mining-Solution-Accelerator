@@ -59,7 +59,8 @@ const UploadDocumentsDialog = () => {
 
       try {
         // Simulate upload delay
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        //File upload is significantly slower than expected, so commented out the line below.
+        // await new Promise((resolve) => setTimeout(resolve, 2000));
         await importDocuments(formData); // Replace with actual upload API
 
         // Update file status to success
@@ -93,9 +94,22 @@ const UploadDocumentsDialog = () => {
     noKeyboard: true,
   });
 
+  // Add this function to handle dialog close
+  const handleDialogClose = () => {
+    setIsOpen(false);
+    setUploadingFiles([]); // Clear the uploaded files
+    setIsUploading(false); // Reset uploading state
+  };
+
   return (<>
     {isUploadBtnVisible == true ?
-      <Dialog open={isOpen} onOpenChange={(event, data) => setIsOpen(data.open)}>
+      <Dialog open={isOpen} onOpenChange={(event, data) => {
+        if (!data.open) {
+          handleDialogClose();
+        } else {
+          setIsOpen(data.open);
+        }
+      }}>
         <DialogTrigger>
           <Button icon={<ArrowUpload24Regular />} onClick={() => setIsOpen(true)}>
             Upload documents
@@ -108,7 +122,7 @@ const UploadDocumentsDialog = () => {
               <Button
                 icon={<DismissRegular />}
                 appearance="subtle"
-                onClick={() => setIsOpen(false)}
+                onClick={handleDialogClose}
                 style={{ position: "absolute", right: 20, top: 20 }}
               />
             </DialogTitle>
