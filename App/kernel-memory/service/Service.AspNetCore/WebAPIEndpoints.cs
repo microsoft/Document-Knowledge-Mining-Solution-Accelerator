@@ -146,7 +146,7 @@ public static class WebAPIEndpoints
                     ILogger<KernelMemoryWebAPI> log,
                     CancellationToken cancellationToken) =>
                 {
-                    log.LogTrace("New delete document HTTP request, index '{0}'", index);
+                    log.LogTrace("New delete document HTTP request, index {Index}", index?.Replace("\r", string.Empty).Replace("\n", string.Empty));
                     await service.DeleteIndexAsync(index: index, cancellationToken)
                         .ConfigureAwait(false);
                     // There's no API to check the index deletion progress, so the URL is empty
@@ -180,7 +180,7 @@ public static class WebAPIEndpoints
                     ILogger<KernelMemoryWebAPI> log,
                     CancellationToken cancellationToken) =>
                 {
-                    log.LogTrace("New delete document HTTP request, index '{0}'", index);
+                    log.LogTrace("New delete document HTTP request, index {Index}", index?.Replace("\r", string.Empty).Replace("\n", string.Empty));
                     await service.DeleteDocumentAsync(documentId: documentId, index: index, cancellationToken)
                         .ConfigureAwait(false);
                     var url = Constants.HttpUploadStatusEndpointWithParams
@@ -217,7 +217,7 @@ public static class WebAPIEndpoints
                     // Allow internal classes to access custom arguments via IContextProvider
                     contextProvider.InitContextArgs(query.ContextArguments);
 
-                    log.LogTrace("New search request, index '{0}', minRelevance {1}", query.Index, query.MinRelevance);
+                    log.LogTrace("New search request, index {Index}, minRelevance {MinRelevance}", query.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty), query.MinRelevance);
                     MemoryAnswer answer = await service.AskAsync(
                             question: query.Question,
                             index: query.Index,
@@ -252,7 +252,7 @@ public static class WebAPIEndpoints
                     // Allow internal classes to access custom arguments via IContextProvider
                     contextProvider.InitContextArgs(query.ContextArguments);
 
-                    log.LogTrace("New search HTTP request, index '{0}', minRelevance {1}", query.Index, query.MinRelevance);
+                    log.LogTrace("New search HTTP request, index {Index}, minRelevance {MinRelevance}", query.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty), query.MinRelevance);
                     SearchResult answer = await service.SearchAsync(
                             query: query.Query,
                             index: query.Index,
@@ -338,7 +338,10 @@ public static class WebAPIEndpoints
                     string.IsNullOrWhiteSpace(filename));
                 var errMsg = "Missing required parameter";
 
-                log.LogTrace("New download file HTTP request, index {0}, documentId {1}, fileName {3}", index, documentId, filename);
+                log.LogTrace("New download file HTTP request, index {Index}, documentId {DocumentId}, fileName {FileName}", 
+                    index?.Replace("\r", string.Empty).Replace("\n", string.Empty), 
+                    documentId?.Replace("\r", string.Empty).Replace("\n", string.Empty), 
+                    filename?.Replace("\r", string.Empty).Replace("\n", string.Empty));
 
                 if (!isValid)
                 {
@@ -362,7 +365,10 @@ public static class WebAPIEndpoints
                         return Results.Problem(title: "File not found", statusCode: 404);
                     }
 
-                    log.LogTrace("Downloading file '{0}', size '{1}', type '{2}'", filename, file.FileSize, file.FileType);
+                    log.LogTrace("Downloading file {FileName}, size {FileSize}, type {FileType}", 
+                        filename?.Replace("\r", string.Empty).Replace("\n", string.Empty), 
+                        file.FileSize, 
+                        file.FileType?.Replace("\r", string.Empty).Replace("\n", string.Empty));
                     Stream resultingFileStream = await file.GetStreamAsync().WaitAsync(cancellationToken).ConfigureAwait(false);
                     var response = Results.Stream(
                         resultingFileStream,

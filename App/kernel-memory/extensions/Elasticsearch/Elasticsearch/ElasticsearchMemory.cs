@@ -213,7 +213,10 @@ public class ElasticsearchMemory : IMemoryDb
         index = IndexNameHelper.Convert(index, this._config);
 
         this._log.LogTrace("Searching for '{Text}' on index '{IndexName}' with filters {Filters}. {MinRelevance} {Limit} {WithEmbeddings}",
-            text, index, filters.ToDebugString(), minRelevance, limit, withEmbeddings);
+            text?.Replace("\r", string.Empty).Replace("\n", string.Empty),
+            index?.Replace("\r", string.Empty).Replace("\n", string.Empty),
+            filters.ToDebugString()?.Replace("\r", string.Empty).Replace("\n", string.Empty),
+            minRelevance, limit, withEmbeddings);
 
         Embedding embedding = await this._embeddingGenerator.GenerateEmbeddingAsync(text, cancellationToken).ConfigureAwait(false);
         var coll = embedding.Data.ToArray();
@@ -258,7 +261,9 @@ public class ElasticsearchMemory : IMemoryDb
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         this._log.LogTrace("Querying index '{IndexName}' with filters {Filters}. {Limit} {WithEmbeddings}",
-            index, filters.ToDebugString(), limit, withEmbeddings);
+            index?.Replace("\r", string.Empty).Replace("\n", string.Empty),
+            filters.ToDebugString()?.Replace("\r", string.Empty).Replace("\n", string.Empty),
+            limit, withEmbeddings);
 
         if (limit < 0)
         {

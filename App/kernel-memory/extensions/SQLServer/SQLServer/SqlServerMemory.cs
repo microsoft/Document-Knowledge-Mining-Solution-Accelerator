@@ -48,6 +48,9 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
     /// SQL Server version, retrieved on the first connection
     /// </summary>
     private int _cachedServerVersion = int.MinValue;
+    // Accepts only [a-zA-Z_][a-zA-Z0-9_]{0,127}
+    private static readonly Regex s_safeSqlIdentifierRegex = new Regex(@"^[a-zA-Z_][a-zA-Z0-9_]{0,127}$", RegexOptions.Compiled);
+
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SqlServerMemory"/> class.
@@ -78,6 +81,7 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
             return;
         }
 
+        // lgtm[cs/sql-injection] Index name sanitized by NormalizeIndexName with regex ^[a-zA-Z_][a-zA-Z0-9_]{0,127}$
         var sql = $@"
             BEGIN TRANSACTION;
 
@@ -139,6 +143,7 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
             return;
         }
 
+        // lgtm[cs/sql-injection] Index name sanitized by NormalizeIndexName with regex ^[a-zA-Z_][a-zA-Z0-9_]{0,127}$
         var sql = $@"
             BEGIN TRANSACTION;
 
@@ -192,6 +197,7 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
             return;
         }
 
+        // lgtm[cs/sql-injection] Index name sanitized by NormalizeIndexName with regex ^[a-zA-Z_][a-zA-Z0-9_]{0,127}$
         var sql = $@"
             BEGIN TRANSACTION;
 
@@ -285,6 +291,7 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
         {
             var tagFilters = new TagCollection();
 
+            // lgtm[cs/sql-injection] Index name sanitized by NormalizeIndexName with regex ^[a-zA-Z_][a-zA-Z0-9_]{0,127}$ 
             command.CommandText = $@"
                 WITH [filters] AS
 		        (
@@ -359,6 +366,7 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
         try
         {
             var generatedFilters = this.GenerateFilters(index, command.Parameters, filters);
+            // lgtm[cs/sql-injection] Index name sanitized by NormalizeIndexName with regex ^[a-zA-Z_][a-zA-Z0-9_]{0,127}$
             command.CommandText = $@"
                 WITH
                 [embedding] as
@@ -455,6 +463,7 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
             throw new IndexNotFoundException($"The index '{index}' does not exist.");
         }
 
+        // lgtm[cs/sql-injection] Index name sanitized by NormalizeIndexName with regex ^[a-zA-Z_][a-zA-Z0-9_]{0,127}$
         var sql = $@"
                 BEGIN TRANSACTION;
 
@@ -606,6 +615,7 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
     /// <returns></returns>
     private async Task CreateTablesIfNotExistsAsync(CancellationToken cancellationToken)
     {
+        // lgtm[cs/sql-injection] Schema and table names from configuration, not user input
         var sql = $@"IF NOT EXISTS (SELECT  *
                                     FROM    sys.schemas
                                     WHERE   name = N'{this._config.Schema}' )
@@ -709,6 +719,7 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
 
                 filterBuilder.Append(" ( ");
 
+                // lgtm[cs/sql-injection] Index name sanitized by NormalizeIndexName with regex ^[a-zA-Z_][a-zA-Z0-9_]{0,127}$
                 filterBuilder.Append(CultureInfo.CurrentCulture, $@"EXISTS (
                          SELECT
 	                        1
@@ -763,6 +774,11 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
 
         index = s_replaceIndexNameCharsRegex.Replace(index.Trim().ToLowerInvariant(), ValidSeparator);
 
+         // Only allow index names that are valid SQL identifiers (start with a letter or underscore, followed by letters, digits, or underscores, max 128 chars)
+        if (!s_safeSqlIdentifierRegex.IsMatch(index))
+        {
+            throw new ArgumentException("Invalid index name. Allowed: letters, digits, underscores, max length 128, cannot start with digit.", nameof(index));
+        }
         return index;
     }
 

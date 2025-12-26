@@ -315,7 +315,7 @@ public class AzureAISearchMemory : IMemoryDb, IMemoryDbUpsertBatch
 
         try
         {
-            this._log.LogDebug("Deleting record {0} from index {1}", id, index);
+            this._log.LogDebug("Deleting record {RecordId} from index {Index}", id?.Replace("\r", string.Empty).Replace("\n", string.Empty), index?.Replace("\r", string.Empty).Replace("\n", string.Empty));
             Response<IndexDocumentsResult>? result = await client.DeleteDocumentsAsync(
                     AzureAISearchMemoryRecord.IdField,
                     new List<string> { id },
@@ -325,7 +325,7 @@ public class AzureAISearchMemory : IMemoryDb, IMemoryDbUpsertBatch
         }
         catch (RequestFailedException e) when (e.Status == 404)
         {
-            this._log.LogTrace("Index {0} record {1} not found, nothing to delete", index, id);
+            this._log.LogTrace("Index {Index} record {RecordId} not found, nothing to delete", index?.Replace("\r", string.Empty).Replace("\n", string.Empty), id?.Replace("\r", string.Empty).Replace("\n", string.Empty));
         }
     }
 
@@ -403,7 +403,7 @@ public class AzureAISearchMemory : IMemoryDb, IMemoryDbUpsertBatch
     private SearchClient GetSearchClient(string index)
     {
         var normalIndexName = this.NormalizeIndexName(index);
-        this._log.LogTrace("Preparing search client, index name '{0}' normalized to '{1}'", index, normalIndexName);
+        this._log.LogTrace("Preparing search client, index name '{Index}' normalized to '{NormalizedIndex}'", index?.Replace("\r", string.Empty).Replace("\n", string.Empty), normalIndexName?.Replace("\r", string.Empty).Replace("\n", string.Empty));
 
         // Search an available client from the local cache
         if (!this._clientsByIndex.TryGetValue(normalIndexName, out SearchClient? client))

@@ -70,11 +70,17 @@ public sealed class TextPartitioningHandler : IPipelineStepHandler
     public async Task<(bool success, DataPipeline updatedPipeline)> InvokeAsync(
         DataPipeline pipeline, CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Partitioning text, pipeline '{0}/{1}'", pipeline.Index, pipeline.DocumentId);
+        this._log.LogDebug(
+            "Partitioning text, pipeline {Index}/{DocumentId}",
+            pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty),
+            pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty));
 
         if (pipeline.Files.Count == 0)
         {
-            this._log.LogWarning("Pipeline '{0}/{1}': there are no files to process, moving to next pipeline step.", pipeline.Index, pipeline.DocumentId);
+            this._log.LogWarning(
+                "Pipeline {Index}/{DocumentId}: there are no files to process, moving to next pipeline step.",
+                pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty),
+                pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty));
             return (true, pipeline);
         }
 
