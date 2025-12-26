@@ -12,6 +12,9 @@ using Microsoft.KernelMemory.Diagnostics;
 using Microsoft.KernelMemory.MemoryStorage;
 
 namespace Microsoft.KernelMemory.MemoryDb.SQLServer;
+// Accepts only [a-zA-Z_][a-zA-Z0-9_]{0,127}
+    private static readonly Regex s_safeSqlIdentifierRegex = new Regex(@"^[a-zA-Z_][a-zA-Z0-9_]{0,127}$", RegexOptions.Compiled);
+
 
 /// <summary>
 /// Represents a memory store implementation that uses a SQL Server database as its backing store.
@@ -48,9 +51,6 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
     /// SQL Server version, retrieved on the first connection
     /// </summary>
     private int _cachedServerVersion = int.MinValue;
-    // Accepts only [a-zA-Z_][a-zA-Z0-9_]{0,127}
-    private static readonly Regex s_safeSqlIdentifierRegex = new Regex(@"^[a-zA-Z_][a-zA-Z0-9_]{0,127}$", RegexOptions.Compiled);
-
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SqlServerMemory"/> class.
