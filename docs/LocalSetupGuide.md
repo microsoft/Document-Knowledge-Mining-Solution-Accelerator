@@ -3,11 +3,10 @@
 This guide provides comprehensive instructions for setting up the Document Knowledge Mining Solution Accelerator for local development across Windows, Linux, and macOS platforms.
 
 ---
-## Step 1: Prerequisites - Install Required Tools
+## Step 1: Install Required Tools
 Install these tools before you start:
 - [Visual Studio](https://visualstudio.microsoft.com/)
 - [Visual Studio Code](https://code.visualstudio.com/)
-- [Node.js (LTS)](https://nodejs.org/en).
 
 ### Windows Development
 ```
@@ -209,9 +208,8 @@ After deploying the accelerator, the `appsettings.Development.json` file will be
 
 #### Server Not Responded Issues
 
-- While running the Kernel solution, if you encounter an error such as **“server not responded”** or **“server not found”**, it usually indicates that the required resource is not responding.  
+- While running the Kernel solution, if you encounter an error such as `server not responded` or `server not found`, it usually indicates that the required resource is not responding.   
 - Ensure that the necessary **Kubernetes services** are running. If not, start the Kubernetes service and then run the Kernel solution again.
-. 
 
 #### Permission Issues (Linux/macOS)
 
@@ -258,5 +256,5 @@ cat .env | grep -v '^#' | grep '='  # Should show key=value pairs
 
 - [Deployment Guide](DeploymentGuide.md) - Instructions for production deployment.
 - [Delete Resource Group](DeleteResourceGroup.md) - Steps to safely delete the Azure resource group created for the solution.
-- [Powershell Setup](PowershellSetup.md) - Instructions for setting up PowerShell and required scripts.
-- [Quota Check](QuotaCheck.md) - Steps to verify Azure quotas and ensure required limits before deployment.
+- [PowerShell Setup](PowershellSetup.md) - Instructions for setting up PowerShell and required scripts.
+- [Quota Check](QuotaCheck.md) - Steps to verify Azure quotas and ensure required limits before deployment..

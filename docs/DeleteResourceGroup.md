@@ -24,7 +24,7 @@ If your deployment fails and you need to clean up the resources manually, follow
 1. Click on the **resource group name** to open it.
 2. Click the **Delete resource group** button at the top.
 
-![Delete Resource Group](images/DeleteRG.png)
+![Delete Resource Group](images/delete-rg.png)
 
 3. Type the resource group name in the confirmation box and click **Delete**.
 
@@ -49,5 +49,3 @@ If you don’t want to delete the entire resource group, follow these steps:
 - Ensure the deleted resource or group no longer appears.
 
 📌 **Tip:** If a resource fails to delete, check if it's **locked** under the **Locks** section and remove the lock.
-
-

@@ -37,8 +37,7 @@ This guide will help you add **PowerShell 7** (PowerShell Core) to your systemâ€
    - Finally, click **OK** to exit the **System Properties** window.
 ### 6. Verify PowerShell 7 in PATH
    - Open **Command Prompt** or **Run** (press `Win + R`).
-   - Type `pwsh` and press Enter.
-   - If PowerShell 7 opens, you've successfully added it to your PATH!
+   - Type `pwsh` and press Enter. If PowerShell 7 opens, you've successfully added it to your PATH!
 ---
 ## Troubleshooting
 - **PowerShell 7 not opening:** Ensure the path to PowerShell 7 is entered correctly. If you're using a custom installation folder, check that the correct path is added to the `Path` variable.
