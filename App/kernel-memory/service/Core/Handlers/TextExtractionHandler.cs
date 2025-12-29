@@ -57,7 +57,7 @@ public sealed class TextExtractionHandler : IPipelineStepHandler, IDisposable
     public async Task<(bool success, DataPipeline updatedPipeline)> InvokeAsync(
         DataPipeline pipeline, CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Extracting text, pipeline '{Index}/{DocumentId}'", pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty), pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty));
+        this._log.LogDebug("Extracting text, pipeline {Index}/{DocumentId}", pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty), pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty));
 
         foreach (DataPipeline.FileDetails uploadedFile in pipeline.Files)
         {

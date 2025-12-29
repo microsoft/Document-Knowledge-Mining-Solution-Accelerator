@@ -355,7 +355,7 @@ internal sealed class DiskFileSystem : IFileSystem
             return;
         }
 
-        this._log.LogDebug("Creating directory {Path}", path?.Replace("\r", string.Empty).Replace("\n", string.Empty));
+        this._log.LogDebug("Creating directory {Path}", path.Replace("\r", string.Empty).Replace("\n", string.Empty));
         Directory.CreateDirectory(path);
     }
 

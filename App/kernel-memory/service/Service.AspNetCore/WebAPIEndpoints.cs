@@ -146,7 +146,7 @@ public static class WebAPIEndpoints
                     ILogger<KernelMemoryWebAPI> log,
                     CancellationToken cancellationToken) =>
                 {
-                    log.LogTrace("New delete document HTTP request, index {Index}", index?.Replace("\r", string.Empty).Replace("\n", string.Empty));
+                    log.LogTrace("New delete document HTTP request, index {Index}", index?.Replace("\r", string.Empty));
                     await service.DeleteIndexAsync(index: index, cancellationToken)
                         .ConfigureAwait(false);
                     // There's no API to check the index deletion progress, so the URL is empty
@@ -366,9 +366,9 @@ public static class WebAPIEndpoints
                     }
 
                     log.LogTrace("Downloading file {FileName}, size {FileSize}, type {FileType}", 
-                        filename?.Replace("\r", string.Empty).Replace("\n", string.Empty), 
+                        filename.Replace("\r", string.Empty).Replace("\n", string.Empty), 
                         file.FileSize, 
-                        file.FileType?.Replace("\r", string.Empty).Replace("\n", string.Empty));
+                        file.FileType.Replace("\r", string.Empty).Replace("\n", string.Empty));
                     Stream resultingFileStream = await file.GetStreamAsync().WaitAsync(cancellationToken).ConfigureAwait(false);
                     var response = Results.Stream(
                         resultingFileStream,

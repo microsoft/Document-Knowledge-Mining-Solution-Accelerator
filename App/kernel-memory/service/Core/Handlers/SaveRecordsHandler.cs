@@ -269,7 +269,7 @@ public sealed class SaveRecordsHandler : IPipelineStepHandler
     {
         try
         {
-            this._log.LogTrace("Saving record {RecordId} in index '{Index}'", record.Id?.Replace("\r", string.Empty).Replace("\n", string.Empty), pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty));
+            this._log.LogTrace("Saving record {RecordId} in index {Index}", record.Id?.Replace("\r", string.Empty).Replace("\n", string.Empty), pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty));
             await db.UpsertAsync(pipeline.Index, record, cancellationToken).ConfigureAwait(false);
         }
         catch (IndexNotFoundException e)
@@ -294,7 +294,7 @@ public sealed class SaveRecordsHandler : IPipelineStepHandler
         ArgumentNullExceptionEx.ThrowIfNull(dbBatch, nameof(dbBatch), $"{db.GetType().FullName} doesn't implement {nameof(IMemoryDbUpsertBatch)}");
         try
         {
-            this._log.LogTrace("Saving batch of {RecordCount} records in index '{Index}'", records.Count, pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty));
+            this._log.LogTrace("Saving batch of {RecordCount} records in index {Index}", records.Count, pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty));
             await dbBatch.UpsertBatchAsync(pipeline.Index, records, cancellationToken).ToListAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (IndexNotFoundException e)

@@ -14,7 +14,14 @@ export const PageNumberTab: React.FC<IPageNumberTabProps> = ({ selectedTab, sele
   }
 
   const base = window.ENV.STORAGE_URL.replace(/\r|\n/g, "").replace(/\/+$/,"");
-  const path = new URL(selectedPageMetadata.document_url, base).pathname.replace(/^\/+/, "");
+  let path: string;
+  try {
+    path = new URL(selectedPageMetadata.document_url, base).pathname.replace(/^\/+/, "");
+  } catch (error) {
+    // Avoid rendering if the document_url is invalid and cannot be parsed as a URL.
+    console.error("Invalid document URL in PageNumberTab:", selectedPageMetadata.document_url, error);
+    return null;
+  }
   const imageUrl = `${base}/${path}/`;
   
   return (

@@ -37,7 +37,7 @@ public sealed class DeleteDocumentHandler : IPipelineStepHandler
     public async Task<(bool success, DataPipeline updatedPipeline)> InvokeAsync(
         DataPipeline pipeline, CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Deleting document, pipeline '{Index}/{DocumentId}'", pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty), pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty));
+        this._log.LogDebug("Deleting document, pipeline {Index}/{DocumentId}", pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty), pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty));
 
         // Delete embeddings
         foreach (IMemoryDb db in this._memoryDbs)

@@ -112,7 +112,7 @@ public sealed class GenerateEmbeddingsParallelHandler : GenerateEmbeddingsHandle
 
             int totalTokens = strings.Sum(s => ((ITextEmbeddingGenerator)generator).CountTokens(s));
             this._log.LogTrace(
-                "Generating embeddings, pipeline '{Index}/{DocumentId}', generator '{GeneratorType}', batch size {BatchSize}, total {TotalTokens} tokens",
+                "Generating embeddings, pipeline {Index}/{DocumentId}, generator {GeneratorType}, batch size {BatchSize}, total {TotalTokens} tokens",
                 pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty),
                 pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty),
                 generator.GetType().FullName?.Replace("\r", string.Empty).Replace("\n", string.Empty),
@@ -143,7 +143,7 @@ public sealed class GenerateEmbeddingsParallelHandler : GenerateEmbeddingsHandle
         await Parallel.ForEachAsync(partitions, cancellationToken, async (partitionInfo, ct) =>
             {
                 this._log.LogTrace(
-                    "Generating embedding, pipeline '{Index}/{DocumentId}', generator '{GeneratorType}', content size {TokenCount} tokens",
+                    "Generating embedding, pipeline {Index}/{DocumentId}, generator {GeneratorType}, content size {TokenCount} tokens",
                     pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty),
                     pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty),
                     generator.GetType().FullName?.Replace("\r", string.Empty).Replace("\n", string.Empty),

@@ -32,7 +32,7 @@ public sealed class DeleteGeneratedFilesHandler : IPipelineStepHandler
     public async Task<(bool success, DataPipeline updatedPipeline)> InvokeAsync(
         DataPipeline pipeline, CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Deleting generated files, pipeline '{Index}/{DocumentId}'", pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty), pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty));
+        this._log.LogDebug("Deleting generated files, pipeline {Index}/{DocumentId}", pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty), pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty));
 
         // Delete files, leaving the status file
         await this._documentStorage.EmptyDocumentDirectoryAsync(

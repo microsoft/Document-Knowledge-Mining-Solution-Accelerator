@@ -403,7 +403,7 @@ public class AzureAISearchMemory : IMemoryDb, IMemoryDbUpsertBatch
     private SearchClient GetSearchClient(string index)
     {
         var normalIndexName = this.NormalizeIndexName(index);
-        this._log.LogTrace("Preparing search client, index name '{Index}' normalized to '{NormalizedIndex}'", index?.Replace("\r", string.Empty).Replace("\n", string.Empty), normalIndexName?.Replace("\r", string.Empty).Replace("\n", string.Empty));
+        this._log.LogTrace("Preparing search client, index name {Index} normalized to {NormalizedIndex}", index?.Replace("\r", string.Empty).Replace("\n", string.Empty), normalIndexName?.Replace("\r", string.Empty).Replace("\n", string.Empty));
 
         // Search an available client from the local cache
         if (!this._clientsByIndex.TryGetValue(normalIndexName, out SearchClient? client))

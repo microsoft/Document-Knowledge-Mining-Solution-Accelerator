@@ -428,7 +428,7 @@ public abstract class BaseOrchestrator : IPipelineOrchestrator, IDisposable
     /// <param name="cancellationToken">Task cancellation token</param>
     protected async Task UpdatePipelineStatusAsync(DataPipeline pipeline, CancellationToken cancellationToken)
     {
-        this.Log.LogDebug("Saving pipeline status to '{Index}/{DocumentId}/{FileName}'", pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty), pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty), Constants.PipelineStatusFilename);
+        this.Log.LogDebug("Saving pipeline status to {Index}/{DocumentId}/{FileName}", pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty), pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty), Constants.PipelineStatusFilename);
         try
         {
             await this._documentStorage.WriteFileAsync(

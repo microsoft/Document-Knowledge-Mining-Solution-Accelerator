@@ -212,7 +212,7 @@ public sealed class AWSS3Storage : IDocumentStorage, IDisposable
 
         this._log.LogTrace(
             "Deleting objects with prefix {Prefix}",
-            prefix?.Replace("\r", string.Empty).Replace("\n", string.Empty));
+            prefix.Replace("\r", string.Empty).Replace("\n", string.Empty));
 
         var allObjects = new List<S3Object>();
         var request = new ListObjectsV2Request

@@ -63,7 +63,7 @@ public sealed class GenerateEmbeddingsHandler : GenerateEmbeddingsHandlerBase, I
     {
         if (!this._embeddingGenerationEnabled)
         {
-            this._log.LogTrace("Embedding generation is disabled, skipping - pipeline '{Index}/{DocumentId}'", pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty), pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty));
+            this._log.LogTrace("Embedding generation is disabled, skipping - pipeline {Index}/{DocumentId}", pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty), pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty));
             return (true, pipeline);
         }
 
@@ -98,7 +98,7 @@ public sealed class GenerateEmbeddingsHandler : GenerateEmbeddingsHandlerBase, I
     {
         PartitionInfo[][] batches = partitions.Chunk(batchSize).ToArray();
 
-        this._log.LogTrace("Generating embeddings, pipeline '{Index}/{DocumentId}', batch generator '{GeneratorType}', batch size {BatchSize}, batch count {BatchCount}",
+        this._log.LogTrace("Generating embeddings, pipeline {Index}/{DocumentId}, batch generator {GeneratorType}, batch size {BatchSize}, batch count {BatchCount}",
             pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty),
             pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty),
             generator.GetType().FullName?.Replace("\r", string.Empty).Replace("\n", string.Empty),
@@ -111,7 +111,7 @@ public sealed class GenerateEmbeddingsHandler : GenerateEmbeddingsHandlerBase, I
             string[] strings = partitionsInfo.Select(x => x.PartitionContent).ToArray();
 
             int totalTokens = strings.Sum(s => ((ITextEmbeddingGenerator)generator).CountTokens(s));
-            this._log.LogTrace("Generating embeddings, pipeline '{Index}/{DocumentId}', generator '{GeneratorType}', batch size {BatchSize}, total {TotalTokens} tokens",
+            this._log.LogTrace("Generating embeddings, pipeline {Index}/{DocumentId}, generator {GeneratorType}, batch size {BatchSize}, total {TotalTokens} tokens",
                 pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty),
                 pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty),
                 generator.GetType().FullName?.Replace("\r", string.Empty).Replace("\n", string.Empty),
@@ -132,7 +132,7 @@ public sealed class GenerateEmbeddingsHandler : GenerateEmbeddingsHandlerBase, I
         List<PartitionInfo> partitions,
         CancellationToken cancellationToken)
     {
-        this._log.LogTrace("Generating embeddings, pipeline '{Index}/{DocumentId}', generator '{GeneratorType}', partition count {PartitionCount}",
+        this._log.LogTrace("Generating embeddings, pipeline {Index}/{DocumentId}, generator {GeneratorType}, partition count {PartitionCount}",
             pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty),
             pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty),
             generator.GetType().FullName?.Replace("\r", string.Empty).Replace("\n", string.Empty),
@@ -141,7 +141,7 @@ public sealed class GenerateEmbeddingsHandler : GenerateEmbeddingsHandlerBase, I
         // One partition at a time
         foreach (PartitionInfo partitionInfo in partitions)
         {
-            this._log.LogTrace("Generating embedding, pipeline '{Index}/{DocumentId}', generator '{GeneratorType}', content size {TokenCount} tokens",
+            this._log.LogTrace("Generating embedding, pipeline {Index}/{DocumentId}, generator {GeneratorType}, content size {TokenCount} tokens",
                 pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty),
                 pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty),
                 generator.GetType().FullName?.Replace("\r", string.Empty).Replace("\n", string.Empty),

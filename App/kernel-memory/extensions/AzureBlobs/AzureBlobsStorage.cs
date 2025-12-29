@@ -314,7 +314,7 @@ public sealed class AzureBlobsStorage : IDocumentStorage
             throw new DocumentStorageException("The blob prefix is empty, stopping the process to prevent data loss");
         }
 
-        this._log.LogInformation("Deleting blobs at {Prefix}", prefix?.Replace("\r", string.Empty).Replace("\n", string.Empty));
+        this._log.LogInformation("Deleting blobs at {Prefix}", prefix.Replace("\r", string.Empty).Replace("\n", string.Empty));
 
         AsyncPageable<BlobItem>? blobList = this._containerClient.GetBlobsAsync(prefix: prefix, cancellationToken: cancellationToken);
         await foreach (Page<BlobItem> page in blobList.AsPages().WithCancellation(cancellationToken).ConfigureAwait(false))
