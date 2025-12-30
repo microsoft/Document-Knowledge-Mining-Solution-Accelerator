@@ -483,7 +483,7 @@ class DeploymentResult {
             $this.AzCosmosDBName = "cosmos-$solutionSuffix"
             $this.AzAppConfigName = "appcs-$solutionSuffix"
 
-            # Model names from bicep defaults
+            # Model names from bicep defaults (if changed in bicep, this needs to be updated here as well)
             $this.AzGPT4oModelName = "gpt-4.1-mini"
             $this.AzGPT4oModelId = "gpt-4.1-mini"
             $this.AzGPTEmbeddingModelName = "text-embedding-3-large"
@@ -496,7 +496,14 @@ class DeploymentResult {
             $this.AzAppConfigEndpoint = "https://$($this.AzAppConfigName).azconfig.io"
 
             # Get AKS managed identity
-            $this.AksMid = az aks show --name $this.AksName --resource-group $resourceGroupName --query "identity.principalId" -o tsv 2>$null
+            $aksMid = az aks show --name $this.AksName --resource-group $resourceGroupName --query "identity.principalId" -o tsv 2>$null
+            if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($aksMid)) {
+                Write-Host "Warning: Failed to retrieve AKS managed identity for '$($this.AksName)' in resource group '$resourceGroupName'.`n`tThe AKS cluster may not exist or you may not have sufficient permissions." -ForegroundColor Yellow
+                $this.AksMid = $null
+            }
+            else {
+                $this.AksMid = $aksMid
+            }
 
             Write-Host "Successfully reconstructed resource names from SolutionSuffix '$solutionSuffix'" -ForegroundColor Green
         }
