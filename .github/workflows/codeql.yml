@@ -58,8 +58,8 @@ jobs:
         queries: security-and-quality
         config: |
           query-filters:
-            - exclude:
-                id: cs/sql-injection
+          - exclude:
+              id: cs/sql-injection
 
     - if: matrix.build-mode == 'manual'
       shell: bash
