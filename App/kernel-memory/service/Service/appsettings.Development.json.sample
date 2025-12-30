@@ -1,6 +1,6 @@
 {
   "ConnectionStrings": {
-    "AppConfig": "https://<app-config-name>.azconfig.io"   // Replace with the     "AppConfig": "https://<app-config-name>.azconfig.io"  // Replace with the Azure App Configuration endpoint URL
+    "AppConfig": "https://<app-config-name>.azconfig.io"  // Replace with the Azure App Configuration endpoint URL
   },
   "KernelMemory": {
     "Service": {
