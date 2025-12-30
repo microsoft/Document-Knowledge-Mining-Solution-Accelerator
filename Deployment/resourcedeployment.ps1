@@ -496,13 +496,10 @@ class DeploymentResult {
             $this.AzAppConfigEndpoint = "https://$($this.AzAppConfigName).azconfig.io"
 
             # Get AKS managed identity
-            $aksMid = az aks show --name $this.AksName --resource-group $resourceGroupName --query "identity.principalId" -o tsv 2>$null
-            if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($aksMid)) {
+            $this.AksMid = az aks show --name $this.AksName --resource-group $resourceGroupName --query "identity.principalId" -o tsv 2>$null
+            if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($this.AksMid)) {
                 Write-Host "Warning: Failed to retrieve AKS managed identity for '$($this.AksName)' in resource group '$resourceGroupName'.`n`tThe AKS cluster may not exist or you may not have sufficient permissions." -ForegroundColor Yellow
                 $this.AksMid = $null
-            }
-            else {
-                $this.AksMid = $aksMid
             }
 
             Write-Host "Successfully reconstructed resource names from SolutionSuffix '$solutionSuffix'" -ForegroundColor Green
