@@ -5,6 +5,14 @@ on:
       - main # Adjust this to the branch you want to trigger the deployment on
       - dev
       - demo
+    paths:
+      - 'infra/**'
+      - 'App/**'
+      - 'Deployment/**'
+      - 'azure.yaml'
+      - '.github/workflows/CI.yml'
+      - '.github/workflows/test-automation.yml'
+      - 'tests/**'
   schedule:
     - cron: "0 10,22 * * *" # Runs at 10:00 AM and 10:00 PM GMT
 
@@ -215,7 +223,7 @@ jobs:
                 enableRedundancy=false \
                 enableScalability=false \
                 createdBy="Pipeline" \
-                tags="{'SecurityControl':'Ignore','Purpose':'Deploying and Cleaning Up Resources for Validation','CreatedDate':'$current_date'}"
+                tags="{'Purpose':'Deploying and Cleaning Up Resources for Validation','CreatedDate':'$current_date'}"
 
       - name: Get Deployment Output and extract Values
         id: get_output
