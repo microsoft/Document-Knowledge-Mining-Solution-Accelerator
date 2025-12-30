@@ -67,8 +67,57 @@ corepack prepare yarn@stable --activate
 dotnet --version
 yarn --version
 ```
+## Step 2: Azure Authentication Setup
 
-## Step 2: Backend Setup
+Before configuring services, authenticate with Azure:
+
+```bash
+# Login to Azure CLI
+az login
+
+# Set your subscription
+az account set --subscription "your-subscription-id"
+
+# Verify authentication
+az account show
+```
+
+### Get Azure App Configuration URL
+
+Navigate to your resource group and select the resource with prefix `appcs-` to get the configuration URL:
+
+```bash
+APP_CONFIGURATION_URL=https://[Your app configuration service name].azconfig.io
+```
+
+For reference, see the image below:
+![local_developement_setup_1](./images/local_development_setup_1.png)
+
+### Required Azure RBAC Permissions
+
+To run the application locally, your Azure account needs the following role assignments on the deployed resources:
+
+#### App Configuration Access
+```bash
+# Get your principal ID
+PRINCIPAL_ID=$(az ad signed-in-user show --query id -o tsv)
+
+# Assign App Configuration Data Reader role
+az role assignment create \
+  --assignee $PRINCIPAL_ID \
+  --role "App Configuration Data Reader" \
+  --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.AppConfiguration/configurationStores/<appconfig-name>"
+```
+
+#### Other Required Roles
+Depending on the features you use, you may also need:
+- **Storage Blob Data Contributor** - For Azure Storage operations
+- **Storage Queue Data Contributor** - For queue-based processing
+- **Storage Blob Data Reader** - For read-only access to blob data
+
+**Note**: RBAC permission changes can take 5-10 minutes to propagate. If you encounter "Forbidden" errors after assigning roles, wait a few minutes and try again.
+
+## Step 3: Backend Setup
 
 ### 1. Clone the Repository
 
@@ -92,15 +141,50 @@ Navigate to the cloned repository and open the following solution files from Vis
 
 ---
 
-### 3. Verify `appsettings.Development.json`
+### 3. Create/Verify `appsettings.Development.json` Files
 
-After deploying the accelerator, the `appsettings.Development.json` file will be created automatically.
+**After deploying the accelerator**, the `appsettings.Development.json` file should be created automatically. If you are using a deployed resource group that was **not deployed from your machine**, you will need to create these files manually.
 
-- **KernelMemory Solution:**  
-    Expand the `appsettings.json` file under the **Service** project (inside the `service` folder) and confirm that `appsettings.Development.json` exists.
+#### KernelMemory Solution
 
-- **Microsoft.GS.DPS Solution:**  
-    Expand the `appsettings.json` file under the **Microsoft.GS.DPS.Host** project and confirm that `appsettings.Development.json` exists.
+1. In the **Service** project (inside the `service` folder), expand the `appsettings.json` file.
+2. Confirm that `appsettings.Development.json` exists.
+3. If it does not exist, create it manually by copying the sample file:
+
+```bash
+cd "document-knowledge-Mining-Solution-Accelerator\App\kernel-memory\service\Service"
+# Copy the example file
+cp appsettings.Development.json.sample appsettings.Development.json  # Linux
+# or
+Copy-Item appsettings.Development.json.sample appsettings.Development.json   # Windows PowerShell
+```
+
+4. Edit the `appsettings.Development.json` file with your Azure App Configuration URL:
+
+```json
+    "AppConfig": "https://<app-config-name>.azconfig.io"
+    // replace the app configuration name from the deployed resource group.
+```
+#### Microsoft.GS.DPS Solution
+
+1. In the **Microsoft.GS.DPS.Host** project, expand the `appsettings.json` file.
+2. Confirm that `appsettings.Development.json` exists.
+3. If it does not exist, create it manually by copying the sample file:
+
+```bash
+cd "document-knowledge-Mining-Solution-Accelerator\App\backend-api\Microsoft.GS.DPS.Host"
+# Copy the example file
+cp appsettings.Development.json.sample appsettings.Development.json  # Linux
+# or
+Copy-Item appsettings.Development.json.sample appsettings.Development.json   # Windows PowerShell
+```
+
+4. Edit the `appsettings.Development.json` file with your Azure App Configuration URL:
+
+```json
+    "AppConfig": "https://<app-config-name>.azconfig.io"
+    // replace the app configuration name from the deployed resource group.
+```
 
 ---
 
@@ -166,7 +250,7 @@ After deploying the accelerator, the `appsettings.Development.json` file will be
 ---
 
 
-## Step 3: Frontend Setup
+## Step 4: Frontend Setup
 
 1. Open the repo in **VS Code**.
 2. Navigate to the `App/frontend-app` folder and locate the `.env` file.
