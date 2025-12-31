@@ -53,20 +53,6 @@ corepack prepare yarn@stable --activate
 dotnet --version
 yarn --version
 ```
-### macOS Development
-```
-# .NET SDK (LTS .NET 8)
-brew install --cask dotnet-sdk
-
-# Yarn (via Corepack) – install Node.js first
-brew install node
-corepack enable
-corepack prepare yarn@stable --activate
-
-# Verify
-dotnet --version
-yarn --version
-```
 ## Step 2: Azure Authentication Setup
 
 Before configuring services, authenticate with Azure:
@@ -111,9 +97,75 @@ az role assignment create \
 
 #### Other Required Roles
 Depending on the features you use, you may also need:
-- **Storage Blob Data Contributor** - For Azure Storage operations
-- **Storage Queue Data Contributor** - For queue-based processing
-- **Storage Blob Data Reader** - For read-only access to blob data
+- **Storage Blob Data Contributor** – For Azure Storage operations  
+
+```bash
+# Assign Storage Blob Data Contributor role
+az role assignment create \
+  --assignee $PRINCIPAL_ID \
+  --role "Storage Blob Data Contributor" \
+  --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Storage/storageAccounts/<storage-account-name>"
+```
+
+- **Storage Queue Data Contributor** – For queue-based processing
+
+```bash
+# Assign Storage Queue Data Contributor role
+az role assignment create \
+  --assignee $PRINCIPAL_ID \
+  --role "Storage Queue Data Contributor" \
+  --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Storage/storageAccounts/<storage-account-name>"
+```
+
+- **Storage Blob Data Reader** – For read-only access to blob data
+
+```bash
+# Assign Storage Blob Data Reader role
+az role assignment create \
+  --assignee $PRINCIPAL_ID \
+  --role "Storage Blob Data Reader" \
+  --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Storage/storageAccounts/<storage-account-name>"
+```
+
+- **Search Index Data Contributor** – For Azure AI Search operations
+
+```bash
+# Assign Search Index Data Contributor role
+az role assignment create \
+  --assignee $PRINCIPAL_ID \
+  --role "Search Index Data Contributor" \
+  --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Search/searchServices/<search-service-name>"
+```
+
+- **Search Service Contributor** – For managing Azure AI Search service
+
+```bash
+# Assign Search Service Contributor role
+az role assignment create \
+  --assignee $PRINCIPAL_ID \
+  --role "Search Service Contributor" \
+  --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Search/searchServices/<search-service-name>"
+```
+
+- **Cognitive Services OpenAI User** – For Azure OpenAI access
+
+```bash
+# Assign Cognitive Services OpenAI User role
+az role assignment create \
+  --assignee $PRINCIPAL_ID \
+  --role "Cognitive Services OpenAI User" \
+  --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.CognitiveServices/accounts/<openai-service-name>"
+```
+
+- **Cognitive Services User** – For Azure AI Document Intelligence access
+
+```bash
+# Assign Cognitive Services User role
+az role assignment create \
+  --assignee $PRINCIPAL_ID \
+  --role "Cognitive Services User" \
+  --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.CognitiveServices/accounts/<document-intelligence-service-name>"
+```
 
 **Note**: RBAC permission changes can take 5-10 minutes to propagate. If you encounter "Forbidden" errors after assigning roles, wait a few minutes and try again.
 
@@ -152,7 +204,7 @@ Navigate to the cloned repository and open the following solution files from Vis
 3. If it does not exist, create it manually by copying the sample file:
 
 ```bash
-cd "document-knowledge-Mining-Solution-Accelerator\App\kernel-memory\service\Service"
+cd "Document-Knowledge-Mining-Solution-Accelerator\App\kernel-memory\service\Service"
 # Copy the example file
 cp appsettings.Development.json.sample appsettings.Development.json  # Linux
 # or
@@ -172,7 +224,7 @@ Copy-Item appsettings.Development.json.sample appsettings.Development.json   # W
 3. If it does not exist, create it manually by copying the sample file:
 
 ```bash
-cd "document-knowledge-Mining-Solution-Accelerator\App\backend-api\Microsoft.GS.DPS.Host"
+cd "Document-Knowledge-Mining-Solution-Accelerator\App\backend-api\Microsoft.GS.DPS.Host"
 # Copy the example file
 cp appsettings.Development.json.sample appsettings.Development.json  # Linux
 # or
