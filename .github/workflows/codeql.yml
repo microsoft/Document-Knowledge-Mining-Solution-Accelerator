@@ -60,6 +60,7 @@ jobs:
           query-filters:
             - exclude:
                 id: cs/sql-injection
+          include-suppressions: true
 
     - if: matrix.build-mode == 'manual'
       shell: bash
