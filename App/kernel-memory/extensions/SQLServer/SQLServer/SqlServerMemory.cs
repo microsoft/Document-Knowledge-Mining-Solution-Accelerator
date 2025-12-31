@@ -118,6 +118,7 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
         try
         {
             SqlCommand command = connection.CreateCommand();
+            // codeql[cs/sql-injection] Index name sanitized by NormalizeIndexName with regex ^[a-zA-Z_][a-zA-Z0-9_]{0,127}$
             command.CommandText = sql;
             command.Parameters.AddWithValue("@index", index);
             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -170,6 +171,7 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
         try
         {
             SqlCommand command = connection.CreateCommand();
+            // codeql[cs/sql-injection] Index name sanitized by NormalizeIndexName with regex ^[a-zA-Z_][a-zA-Z0-9_]{0,127}$
             command.CommandText = sql;
             command.Parameters.AddWithValue("@index", index);
             command.Parameters.AddWithValue("@key", record.Id);
@@ -214,6 +216,7 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
         SqlCommand command = connection.CreateCommand();
         try
         {
+            // codeql[cs/sql-injection] Index name sanitized by NormalizeIndexName with regex ^[a-zA-Z_][a-zA-Z0-9_]{0,127}$
             command.CommandText = sql;
             command.Parameters.AddWithValue("@index", index);
             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -240,6 +243,7 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
         SqlCommand command = connection.CreateCommand();
         try
         {
+            // codeql[cs/sql-injection] Schema and table names from configuration, not user input
             command.CommandText = sql;
             var dataReader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
             while (await dataReader.ReadAsync(cancellationToken).ConfigureAwait(false))
@@ -533,6 +537,7 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
             foreach (var record in list)
             {
                 SqlCommand command = connection.CreateCommand();
+                // codeql[cs/sql-injection] Index name sanitized by NormalizeIndexName with regex ^[a-zA-Z_][a-zA-Z0-9_]{0,127}$
                 command.CommandText = sql;
                 command.Parameters.AddWithValue("@index", index);
                 command.Parameters.AddWithValue("@key", record.Id);
@@ -644,6 +649,7 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
         SqlCommand command = connection.CreateCommand();
         try
         {
+            // codeql[cs/sql-injection] Schema and table names from configuration, not user input
             command.CommandText = sql;
             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
