@@ -55,6 +55,7 @@ jobs:
         build-mode: ${{ matrix.build-mode }}
         queries: security-and-quality
         config: |
+          disable-default-queries: false
           query-filters:
             - exclude:
                 id: csharp/sql-injection
