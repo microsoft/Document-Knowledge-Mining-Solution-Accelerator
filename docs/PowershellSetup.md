@@ -24,6 +24,7 @@ This guide will help you add **PowerShell 7** (PowerShell Core) to your systemâ€
      C:\Program Files\PowerShell\7\
      ```
    - If the path is already there, you don't need to add it again.
+
 ### 4. Add PowerShell 7 Path
    - If the path is not already in the list, click **New** in the **Edit Environment Variable** window.
    - Add the following path to the list:
@@ -31,10 +32,12 @@ This guide will help you add **PowerShell 7** (PowerShell Core) to your systemâ€
      C:\Program Files\PowerShell\7\
      ```
    > **Note:** If you installed PowerShell 7 in a custom location, replace the above path with the correct one.
+
 ### 5. Save Changes
    - After adding the path, click **OK** to close the **Edit Environment Variable** window.
    - Click **OK** again to close the **Environment Variables** window.
    - Finally, click **OK** to exit the **System Properties** window.
+   
 ### 6. Verify PowerShell 7 in PATH
    - Open **Command Prompt** or **Run** (press `Win + R`).
    - Type `pwsh` and press Enter. If PowerShell 7 opens, you've successfully added it to your PATH!

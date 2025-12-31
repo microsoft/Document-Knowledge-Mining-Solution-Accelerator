@@ -77,7 +77,7 @@ APP_CONFIGURATION_URL=https://[Your app configuration service name].azconfig.io
 ```
 
 For reference, see the image below:
-![local_developement_setup_1](./images/local_development_setup_1.png)
+![local_development_setup_1](./images/local_development_setup_1.png)
 
 ### Required Azure RBAC Permissions
 
@@ -214,8 +214,8 @@ Copy-Item appsettings.Development.json.sample appsettings.Development.json   # W
 4. Edit the `appsettings.Development.json` file with your Azure App Configuration URL:
 
 ```json
+    // Replace with the Azure App Configuration endpoint URL
     "AppConfig": "https://<app-config-name>.azconfig.io"
-    // replace the app configuration name from the deployed resource group.
 ```
 #### Microsoft.GS.DPS Solution
 
@@ -234,8 +234,8 @@ Copy-Item appsettings.Development.json.sample appsettings.Development.json   # W
 4. Edit the `appsettings.Development.json` file with your Azure App Configuration URL:
 
 ```json
+    // Replace with the Azure App Configuration endpoint URL
     "AppConfig": "https://<app-config-name>.azconfig.io"
-    // replace the app configuration name from the deployed resource group.
 ```
 
 ---
@@ -393,4 +393,4 @@ cat .env | grep -v '^#' | grep '='  # Should show key=value pairs
 - [Deployment Guide](DeploymentGuide.md) - Instructions for production deployment.
 - [Delete Resource Group](DeleteResourceGroup.md) - Steps to safely delete the Azure resource group created for the solution.
 - [PowerShell Setup](PowershellSetup.md) - Instructions for setting up PowerShell and required scripts.
-- [Quota Check](QuotaCheck.md) - Steps to verify Azure quotas and ensure required limits before deployment..
+- [Quota Check](QuotaCheck.md) - Steps to verify Azure quotas and ensure required limits before deployment.
