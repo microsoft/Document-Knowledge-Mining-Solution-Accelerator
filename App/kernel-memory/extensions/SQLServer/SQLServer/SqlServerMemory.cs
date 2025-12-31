@@ -81,7 +81,7 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
             return;
         }
 
-        // lgtm[cs/sql-injection] Index name sanitized by NormalizeIndexName with regex ^[a-zA-Z_][a-zA-Z0-9_]{0,127}$ 
+        // lgtm[cs/sql-injection] Index name sanitized by NormalizeIndexName with regex ^[a-zA-Z_][a-zA-Z0-9_]{0,127}$
         var sql = $@"
             BEGIN TRANSACTION;
 

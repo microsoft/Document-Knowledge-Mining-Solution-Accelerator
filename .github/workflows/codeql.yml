@@ -54,8 +54,6 @@ jobs:
         languages: ${{ matrix.language }}
         build-mode: ${{ matrix.build-mode }}
         queries: security-and-quality
-        config: |
-          include-suppressions: true
 
     - if: matrix.build-mode == 'manual'
       shell: bash
