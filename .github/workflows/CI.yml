@@ -1,6 +1,4 @@
 name: Deploy-Test-Cleanup Pipeline
-permissions:
-  contents: read
 on:
   push:
     branches:
