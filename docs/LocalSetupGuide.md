@@ -214,7 +214,6 @@ Copy-Item appsettings.Development.json.sample appsettings.Development.json   # W
 4. Edit the `appsettings.Development.json` file with your Azure App Configuration URL:
 
 ```json
-    // Replace with the Azure App Configuration endpoint URL
     "AppConfig": "https://<app-config-name>.azconfig.io"
 ```
 #### Microsoft.GS.DPS Solution
@@ -234,7 +233,6 @@ Copy-Item appsettings.Development.json.sample appsettings.Development.json   # W
 4. Edit the `appsettings.Development.json` file with your Azure App Configuration URL:
 
 ```json
-    // Replace with the Azure App Configuration endpoint URL
     "AppConfig": "https://<app-config-name>.azconfig.io"
 ```
 
