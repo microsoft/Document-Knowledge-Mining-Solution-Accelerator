@@ -8,10 +8,9 @@ on:
       - 'App/frontend-app/**'
       - 'App/kernel-memory/**'
       - '.github/workflows/codeql.yml'
-    paths-ignore:
-      - '**/.gitignore'
-      - '**/Dockerfile'
-      - '**/.dockerignore'
+      - '!**/.gitignore'
+      - '!**/Dockerfile'
+      - '!**/.dockerignore'
   pull_request:
     branches: [ "main", "dev", "demo" ]
     paths:
@@ -19,10 +18,9 @@ on:
       - 'App/frontend-app/**'
       - 'App/kernel-memory/**'
       - '.github/workflows/codeql.yml'
-    paths-ignore:
-      - '**/.gitignore'
-      - '**/Dockerfile'
-      - '**/.dockerignore'
+      - '!**/.gitignore'
+      - '!**/Dockerfile'
+      - '!**/.dockerignore'
   schedule:
     - cron: '37 2 * * 5'
 
