@@ -1,4 +1,6 @@
 name: Deploy-Test-Cleanup Pipeline
+permissions:
+  contents: read
 on:
   push:
     branches:
@@ -15,8 +17,6 @@ on:
       - 'tests/**'
   schedule:
     - cron: "0 10,22 * * *" # Runs at 10:00 AM and 10:00 PM GMT
-permissions:
-  contents: read
 
 env:
   GPT_CAPACITY: 150
