@@ -58,7 +58,7 @@ jobs:
           disable-default-queries: false
           query-filters:
             - exclude:
-                id: csharp/sql-injection
+                id: cs/sql-injection
                 paths:
                   - '**/SqlServerMemory.cs'
                   - '**/PostgresDbClient.cs'
