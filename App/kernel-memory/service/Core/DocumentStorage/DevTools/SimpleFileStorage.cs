@@ -117,7 +117,10 @@ public class SimpleFileStorage : IDocumentStorage
         {
             if (logErrIfNotFound)
             {
-                this._log.LogError("File not found {0}/{1}/{2}", index, documentId, fileName);
+                this._log.LogError("File not found {Index}/{DocumentId}/{FileName}",
+                    index?.Replace("\r", string.Empty).Replace("\n", string.Empty),
+                    documentId?.Replace("\r", string.Empty).Replace("\n", string.Empty),
+                    fileName?.Replace("\r", string.Empty).Replace("\n", string.Empty));
             }
 
             throw new DocumentStorageFileNotFoundException("File not found");
