@@ -10,7 +10,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.KernelMemory.AI;
 using Microsoft.KernelMemory.Diagnostics;
 using Microsoft.KernelMemory.MemoryStorage;
-using Microsoft.KernelMemory.Models;
 
 namespace Microsoft.KernelMemory.MemoryDb.SQLServer;
 
@@ -74,8 +73,7 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
     {
         if (!this._isReady) { await this.InitAsync(cancellationToken).ConfigureAwait(false); }
 
-         // Ensure index name is a safe SQL identifier; this mirrors IndexName.CleanName usage in higher layers.
-        index = IndexName.CleanName(index, defaultName: "default");
+        index = NormalizeIndexName(index);
 
         if (await this.DoesIndexExistsAsync(index, cancellationToken).ConfigureAwait(false))
         {
@@ -138,7 +136,7 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
     {
         if (!this._isReady) { await this.InitAsync(cancellationToken).ConfigureAwait(false); }
 
-        index = IndexName.CleanName(index, defaultName: "default");
+        index = NormalizeIndexName(index);
 
         if (!await this.DoesIndexExistsAsync(index, cancellationToken).ConfigureAwait(false))
         {
@@ -193,7 +191,7 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
     {
         if (!this._isReady) { await this.InitAsync(cancellationToken).ConfigureAwait(false); }
 
-        index = IndexName.CleanName(index, defaultName: "default");
+        index = NormalizeIndexName(index);
 
         if (!await this.DoesIndexExistsAsync(index, cancellationToken).ConfigureAwait(false))
         {
@@ -275,7 +273,7 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
     {
         if (!this._isReady) { await this.InitAsync(cancellationToken).ConfigureAwait(false); }
 
-        index = IndexName.CleanName(index, defaultName: "default");
+        index = NormalizeIndexName(index);
 
         if (!await this.DoesIndexExistsAsync(index, cancellationToken).ConfigureAwait(false))
         {
@@ -345,7 +343,7 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
     {
         if (!this._isReady) { await this.InitAsync(cancellationToken).ConfigureAwait(false); }
 
-        index = IndexName.CleanName(index, defaultName: "default");
+        index = NormalizeIndexName(index);
 
         if (!await this.DoesIndexExistsAsync(index, cancellationToken).ConfigureAwait(false))
         {
@@ -462,7 +460,7 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
 
         if (!this._isReady) { await this.InitAsync(cancellationToken).ConfigureAwait(false); }
 
-        index = IndexName.CleanName(index, defaultName: "default");
+        index = NormalizeIndexName(index);
 
         if (!await this.DoesIndexExistsAsync(index, cancellationToken).ConfigureAwait(false))
         {
@@ -566,6 +564,10 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
     }
 
     #region private ================================================================================
+
+    // Note: "_" is allowed in SQL Server, but we normalize it to "-" for consistency with other DBs
+    private static readonly Regex s_replaceIndexNameCharsRegex = new(@"[\s|\\|/|.|_|:]");
+    private const string ValidSeparator = "-";
 
     /// <summary>
     /// Prepare instance, ensuring tables exist and reusable info is cached.
@@ -772,6 +774,19 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
         return entry;
     }
 
-    
+    private static string NormalizeIndexName(string index)
+    {
+        ArgumentNullExceptionEx.ThrowIfNullOrWhiteSpace(index, nameof(index), "The index name is empty");
+
+        index = s_replaceIndexNameCharsRegex.Replace(index.Trim().ToLowerInvariant(), ValidSeparator);
+
+         // Only allow index names that are valid SQL identifiers (start with a letter or underscore, followed by letters, digits, or underscores, max 128 chars)
+        if (!s_safeSqlIdentifierRegex.IsMatch(index))
+        {
+            throw new ArgumentException("Invalid index name. Allowed: letters, digits, underscores, max length 128, cannot start with digit.", nameof(index));
+        }
+        return index;
+    }
+
     #endregion
 }
