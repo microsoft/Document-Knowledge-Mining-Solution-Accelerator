@@ -2,7 +2,6 @@
 
 This guide provides comprehensive instructions for setting up the Document Knowledge Mining Solution Accelerator for local development across Windows, Linux, and macOS platforms.
 
----
 ## Important Setup Notes
 
 ### Multi-Service Architecture
@@ -30,7 +29,7 @@ This application consists of **three separate services** that run independently:
 **All paths in this guide are relative to the repository root directory:**
 
 ```bash
-Document-Knowledge-Mining-Solution-Accelerator/      ← Repository root (start here)
+Document-Knowledge-Mining-Solution-Accelerator/        ← Repository root (start here)
 ├── App/
 │   ├── backend-api/                            
 │   │   ├── Microsoft.GS.DPS.sln                       ← Backend solution file
@@ -213,6 +212,7 @@ az role assignment create \
 
 #### Other Required Roles
 Depending on the features you use, you may also need:
+
 **Storage Blob Data Contributor** – For Azure Storage operations  
 
 ```bash
@@ -473,6 +473,7 @@ yarn -v
 ### 4.5. Install frontend dependencies
 
 ```powershell
+cd App/frontend-app
 yarn install
 ```
 
