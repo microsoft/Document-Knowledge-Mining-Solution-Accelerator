@@ -496,8 +496,8 @@ yarn start
 ---
 
 **Services will be available at:**
-- **Kernel Memory Service**: http://localhost:9001 (Swagger UI)
-- **Backend API**: https://localhost:52190 (Swagger UI)
+- **Kernel Memory Service**: http://localhost:9001 
+- **Backend API**: https://localhost:52190 
 - **Frontend Application**: http://localhost:5900
 
 You're now ready to run and debug the application locally!
