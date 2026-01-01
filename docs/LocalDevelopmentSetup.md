@@ -173,13 +173,6 @@ cd Document-Knowledge-Mining-Solution-Accelerator
 
 ---
 
-> **⚠️ IMPORTANT PREREQUISITE**  
-> Before proceeding with local development setup, you must have **already deployed the Azure resources** for this accelerator.  
-> If you haven't deployed yet, follow the [Deployment Guide](DeploymentGuide.md) first.  
-> Local development requires access to deployed Azure resources (App Configuration, Storage, AI Search, OpenAI, Document Intelligence).
-
----
-
 ## Step 2: Azure Authentication Setup
 
 Before configuring services, authenticate with Azure:
