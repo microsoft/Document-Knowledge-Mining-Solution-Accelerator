@@ -233,16 +233,6 @@ az role assignment create \
   --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Storage/storageAccounts/<storage-account-name>"
 ```
 
-**Storage Blob Data Reader** – For read-only access to blob data
-
-```bash
-# Assign Storage Blob Data Reader role
-az role assignment create \
-  --assignee $PRINCIPAL_ID \
-  --role "Storage Blob Data Reader" \
-  --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Storage/storageAccounts/<storage-account-name>"
-```
-
 **Search Index Data Contributor** – For Azure AI Search operations
 
 ```bash
@@ -387,7 +377,6 @@ Copy-Item Deployment\appconfig\aiservice\appsettings.Development.json.template A
    - Assign the following roles to your user account:
      - `Storage Blob Data Contributor`
      - `Storage Queue Data Contributor`
-     - `Storage Blob Data Reader`
 
 #### Azure AI Search
    - Go to **Access control (IAM)** → **Add role assignment**
