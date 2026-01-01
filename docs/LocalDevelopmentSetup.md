@@ -48,6 +48,8 @@ Document-Knowledge-Mining-Solution-Accelerator/        ← Repository root (star
 │   └── appconfig/                                     ← Configuration templates location
 │       ├── aiservice/
 │       │   └── appsettings.Development.json.template  ← Backend API template
+│       ├── frontapp/
+│       │   └── .env.template                          ← Frontend template
 │       └── kernelmemory/
 │           └── appsettings.Development.json.template  ← Kernel Memory template
 ├── infra/                                        
@@ -168,6 +170,16 @@ yarn --version
 git clone https://github.com/microsoft/Document-Knowledge-Mining-Solution-Accelerator.git
 cd Document-Knowledge-Mining-Solution-Accelerator
 ```
+
+---
+
+> **⚠️ IMPORTANT PREREQUISITE**  
+> Before proceeding with local development setup, you must have **already deployed the Azure resources** for this accelerator.  
+> If you haven't deployed yet, follow the [Deployment Guide](DeploymentGuide.md) first.  
+> Local development requires access to deployed Azure resources (App Configuration, Storage, AI Search, OpenAI, Document Intelligence).
+
+---
+
 ## Step 2: Azure Authentication Setup
 
 Before configuring services, authenticate with Azure:
@@ -472,8 +484,11 @@ yarn -v
 
 ### 4.5. Install frontend dependencies
 
-```powershell
+```bash
+# From repository root, navigate to frontend directory
 cd App/frontend-app
+
+# Install dependencies
 yarn install
 ```
 
@@ -497,7 +512,6 @@ You're now ready to run and debug the application locally!
 ## Troubleshooting
 
 ### Common Issues
-
 
 #### Connection Issues
 
