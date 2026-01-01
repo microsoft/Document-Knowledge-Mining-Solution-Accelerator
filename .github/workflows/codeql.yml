@@ -53,16 +53,6 @@ jobs:
       with:
         languages: ${{ matrix.language }}
         build-mode: ${{ matrix.build-mode }}
-        queries: security-and-quality
-        config: |
-          disable-default-queries: false
-          query-filters:
-            - exclude:
-                id: cs/sql-injection
-                paths:
-                  - '**/SqlServerMemory.cs'
-                  - '**/PostgresDbClient.cs'
-          include-suppressions: false
 
     - if: matrix.build-mode == 'manual'
       shell: bash
