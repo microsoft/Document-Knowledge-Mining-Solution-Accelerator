@@ -1,6 +1,6 @@
 # Local Development Setup Guide
 
-This guide provides comprehensive instructions for setting up the Document Knowledge Mining Solution Accelerator for local development across Windows, Linux, and macOS platforms.
+This guide provides comprehensive instructions for setting up the Document Knowledge Mining Solution Accelerator for local development on Windows.
 
 ## Important Setup Notes
 
@@ -62,11 +62,10 @@ Document-Knowledge-Mining-Solution-Accelerator/        ← Repository root (star
 
 ```bash
 # Verify you're in the correct location
-pwd  # Linux/macOS - should show: .../Document-Knowledge-Mining-Solution-Accelerator
 Get-Location  # Windows PowerShell - should show: ...\Document-Knowledge-Mining-Solution-Accelerator
 
 # If not, navigate to repository root
-cd path/to/Document-Knowledge-Mining-Solution-Accelerator
+cd path\to\Document-Knowledge-Mining-Solution-Accelerator
 ```
 
 ### Configuration Files
@@ -123,47 +122,6 @@ az --version
 node -v 
 yarn --version
 ```
-### Linux Development
-
-#### Ubuntu/Debian
-```bash
-# .NET SDK (LTS .NET 8)
-sudo apt update && sudo apt install -y dotnet-sdk-8.0
-
-# Azure CLI (required for authentication and resource management)
-curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-
-# Yarn (via Corepack) – install Node.js LTS first
-sudo apt install -y nodejs npm
-corepack enable
-corepack prepare yarn@stable --activate
-
-# Verify
-dotnet --version
-az --version
-yarn --version
-```
-
-#### RHEL/CentOS/Fedora
-```bash
-# .NET SDK (LTS .NET 8)
-sudo dnf install -y dotnet-sdk-8.0
-
-# Azure CLI (required for authentication and resource management)
-sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
-sudo dnf install -y https://packages.microsoft.com/config/rhel/9.0/packages-microsoft-prod.rpm
-sudo dnf install -y azure-cli
-
-# Yarn (via Corepack) – install Node.js LTS first
-sudo dnf install -y nodejs npm
-corepack enable
-corepack prepare yarn@stable --activate
-
-# Verify
-dotnet --version
-az --version
-yarn --version
-```
 ### Clone the Repository
 
 ```bash
@@ -203,11 +161,21 @@ For reference, see the image below:
 
 To run the application locally, your Azure account needs the following role assignments on the deployed resources:
 
-#### App Configuration Access
+> **Note:**  
+> These roles are required only for local debugging and development. For production, ensure proper RBAC policies are applied.
+
+You can assign these roles using either Azure CLI (Option 1) or Azure Portal (Option 2).
+
+#### Option 1: Assign Roles via Azure CLI
+
 ```bash
 # Get your principal ID
 PRINCIPAL_ID=$(az ad signed-in-user show --query id -o tsv)
+```
 
+**App Configuration Data Reader** – Required for reading application configuration
+
+```bash
 # Assign App Configuration Data Reader role
 az role assignment create \
   --assignee $PRINCIPAL_ID \
@@ -278,6 +246,41 @@ az role assignment create \
   --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.CognitiveServices/accounts/<document-intelligence-service-name>"
 ```
 
+#### Option 2: Assign Roles via Azure Portal
+
+If you prefer or need to use the Azure Portal instead of CLI commands:
+
+1. Sign in to the [Azure Portal](https://portal.azure.com).
+2. Navigate to your **Resource Group** where services are deployed.
+3. For each resource, assign the required roles:
+
+**App Configuration**
+   - Go to **Access control (IAM)** → **Add role assignment**
+   - Assign role: `App Configuration Data Reader`
+   - Assign to: Your user account
+
+**Storage Account**
+   - Go to **Access control (IAM)** → **Add role assignment**
+   - Assign the following roles to your user account:
+     - `Storage Blob Data Contributor`
+     - `Storage Queue Data Contributor`
+
+**Azure AI Search**
+   - Go to **Access control (IAM)** → **Add role assignment**
+   - Assign the following roles to your user account:
+     - `Search Index Data Contributor`
+     - `Search Service Contributor`
+
+**Azure OpenAI**
+   - Go to **Access control (IAM)** → **Add role assignment**
+   - Assign role: `Cognitive Services OpenAI User`
+   - Assign to: Your user account
+
+**Azure AI Document Intelligence**
+   - Go to **Access control (IAM)** → **Add role assignment**
+   - Assign role: `Cognitive Services User`
+   - Assign to: Your user account
+
 **Note**: RBAC permission changes can take 5-10 minutes to propagate. If you encounter "Forbidden" errors after assigning roles, wait a few minutes and try again.
 
 ## Step 3: Backend Setup & Run Instructions
@@ -309,8 +312,6 @@ Navigate to the cloned repository and open the following solution files from Vis
 cd "Document-Knowledge-Mining-Solution-Accelerator"
 
 # Copy the template file
-cp Deployment/appconfig/kernelmemory/appsettings.Development.json.template App/kernel-memory/service/Service/appsettings.Development.json  # Linux
-# or
 Copy-Item Deployment\appconfig\kernelmemory\appsettings.Development.json.template App\kernel-memory\service\Service\appsettings.Development.json   # Windows PowerShell
 ```
 
@@ -334,9 +335,7 @@ Copy-Item Deployment\appconfig\kernelmemory\appsettings.Development.json.templat
 cd "Document-Knowledge-Mining-Solution-Accelerator"
 
 # Copy the template file
-cp Deployment/appconfig/aiservice/appsettings.Development.json.template App/backend-api/Microsoft.GS.DPS.Host/appsettings.Development.json  # Linux
-# or
-Copy-Item Deployment\appconfig\aiservice\appsettings.Development.json.template App\backend-api\Microsoft.GS.DPS.Host\appsettings.Development.json   # Windows PowerShell
+Copy-Item Deployment\appconfig\aiservice\appsettings.Development.json.template App\backend-api\Microsoft.GS.DPS.Host\appsettings.Development.json
 ```
 
 4. Edit the `appsettings.Development.json` file with your Azure App Configuration URL:
@@ -351,7 +350,9 @@ Copy-Item Deployment\appconfig\aiservice\appsettings.Development.json.template A
 
 ---
 
-### 3.3. Set Startup Projects
+## Step 4: Run Backend Services
+
+### 4.1. Set Startup Projects
 
 - **KernelMemory Solution:**  
     Set **Service** (located inside the `service` folder) as the startup project to run the Kernel Memory service.
@@ -359,51 +360,7 @@ Copy-Item Deployment\appconfig\aiservice\appsettings.Development.json.template A
 - **Microsoft.GS.DPS Solution:**  
     Set **Microsoft.GS.DPS.Host** as the startup project to run the API.
 
----
-
-
-### 3.4. Alternative: Assign Azure Roles via Portal (If CLI Commands Don't Work)
-
-> **Note:**  
-> If you were unable to assign roles using the Azure CLI commands in Step 2, you can use the Azure Portal as an alternative method.
-> These roles are required only for local debugging and development. For production, ensure proper RBAC policies are applied.
-
-1. Sign in to the [Azure Portal](https://portal.azure.com).
-2. Navigate to your **Resource Group** where services are deployed.
-3. For each resource, assign the required roles:
-
-#### App Configuration
-   - Go to **Access control (IAM)** → **Add role assignment**
-   - Assign role: `App Configuration Data Reader`
-   - Assign to: Your user account
-
-#### Storage Account
-   - Go to **Access control (IAM)** → **Add role assignment**
-   - Assign the following roles to your user account:
-     - `Storage Blob Data Contributor`
-     - `Storage Queue Data Contributor`
-
-#### Azure AI Search
-   - Go to **Access control (IAM)** → **Add role assignment**
-   - Assign the following roles to your user account:
-     - `Search Index Data Contributor`
-     - `Search Service Contributor`
-
-#### Azure OpenAI
-   - Go to **Access control (IAM)** → **Add role assignment**
-   - Assign role: `Cognitive Services OpenAI User`
-   - Assign to: Your user account
-
-#### Azure AI Document Intelligence
-   - Go to **Access control (IAM)** → **Add role assignment**
-   - Assign role: `Cognitive Services User`
-   - Assign to: Your user account
-
-**Remember**: RBAC permission changes can take 5-10 minutes to propagate.
-
----
-
-### 3.5. Update Kernel Memory Endpoint in Azure App Configuration
+### 4.2. Update Kernel Memory Endpoint in Azure App Configuration
 
 > **Important:**  
 > The following change is only for local development and debugging.  
@@ -424,20 +381,27 @@ Copy-Item Deployment\appconfig\aiservice\appsettings.Development.json.template A
      ```
 6. Apply the changes.
 
----
-**After running both solutions, two terminal windows will appear. Once the backend starts successfully, Swagger will start at http://localhost:9001. You can now validate the API endpoints from the Swagger UI to ensure that the backend is running correctly.**
-
 > **Note:**  
 > Always revert the Kernel Memory endpoint value back to `http://kernelmemory-service` before running the application in Azure.
 
+### 4.3. Run the Backend Services
+
+1. In Visual Studio, run both solutions (KernelMemory and Microsoft.GS.DPS) by pressing **F5** or clicking the **Start** button.
+2. Two terminal windows will appear showing the service logs.
+3. Once both services start successfully:
+   - **Kernel Memory Service** will be available at: http://localhost:9001
+   - **Backend API** will be available at: https://localhost:52190
+   - **Swagger UI** will open automatically at http://localhost:52190 for API validation
+
+> **⚠️ Important:** Keep both terminal windows open while the services are running. Do not close them until you're done with development.
+
 ---
 
+## Step 5: Frontend Setup & Run Instructions
 
-## Step 4: Frontend Setup & Run Instructions
+### 5.1. Open the repo in **VS Code**.
 
-### 4.1. Open the repo in **VS Code**.
-
-### 4.2. Create `.env` file from template
+### 5.2. Create `.env` file from template
 
 Navigate to the `App/frontend-app` folder and create the `.env` file:
 
@@ -446,12 +410,10 @@ Navigate to the `App/frontend-app` folder and create the `.env` file:
 cd "Document-Knowledge-Mining-Solution-Accelerator"
 
 # Copy the template file
-cp Deployment/appconfig/frontapp/.env.template App/frontend-app/.env  # Linux
-# or
-Copy-Item Deployment\appconfig\frontapp\.env.template App\frontend-app\.env   # Windows PowerShell
+Copy-Item Deployment\appconfig\frontapp\.env.template App\frontend-app\.env
 ```
 
-### 4.3. Configure the `.env` file
+### 5.3. Configure the `.env` file
 
 Update the `VITE_API_ENDPOINT` value with your local Backend API URL:
 
@@ -460,7 +422,7 @@ VITE_API_ENDPOINT=https://localhost:52190
 DISABLE_AUTH=true
 VITE_ENABLE_UPLOAD_BUTTON=true
 ```
-### 4.4. Verify Node.js and Yarn Installation
+### 5.4. Verify Node.js and Yarn Installation
 
 Before installing dependencies, verify that Node.js (LTS) and Yarn are already installed from Step 1:
 
@@ -475,17 +437,17 @@ yarn -v
 > corepack prepare yarn@stable --activate
 > ```
 
-### 4.5. Install frontend dependencies
+### 5.5. Install frontend dependencies
 
-```bash
+```powershell
 # From repository root, navigate to frontend directory
-cd App/frontend-app
+cd App\frontend-app
 
 # Install dependencies
 yarn install
 ```
 
-### 4.6. Start the application
+### 5.6. Start the application
 
 ```powershell
 yarn start
@@ -510,13 +472,6 @@ You're now ready to run and debug the application locally!
 
 - While running the Kernel solution, if you encounter an error such as ``server not responded`` or ``server not found``, it usually indicates that the required resource is not responding.
 - Ensure that the necessary **Kubernetes services** are running. If not, start the Kubernetes service and then run the Kernel solution again.
-
-#### Permission Issues (Linux/macOS)
-
-```bash
-# Fix ownership of files
-sudo chown -R $USER:$USER .
-```
 
 #### Windows-Specific Issues
 
@@ -545,7 +500,6 @@ az account show
 
 ```bash
 # Check environment variables are loaded
-env | grep AZURE  # Linux/macOS
 Get-ChildItem Env:AZURE*  # Windows PowerShell
 
 # Validate .env file format
