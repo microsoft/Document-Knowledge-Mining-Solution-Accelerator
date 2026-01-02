@@ -4,7 +4,7 @@ When deploying Azure resources, you may come across different error codes that s
 
 Use these as quick reference guides to unblock your deployments.
 
-> **💡 Need deployment recovery help?** If your deployment failed and you need to start over, see the [Recover from Failed Deployment](https://github.com/microsoft/Container-Migration-Solution-Accelerator/blob/readme-updates/docs/DeploymentGuide.md#recover-from-failed-deployment) section in the deployment guide.
+> **💡 Need deployment recovery help?** If your deployment failed and you need to start over, see the [Recover from Failed Deployment](./DeploymentGuide.md#recover-from-failed-deployment) section in the deployment guide.
 
 ## Error Codes
 

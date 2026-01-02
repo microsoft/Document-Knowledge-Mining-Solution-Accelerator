@@ -204,7 +204,7 @@ azd up
 **During deployment, you'll be prompted for:**
 1. **Environment name** (e.g., "conmig") - Must be 3-16 characters long, alphanumeric only
 2. **Azure subscription** selection
-3. **Azure AI Deployment Location** - Select a region with available o3 model quota for AI operations
+3. **Azure AI Deployment Location** - Select a region with available Azure OpenAI Service quota for GPT-4.1-mini and text-embedding-3-large models
 4. **Primary location** - Select the region where your infrastructure resources will be deployed
 5. **Resource group** selection (create new or use existing)
 
