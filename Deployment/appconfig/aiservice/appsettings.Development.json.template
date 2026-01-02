@@ -7,7 +7,8 @@
   },
   "AllowedHosts": "*",
   "ConnectionStrings": {
-    "AppConfig": "{{ appconfig-url }}"
+    // Replace with the Azure App Configuration endpoint URL
+    "AppConfig": "https://<app-config-name>.azconfig.io"
   }
 }
   
