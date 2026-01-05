@@ -37,7 +37,7 @@ If your deployment fails and you need to clean up the resources manually, follow
 
 ## **4. Delete Individual Resources (If Needed)**
 
-If you don’t want to delete the entire resource group, follow these steps:
+If you don't want to delete the entire resource group, follow these steps:
 
 1. Open **Azure Portal** and go to the **Resource groups** section.
 2. Click on the specific **resource group**.

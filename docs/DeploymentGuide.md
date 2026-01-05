@@ -448,6 +448,7 @@ Now that your deployment is complete and tested, explore these resources to enha
 📚 **Learn More:**
 - [Technical Architecture](./TechnicalArchitecture.md) - Understand the system design and components
 - [Local Development Setup](./LocalSetupGuide.md) - Set up your local development environment
+- [Sample Questions](./SampleQuestions.md) - Example prompts to test the solution
 
 ## Need Help?
 
