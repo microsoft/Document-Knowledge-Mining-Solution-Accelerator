@@ -4,25 +4,31 @@ on:
   push:
     branches: [ "main", "dev", "demo" ]
     paths:
-      - 'App/backend-api/**'
-      - 'App/frontend-app/**'
-      - 'App/kernel-memory/**'
+      - 'App/backend-api/**/*.cs'
+      - 'App/backend-api/**/*.csproj'
+      - 'App/backend-api/**/*.sln'
+      - 'App/frontend-app/**/*.ts'
+      - 'App/frontend-app/**/*.tsx'
+      - 'App/frontend-app/**/*.js'
+      - 'App/frontend-app/**/*.jsx'
+      - 'App/kernel-memory/**/*.cs'
+      - 'App/kernel-memory/**/*.csproj'
+      - 'App/kernel-memory/**/*.sln'
       - '.github/workflows/codeql.yml'
-    paths-ignore:
-      - '**/.gitignore'
-      - '**/Dockerfile'
-      - '**/.dockerignore'
   pull_request:
     branches: [ "main", "dev", "demo" ]
     paths:
-      - 'App/backend-api/**'
-      - 'App/frontend-app/**'
-      - 'App/kernel-memory/**'
+      - 'App/backend-api/**/*.cs'
+      - 'App/backend-api/**/*.csproj'
+      - 'App/backend-api/**/*.sln'
+      - 'App/frontend-app/**/*.ts'
+      - 'App/frontend-app/**/*.tsx'
+      - 'App/frontend-app/**/*.js'
+      - 'App/frontend-app/**/*.jsx'
+      - 'App/kernel-memory/**/*.cs'
+      - 'App/kernel-memory/**/*.csproj'
+      - 'App/kernel-memory/**/*.sln'
       - '.github/workflows/codeql.yml'
-    paths-ignore:
-      - '**/.gitignore'
-      - '**/Dockerfile'
-      - '**/.dockerignore'
   schedule:
     - cron: '37 2 * * 5'
 
