@@ -362,91 +362,152 @@ class DeploymentResult {
     }
 
     [void]MapResultAz([string]$resourceGroupName) {
-        # Get deployment outputs
-        $deploymentName=$(az group show --name "$resourceGroupName" --query "tags.DeploymentName" -o tsv)
-        if (!$deploymentName) {
-            Write-Error "Deployment name not found in the resource group tags."
-            exit 1
-        }
-    
-        $deploymentOutputs=$(az deployment group show --resource-group "$resourceGroupName" --name "$deploymentName" --query "properties.outputs" -o json | ConvertFrom-Json)
-    
-        # Helper function to get value from deployment outputs with fallback
-        function Get-DeploymentOutputValue {
-            param (
-                [Parameter(Mandatory=$true)]
-                $outputs,
-                [Parameter(Mandatory=$true)]
-                [string]$primaryKey,
-                [Parameter(Mandatory=$true)]
-                [string]$fallbackKey
-            )
+        try {
+            Write-Host "Retrieving resource group tags..." -ForegroundColor Yellow
             
-            $value = $null
+            # Get deployment name from tags
+            $deploymentName = az group show --name $resourceGroupName --query "tags.DeploymentName" -o tsv 2>$null
             
-            # Try primary key first (old convention)
-            if ($outputs.PSObject.Properties.Name -contains $primaryKey) {
-                $value = $outputs.$primaryKey.value
+            if ([string]::IsNullOrEmpty($deploymentName)) {
+                Write-Host "DeploymentName tag not found. Using SolutionSuffix fallback..." -ForegroundColor Yellow
             }
-            
-            # If not found or empty, try fallback key (new convention)
-            if ([string]::IsNullOrEmpty($value) -and ($outputs.PSObject.Properties.Name -contains $fallbackKey)) {
-                $value = $outputs.$fallbackKey.value
+            else {
+                Write-Host "Found deployment name from tag: $deploymentName" -ForegroundColor Green
+                
+                # Check if deployment exists
+                $deploymentState = az deployment group show `
+                    --resource-group $resourceGroupName `
+                    --name $deploymentName `
+                    --query "properties.provisioningState" `
+                    -o tsv 2>$null
+                
+                if ($deploymentState -eq "Succeeded") {
+                    Write-Host "Deployment exists and succeeded. Retrieving outputs..." -ForegroundColor Green
+
+                    # Get deployment outputs
+                    $deploymentOutputs = az deployment group show `
+                        --resource-group $resourceGroupName `
+                        --name $deploymentName `
+                        --query "properties.outputs" `
+                        -o json | ConvertFrom-Json
+
+                    # Helper function to get value from deployment outputs with fallback
+                    function Get-DeploymentOutputValue {
+                        param (
+                            [Parameter(Mandatory=$true)]
+                            $outputs,
+                            [Parameter(Mandatory=$true)]
+                            [string]$primaryKey,
+                            [Parameter(Mandatory=$true)]
+                            [string]$fallbackKey
+                        )
+
+                        $value = $null
+
+                        # Try primary key first
+                        if ($outputs.PSObject.Properties.Name -contains $primaryKey) {
+                            $value = $outputs.$primaryKey.value
+                        }
+
+                        # If not found or empty, try fallback key
+                        if ([string]::IsNullOrEmpty($value) -and ($outputs.PSObject.Properties.Name -contains $fallbackKey)) {
+                            $value = $outputs.$fallbackKey.value
+                        }
+
+                        return $value
+                    }
+
+                    # Map all outputs to properties
+                    $this.TenantId = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_TENANT_ID" -fallbackKey "azureTenantId"
+                    if ([string]::IsNullOrEmpty($this.TenantId)) {
+                        $this.TenantId = az account show --query tenantId -o tsv
+                    }
+
+                    $this.SubscriptionId = az account show --query id -o tsv
+                    $this.ResourceGroupName = $resourceGroupName
+                    $this.ResourceGroupId = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_RESOURCE_GROUP_ID" -fallbackKey "azureResourceGroupId"
+
+                    $this.StorageAccountName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "storagE_ACCOUNT_NAME" -fallbackKey "storageAccountName"
+                    $this.AzSearchServiceName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_SEARCH_SERVICE_NAME" -fallbackKey "azureSearchServiceName"
+                    $this.AzSearchServicEndpoint = "https://$($this.AzSearchServiceName).search.windows.net"
+
+                    $this.AksName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_AKS_NAME" -fallbackKey "azureAksName"
+                    $this.AksMid = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_AKS_MI_ID" -fallbackKey "azureAksMiId"
+
+                    $this.AzContainerRegistryName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_CONTAINER_REGISTRY_NAME" -fallbackKey "azureContainerRegistryName"
+                    $this.AzCognitiveServiceName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_COGNITIVE_SERVICE_NAME" -fallbackKey "azureCognitiveServiceName"
+                    $this.AzCognitiveServiceEndpoint = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_COGNITIVE_SERVICE_ENDPOINT" -fallbackKey "azureCognitiveServiceEndpoint"
+                    $this.AzOpenAiServiceName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_OPENAI_SERVICE_NAME" -fallbackKey "azureOpenAiServiceName"
+                    $this.AzOpenAiServiceEndpoint = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_OPENAI_SERVICE_ENDPOINT" -fallbackKey "azureOpenAiServiceEndpoint"
+
+                    $this.AzCosmosDBName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_COSMOSDB_NAME" -fallbackKey "azureCosmosDbName"
+                    $this.AzGPT4oModelName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "aZ_GPT4O_MODEL_NAME" -fallbackKey "azGpt4oModelName"
+                    $this.AzGPT4oModelId = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "aZ_GPT4O_MODEL_ID" -fallbackKey "azGpt4oModelId"
+                    $this.AzGPTEmbeddingModelName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "aZ_GPT_EMBEDDING_MODEL_NAME" -fallbackKey "azGptEmbeddingModelName"
+                    $this.AzGPTEmbeddingModelId = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "aZ_GPT_EMBEDDING_MODEL_ID" -fallbackKey "azGptEmbeddingModelId"
+
+                    $this.AzAppConfigEndpoint = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_APP_CONFIG_ENDPOINT" -fallbackKey "azureAppConfigEndpoint"
+                    $this.AzAppConfigName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_APP_CONFIG_NAME" -fallbackKey "azureAppConfigName"
+
+                    Write-Host "Successfully retrieved deployment outputs" -ForegroundColor Green
+                    return
+                }
+                else {
+                    Write-Host "Deployment '$deploymentName' not found or did not succeed. Using SolutionSuffix fallback..." -ForegroundColor Yellow
+                }
             }
-            
-            return $value
+
+            # FALLBACK: Use SolutionSuffix from tags
+            Write-Host "Attempting to use SolutionSuffix fallback mechanism..." -ForegroundColor Yellow
+            $solutionSuffix = az group show --name $resourceGroupName --query "tags.SolutionSuffix" -o tsv 2>$null
+
+            if ([string]::IsNullOrEmpty($solutionSuffix)) {
+                throw "Cannot proceed: Neither deployment outputs nor SolutionSuffix tag found in resource group '$resourceGroupName'"
+            }
+
+            Write-Host "Found SolutionSuffix from tags: $solutionSuffix" -ForegroundColor Green
+
+            # Basic properties
+            $this.TenantId = az account show --query tenantId -o tsv
+            $this.SubscriptionId = az account show --query id -o tsv
+            $this.ResourceGroupName = $resourceGroupName
+            $this.ResourceGroupId = az group show --name $resourceGroupName --query id -o tsv
+
+            # Reconstruct resource names using same pattern as main.bicep
+            $this.StorageAccountName = "st$solutionSuffix"
+            $this.AzSearchServiceName = "srch-$solutionSuffix"
+            $this.AksName = "aks-$solutionSuffix"
+            $this.AzContainerRegistryName = "cr$($solutionSuffix.Replace('-', ''))"
+            $this.AzCognitiveServiceName = "di-$solutionSuffix"
+            $this.AzOpenAiServiceName = "oai-$solutionSuffix"
+            $this.AzCosmosDBName = "cosmos-$solutionSuffix"
+            $this.AzAppConfigName = "appcs-$solutionSuffix"
+
+            # Model names from bicep defaults (if changed in bicep, this needs to be updated here as well)
+            $this.AzGPT4oModelName = "gpt-4.1-mini"
+            $this.AzGPT4oModelId = "gpt-4.1-mini"
+            $this.AzGPTEmbeddingModelName = "text-embedding-3-large"
+            $this.AzGPTEmbeddingModelId = "text-embedding-3-large"
+
+            # Construct endpoints
+            $this.AzCognitiveServiceEndpoint = "https://$($this.AzCognitiveServiceName).cognitiveservices.azure.com/"
+            $this.AzOpenAiServiceEndpoint = "https://$($this.AzOpenAiServiceName).openai.azure.com/"
+            $this.AzSearchServicEndpoint = "https://$($this.AzSearchServiceName).search.windows.net"
+            $this.AzAppConfigEndpoint = "https://$($this.AzAppConfigName).azconfig.io"
+
+            # Get AKS managed identity
+            $this.AksMid = az aks show --name $this.AksName --resource-group $resourceGroupName --query "identity.principalId" -o tsv 2>$null
+            if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($this.AksMid)) {
+                Write-Host "Warning: Failed to retrieve AKS managed identity for '$($this.AksName)' in resource group '$resourceGroupName'.`n`tThe AKS cluster may not exist or you may not have sufficient permissions." -ForegroundColor Yellow
+                $this.AksMid = $null
+            }
+
+            Write-Host "Successfully reconstructed resource names from SolutionSuffix '$solutionSuffix'" -ForegroundColor Green
         }
-    
-        # Tenant ID
-        $this.TenantId = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_TENANT_ID" -fallbackKey "azureTenantId"
-        if (!$this.TenantId) {
-            $this.TenantId = $(az account show --query tenantId -o tsv)
+        catch {
+            Write-Host "Error in MapResultAz: $_" -ForegroundColor Red
+            throw
         }
-    
-        $this.SubscriptionId = $(az account show --query id -o tsv)
-    
-        # Resource Group
-        $this.ResourceGroupName = $resourceGroupName
-        $this.ResourceGroupId = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_RESOURCE_GROUP_ID" -fallbackKey "azureResourceGroupId"
-        if (!$this.ResourceGroupId) {
-            Write-Error "Required value 'AZURE_RESOURCE_GROUP_ID' or 'azureResourceGroupId' not found in the deployment outputs."
-            exit 1
-        }
-    
-        # Storage Account
-        $this.StorageAccountName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "storagE_ACCOUNT_NAME" -fallbackKey "storageAccountName"
-    
-        # Search Service
-        $this.AzSearchServiceName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_SEARCH_SERVICE_NAME" -fallbackKey "azureSearchServiceName"
-        $this.AzSearchServicEndpoint = "https://$($this.AzSearchServiceName).search.windows.net"
-    
-        # AKS
-        $this.AksName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_AKS_NAME" -fallbackKey "azureAksName"
-        $this.AksMid = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_AKS_MI_ID" -fallbackKey "azureAksMiId"
-    
-        # Container Registry
-        $this.AzContainerRegistryName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_CONTAINER_REGISTRY_NAME" -fallbackKey "azureContainerRegistryName"
-    
-        # Cognitive Service - Azure AI Document Intelligence Service
-        $this.AzCognitiveServiceName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_COGNITIVE_SERVICE_NAME" -fallbackKey "azureCognitiveServiceName"
-        $this.AzCognitiveServiceEndpoint = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_COGNITIVE_SERVICE_ENDPOINT" -fallbackKey "azureCognitiveServiceEndpoint"
-    
-        # Open AI Service
-        $this.AzOpenAiServiceName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_OPENAI_SERVICE_NAME" -fallbackKey "azureOpenAiServiceName"
-        $this.AzOpenAiServiceEndpoint = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_OPENAI_SERVICE_ENDPOINT" -fallbackKey "azureOpenAiServiceEndpoint"
-    
-        # Cosmos DB
-        $this.AzCosmosDBName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_COSMOSDB_NAME" -fallbackKey "azureCosmosDbName"
-    
-        # Open AI Service Models
-        $this.AzGPT4oModelName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "aZ_GPT4O_MODEL_NAME" -fallbackKey "azGpt4oModelName"
-        $this.AzGPT4oModelId = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "aZ_GPT4O_MODEL_ID" -fallbackKey "azGpt4oModelId"
-        $this.AzGPTEmbeddingModelName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "aZ_GPT_EMBEDDING_MODEL_NAME" -fallbackKey "azGptEmbeddingModelName"
-        $this.AzGPTEmbeddingModelId = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "aZ_GPT_EMBEDDING_MODEL_ID" -fallbackKey "azGptEmbeddingModelId"
-    
-        # App Configuration
-        $this.AzAppConfigEndpoint = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_APP_CONFIG_ENDPOINT" -fallbackKey "azureAppConfigEndpoint"
-        $this.AzAppConfigName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_APP_CONFIG_NAME" -fallbackKey "azureAppConfigName"
     }
 }
 
