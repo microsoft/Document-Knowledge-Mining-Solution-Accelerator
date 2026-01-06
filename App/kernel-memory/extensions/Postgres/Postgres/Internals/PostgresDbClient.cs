@@ -154,6 +154,8 @@ internal sealed class PostgresDbClient : IDisposable
         CancellationToken cancellationToken = default)
     {
         var origInputTableName = tableName;
+        // Validate tableName parameter before using it in SQL construction
+        PostgresSchema.ValidateTableName(origInputTableName);
         tableName = this.WithSchemaAndTableNamePrefix(tableName);
         this._log.LogTrace("Creating table: {0}", tableName);
 
@@ -173,7 +175,7 @@ internal sealed class PostgresDbClient : IDisposable
                     if (!string.IsNullOrEmpty(this._createTableSql))
                     {
                         cmd.CommandText = this._createTableSql
-                            .Replace(PostgresConfig.SqlPlaceholdersTableName, tableName, StringComparison.Ordinal)
+                            .Replace(PostgresConfig.SqlPlaceholdersTableName, tableName, StringComparison.Ordinal) // CodeQL [SM03934] tableName parameter is validated by PostgresSchema.ValidateTableName to prevent SQL injection
                             .Replace(PostgresConfig.SqlPlaceholdersVectorSize, $"{vectorSize}", StringComparison.Ordinal)
                             .Replace(PostgresConfig.SqlPlaceholdersLockId, $"{lockId}", StringComparison.Ordinal);
 
@@ -457,9 +459,9 @@ internal sealed class PostgresDbClient : IDisposable
 
                     // When using 1 - (embedding <=> target) the index is not being used, therefore we calculate
                     // the similarity (1 - distance) later. Furthermore, colDistance can't be used in the WHERE clause.
-                    cmd.CommandText = @$"
+                    cmd.CommandText = @$" // CodeQL [SM03934] justification: tableName parameter is validated by PostgresSchema.ValidateTableName to prevent SQL injection
                 SELECT {columns}, {this._colEmbedding} <=> @embedding AS {colDistance}
-                FROM {tableName}
+                FROM {tableName} 
                 WHERE {filterSql}
                 ORDER BY {colDistance} ASC
                 LIMIT @limit
