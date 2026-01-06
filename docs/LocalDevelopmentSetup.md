@@ -320,7 +320,7 @@ Copy-Item Deployment\appconfig\kernelmemory\appsettings.Development.json.templat
 ```json
 {
   "ConnectionStrings": {
-    "AppConfig": "https://<app-config-name>.azconfig.io"
+    "AppConfig": "{{ appconfig-url }}"
   }
 }
 ```
@@ -343,7 +343,7 @@ Copy-Item Deployment\appconfig\aiservice\appsettings.Development.json.template A
 ```json
 {
   "ConnectionStrings": {
-    "AppConfig": "https://<app-config-name>.azconfig.io"
+    "AppConfig": "{{ appconfig-url }}"
   }
 }
 ```

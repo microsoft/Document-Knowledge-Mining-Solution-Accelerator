@@ -445,8 +445,8 @@ class DeploymentResult {
         $this.AzGPTEmbeddingModelId = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "aZ_GPT_EMBEDDING_MODEL_ID" -fallbackKey "azGptEmbeddingModelId"
     
         # App Configuration
-        $this.AzAppConfigEndpoint = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_APP_CONFIG_ENDPOINT" -fallbackKey "azureAppConfigEndpoint"
-        $this.AzAppConfigName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_APP_CONFIG_NAME" -fallbackKey "azureAppConfigName"
+        $this.AzAppConfigEndpoint = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "AZURE_APP_CONFIG_ENDPOINT" -fallbackKey "azureAppConfigEndpoint"
+        $this.AzAppConfigName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "AZURE_APP_CONFIG_NAME" -fallbackKey "azureAppConfigName"
     }
 }
 

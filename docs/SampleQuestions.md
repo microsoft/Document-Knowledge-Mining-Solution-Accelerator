@@ -13,7 +13,7 @@ Prompts focus on housing issues, document filtering, and comparing annual report
 2. Navigate to the **document list** and browse available documents
 3. Ask in chat: **"What are the main factors contributing to the current housing affordability issues?"**
 
-![chat response image](./images/SampleQustion.png)
+![chat response image](./images/Sample_Qustion.png)
 
 4. Review the AI response for relevant insights
 5. Click one of the **suggested follow-up questions** and check the response
