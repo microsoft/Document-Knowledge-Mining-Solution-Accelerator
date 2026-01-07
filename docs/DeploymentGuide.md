@@ -53,7 +53,7 @@ Ensure you have access to an [Azure subscription](https://azure.microsoft.com/fr
 - [Azure Queue Storage](https://learn.microsoft.com/en-us/azure/storage/queues/)
 - [Azure Cosmos DB](https://learn.microsoft.com/en-us/azure/cosmos-db/)
 
-**Recommended Regions:** East US, East US 2, West US 3, Sweden Central
+**Recommended Regions:**  Central US, Australia East, UK South, Japan East
 
 🔍 **Check Availability:** Use [Azure Products by Region](https://azure.microsoft.com/en-us/explore/global-infrastructure/products-by-region/) to verify service availability.
 
@@ -202,7 +202,7 @@ azd up
 ```
 
 **During deployment, you'll be prompted for:**
-1. **Environment name** (e.g., "conmig") - Must be 3-16 characters long, alphanumeric only
+1. **Environment name** (e.g., "dkmsa") - Must be 3-16 characters long, alphanumeric only
 2. **Azure subscription** selection
 3. **Azure AI Deployment Location** - Select a region with available Azure OpenAI Service quota for GPT-4.1-mini and text-embedding-3-large models
 4. **Primary location** - Select the region where your infrastructure resources will be deployed
@@ -367,7 +367,7 @@ If your deployment failed or encountered errors, here are the steps to recover:
 azd down
 
 # Create new environment (3-16 chars, alphanumeric only)
-azd env new conmigretry
+azd env new dkmsaretry
 
 # Deploy with different settings/region
 azd up
@@ -397,10 +397,10 @@ azd up
 **Example:**
 ```shell
 # Create a new environment for production (valid: 3-16 chars)
-azd env new conmigprod
+azd env new dkmsaprod
 
 # Switch to the new environment
-azd env select conmigprod
+azd env select dkmsaprod
 
 # Deploy with fresh settings
 azd up
@@ -409,7 +409,7 @@ azd up
 > **Environment Name Requirements:**
 > - **Length:** 3-16 characters
 > - **Characters:** Alphanumeric only (letters and numbers)
-> - **Valid examples:** `conmig`, `test123`, `myappdev`, `prod2024`
+> - **Valid examples:** `dkmsa`, `test123`, `myappdev`, `prod2024`
 > - **Invalid examples:** `co` (too short), `my-very-long-environment-name` (too long), `test_env` (underscore not allowed), `myapp-dev` (hyphen not allowed)
 
 </details>
@@ -436,7 +436,7 @@ azd env get-values
 
 ### Best Practices for Multiple Environments
 
-- **Use descriptive names:** `conmigdev`, `conmigprod`, `conmigtest` (remember: 3-16 chars, alphanumeric only)
+- **Use descriptive names:** `dkmsadev`, `dkmsaprod`, `dkmsatest` (remember: 3-16 chars, alphanumeric only)
 - **Different regions:** Deploy to multiple regions for testing quota availability
 - **Separate configurations:** Each environment can have different parameter settings
 - **Clean up unused environments:** Use `azd down` to remove environments you no longer need
@@ -455,32 +455,3 @@ Now that your deployment is complete and tested, explore these resources to enha
 - 🐛 **Issues:** Check [Troubleshooting Guide](./TroubleShootingSteps.md)
 - 💬 **Support:** Review [Support Guidelines](../SUPPORT.md)
 - 🔧 **Development:** See [Contributing Guide](../CONTRIBUTING.md)
-
----
-
-## Advanced: Deploy Local Changes
-
-If you've made local modifications to the code and want to deploy them to Azure, follow these steps to swap the configuration files:
-
-> **Note:** To set up and run the application locally for development, see the [Local Development Setup Guide](./LocalDevelopmentSetup.md).
-
-### Step 1: Rename Azure Configuration Files
-
-**In the root directory:**
-1. Rename `azure.yaml` to `azure_custom2.yaml`
-2. Rename `azure_custom.yaml` to `azure.yaml`
-
-### Step 2: Rename Infrastructure Files
-
-**In the `infra` directory:**
-1. Rename `main.bicep` to `main_custom2.bicep`
-2. Rename `main_custom.bicep` to `main.bicep`
-
-### Step 3: Deploy Changes
-
-Run the deployment command:
-```shell
-azd up
-```
-
-> **Note:** These custom files are configured to deploy your local code changes instead of pulling from the GitHub repository.
