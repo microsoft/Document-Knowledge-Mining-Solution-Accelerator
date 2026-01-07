@@ -10,6 +10,7 @@ By default this template will use the environment name as the prefix to prevent 
 | ------------------------------- | ------ | ----------------- | --------------------------------------------------------------------------------------------------- |
 | `AZURE_ENV_NAME`                | string | `dkm`           | Used as a prefix for all resource names to ensure uniqueness across environments.                   |
 | `AZURE_LOCATION`                | string | `<User selects during deployment>`   | Location of the Azure resources. Controls where the infrastructure will be deployed.                |
+| `AZURE_ENV_OPENAI_LOCATION`     | string | `<User selects during deployment>`   | Location for Azure OpenAI resources. Can be different from AZURE_LOCATION for optimized AI service placement. |
 | `AZURE_ENV_MODEL_DEPLOYMENT_TYPE` | string | `GlobalStandard` | Defines the deployment type for the AI model (e.g., Standard, GlobalStandard).                     |
 | `AZURE_ENV_MODEL_NAME`          | string | `gpt-4.1`          | Specifies the name of the GPT model to be deployed.                                                |
 | `AZURE_ENV_MODEL_CAPACITY`       | int | `100`      | Sets the GPT model capacity.                                                |

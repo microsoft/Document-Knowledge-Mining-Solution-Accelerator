@@ -1,0 +1,84 @@
+name: Deploy-Test-Cleanup (v2)
+on:
+  push:
+    branches:
+      - main # Adjust this to the branch you want to trigger the deployment on
+      - dev
+      - demo
+  schedule:
+    - cron: "0 10,22 * * *" # Runs at 10:00 AM and 10:00 PM GMT
+  
+  workflow_dispatch:
+    inputs:
+      azure_location:
+        description: 'Azure Location For Deployment'
+        required: false
+        default: 'australiaeast'
+        type: choice
+        options:
+          - 'australiaeast'
+          - 'centralus'
+          - 'eastasia'
+          - 'eastus2'
+          - 'japaneast'
+          - 'northeurope'
+          - 'southeastasia'
+          - 'uksouth'
+      resource_group_name:
+        description: 'Resource Group Name (Optional)'
+        required: false
+        default: ''
+        type: string
+
+      waf_enabled:
+        description: 'Enable WAF'
+        required: false
+        default: false
+        type: boolean
+      EXP:
+        description: 'Enable EXP'
+        required: false
+        default: false
+        type: boolean
+      
+      cleanup_resources:
+        description: 'Cleanup Deployed Resources'
+        required: false
+        default: false
+        type: boolean
+
+      run_e2e_tests:
+        description: 'Run End-to-End Tests'
+        required: false
+        default: 'GoldenPath-Testing'
+        type: choice
+        options:
+          - 'GoldenPath-Testing'
+          - 'Smoke-Testing'
+          - 'None'
+      
+      AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID:
+        description: 'Log Analytics Workspace ID (Optional)'
+        required: false
+        default: ''
+        type: string
+      existing_webapp_url:
+        description: 'Existing WebApp URL (Skips Deployment)'
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  Run:
+    uses: ./.github/workflows/deploy-orchestrator.yml
+    with:
+      azure_location: ${{ github.event.inputs.azure_location || 'australiaeast' }}
+      resource_group_name: ${{ github.event.inputs.resource_group_name || '' }}
+      waf_enabled: ${{ github.event.inputs.waf_enabled == 'true' }}
+      EXP: ${{ github.event.inputs.EXP == 'true' }}
+      cleanup_resources: ${{ github.event.inputs.cleanup_resources == 'true' }}
+      run_e2e_tests: ${{ github.event.inputs.run_e2e_tests || 'GoldenPath-Testing' }}
+      AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID: ${{ github.event.inputs.AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID || '' }}
+      existing_webapp_url: ${{ github.event.inputs.existing_webapp_url || '' }}
+      trigger_type: ${{ github.event_name }}
+    secrets: inherit
