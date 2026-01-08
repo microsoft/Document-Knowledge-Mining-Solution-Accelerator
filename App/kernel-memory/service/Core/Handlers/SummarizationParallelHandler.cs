@@ -56,7 +56,10 @@ public sealed class SummarizationParallelHandler : IPipelineStepHandler
     public async Task<(bool success, DataPipeline updatedPipeline)> InvokeAsync(
         DataPipeline pipeline, CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Generating summary, pipeline '{0}/{1}'", pipeline.Index, pipeline.DocumentId);
+        this._log.LogDebug(
+            "Generating summary, pipeline {Index}/{DocumentId}",
+            pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty),
+            pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty));
 
         foreach (DataPipeline.FileDetails uploadedFile in pipeline.Files)
         {

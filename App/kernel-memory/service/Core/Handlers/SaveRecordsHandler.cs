@@ -106,7 +106,10 @@ public sealed class SaveRecordsHandler : IPipelineStepHandler
     public async Task<(bool success, DataPipeline updatedPipeline)> InvokeAsync(
         DataPipeline pipeline, CancellationToken cancellationToken = default)
     {
-        this._log.LogDebug("Saving memory records, pipeline '{0}/{1}'", pipeline.Index, pipeline.DocumentId);
+        this._log.LogDebug(
+            "Saving memory records, pipeline {Index}/{DocumentId}",
+            pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty),
+            pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty));
 
         await this.DeletePreviousRecordsAsync(pipeline, cancellationToken).ConfigureAwait(false);
         pipeline.PreviousExecutionsToPurge = new List<DataPipeline>();
@@ -238,7 +241,11 @@ public sealed class SaveRecordsHandler : IPipelineStepHandler
 
         if (!recordsFound)
         {
-            this._log.LogWarning("Pipeline '{0}/{1}': step {2}: no records found, cannot save, moving to next pipeline step.", pipeline.Index, pipeline.DocumentId, this.StepName);
+            this._log.LogWarning(
+                "Pipeline {Index}/{DocumentId}: step {StepName}: no records found, cannot save, moving to next pipeline step.",
+                pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty),
+                pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty),
+                this.StepName?.Replace("\r", string.Empty).Replace("\n", string.Empty));
         }
 
         return (true, pipeline);
@@ -262,15 +269,21 @@ public sealed class SaveRecordsHandler : IPipelineStepHandler
     {
         try
         {
-            this._log.LogTrace("Saving record {0} in index '{1}'", record.Id, pipeline.Index);
+            this._log.LogTrace("Saving record {RecordId} in index {Index}", record.Id?.Replace("\r", string.Empty).Replace("\n", string.Empty), pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty));
             await db.UpsertAsync(pipeline.Index, record, cancellationToken).ConfigureAwait(false);
         }
         catch (IndexNotFoundException e)
         {
-            this._log.LogWarning(e, "Index {0} not found, attempting to create it", pipeline.Index);
+            this._log.LogWarning(
+                e,
+                "Index {Index} not found, attempting to create it",
+                pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty));
             await this.CreateIndexOnceAsync(db, createdIndexes, pipeline.Index, record.Vector.Length, cancellationToken, true).ConfigureAwait(false);
 
-            this._log.LogTrace("Retry: saving record {0} in index '{1}'", record.Id, pipeline.Index);
+            this._log.LogTrace(
+                "Retry: saving record {RecordId} in index {Index}",
+                record.Id?.Replace("\r", string.Empty).Replace("\n", string.Empty),
+                pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty));
             await db.UpsertAsync(pipeline.Index, record, cancellationToken).ConfigureAwait(false);
         }
     }
@@ -281,15 +294,18 @@ public sealed class SaveRecordsHandler : IPipelineStepHandler
         ArgumentNullExceptionEx.ThrowIfNull(dbBatch, nameof(dbBatch), $"{db.GetType().FullName} doesn't implement {nameof(IMemoryDbUpsertBatch)}");
         try
         {
-            this._log.LogTrace("Saving batch of {0} records in index '{1}'", records.Count, pipeline.Index);
+            this._log.LogTrace("Saving batch of {RecordCount} records in index {Index}", records.Count, pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty));
             await dbBatch.UpsertBatchAsync(pipeline.Index, records, cancellationToken).ToListAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (IndexNotFoundException e)
         {
-            this._log.LogWarning(e, "Index {0} not found, attempting to create it", pipeline.Index);
+            this._log.LogWarning(e, "Index {Index} not found, attempting to create it", pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty));
             await this.CreateIndexOnceAsync(db, createdIndexes, pipeline.Index, records[0].Vector.Length, cancellationToken, true).ConfigureAwait(false);
 
-            this._log.LogTrace("Retry: Saving batch of {0} records in index '{1}'", records.Count, pipeline.Index);
+            this._log.LogTrace(
+                "Retry: Saving batch of {RecordCount} records in index {Index}",
+                records.Count,
+                pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty));
             await dbBatch.UpsertBatchAsync(pipeline.Index, records, cancellationToken).ToListAsync(cancellationToken).ConfigureAwait(false);
         }
     }
@@ -335,7 +351,9 @@ public sealed class SaveRecordsHandler : IPipelineStepHandler
 
         if (!force && createdIndexes.Contains(key)) { return; }
 
-        this._log.LogTrace("Creating index '{0}'", indexName);
+        this._log.LogTrace(
+            "Creating index {Index}",
+            indexName?.Replace("\r", string.Empty).Replace("\n", string.Empty));
         await client.CreateIndexAsync(indexName, vectorLength, cancellationToken).ConfigureAwait(false);
         createdIndexes.Add(key);
     }

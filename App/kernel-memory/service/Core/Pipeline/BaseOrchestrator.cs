@@ -428,7 +428,7 @@ public abstract class BaseOrchestrator : IPipelineOrchestrator, IDisposable
     /// <param name="cancellationToken">Task cancellation token</param>
     protected async Task UpdatePipelineStatusAsync(DataPipeline pipeline, CancellationToken cancellationToken)
     {
-        this.Log.LogDebug("Saving pipeline status to '{0}/{1}/{2}'", pipeline.Index, pipeline.DocumentId, Constants.PipelineStatusFilename);
+        this.Log.LogDebug("Saving pipeline status to {Index}/{DocumentId}/{FileName}", pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty), pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty), Constants.PipelineStatusFilename);
         try
         {
             await this._documentStorage.WriteFileAsync(
@@ -453,7 +453,7 @@ public abstract class BaseOrchestrator : IPipelineOrchestrator, IDisposable
 
     private async Task UploadFormFilesAsync(DataPipeline pipeline, CancellationToken cancellationToken)
     {
-        this.Log.LogDebug("Uploading {0} files, pipeline '{1}/{2}'", pipeline.FilesToUpload.Count, pipeline.Index, pipeline.DocumentId);
+        this.Log.LogDebug("Uploading {FileCount} files, pipeline '{Index}/{DocumentId}'", pipeline.FilesToUpload.Count, pipeline.Index?.Replace("\r", string.Empty).Replace("\n", string.Empty), pipeline.DocumentId?.Replace("\r", string.Empty).Replace("\n", string.Empty));
 
         await this._documentStorage.CreateIndexDirectoryAsync(pipeline.Index, cancellationToken).ConfigureAwait(false);
         await this._documentStorage.CreateDocumentDirectoryAsync(pipeline.Index, pipeline.DocumentId, cancellationToken).ConfigureAwait(false);
