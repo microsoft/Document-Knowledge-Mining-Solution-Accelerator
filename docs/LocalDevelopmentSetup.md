@@ -415,7 +415,7 @@ Copy-Item Deployment\appconfig\frontapp\.env.template App\frontend-app\.env
 
 ### 5.3. Configure the `.env` file
 
-Update the `VITE_API_ENDPOINT` value with your local Backend API URL:
+Update the `VITE_API_ENDPOINT` value with your local Backend API URL, e.g.:
 
 ```env
 VITE_API_ENDPOINT=https://localhost:52190
