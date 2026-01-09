@@ -15,7 +15,7 @@ This application consists of **three separate services** that run independently:
 > **⚠️ Critical: Each service must run in its own terminal/console window**
 >
 > - **Do NOT close terminals/windows** while services are running
-> - Open **Kernel Memory** and **Backend API** in Visual studio.
+> - Open **Kernel Memory** and **Backend API** in Visual Studio.
 > - Open **Frontend** in Visual Studio Code.
 > - Each service will occupy its terminal and show live logs
 >

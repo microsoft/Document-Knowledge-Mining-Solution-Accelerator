@@ -73,7 +73,7 @@ Ensure you have access to an [Azure subscription](https://azure.microsoft.com/fr
 
 ## Step 2: Deployment Environment
 
-<summary><b>Local Environment</b></summary>
+### Local Environment
 
 **Required Tools:**
 - [PowerShell 7.0+](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell) 
@@ -149,7 +149,7 @@ azd env set AZURE_ENV_VM_ADMIN_PASSWORD <your-password>
 
 You can customize various deployment settings before running `azd up`, including Azure regions, AI model configurations (deployment type, version, capacity), container registry settings, and resource names.
 
-📖 **Complete Guide:** See [Parameter Customization Guide](../docs/CustomizingAzdParameters.md) for the full list of available parameters and their usage.
+📖 **Complete Guide:** See [Parameter Customization Guide](./CustomizingAzdParameters.md) for the full list of available parameters and their usage.
 
 </details>
 
@@ -260,16 +260,16 @@ powershell.exe -ExecutionPolicy Bypass -File ".\resourcedeployment.ps1"
 
 <img src="./images/deployment/Deployment_Login_02.png" width="900" alt-text="Login">
 
-##### 5.1.3.2 You will be prompted to Login, Select a account and proceed to Login.
+##### 5.1.3.2 You will be prompted to login. Select an account and proceed to login.
 
-##### 5.1.3.3 **GO !** - Post Deployment Script executes Azure Infrastructure configuration, Application code compile and publish into Kubernetes Cluster.
+##### 5.1.3.3 **GO!** - Post Deployment script executes Azure Infrastructure configuration, Application code compile and publish into Kubernetes Cluster.
 
 ##### 5.1.3.4 Deployment Complete
 
 #### 🥳🎉 First, congrats on finishing Deployment!
 Let's check the message and configure your model's TPM rate higher to get better performance.  
 You can check the Application URL from the final console message.  
-Don't miss this Url information. This is the application's endpoint URL and it should be used for your data importing process.
+Don't miss this URL information. This is the application's endpoint URL and should be used for your data importing process.
 
 <img src="./images/deployment/Deployment_Screen02.png" alt="Success Deployment" width="900">
 
