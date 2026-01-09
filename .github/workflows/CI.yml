@@ -15,7 +15,9 @@ on:
       - 'tests/**'
   schedule:
     - cron: "0 10,22 * * *" # Runs at 10:00 AM and 10:00 PM GMT
-
+permissions:
+  contents: read
+  actions: read
 env:
   GPT_CAPACITY: 150
   TEXT_EMBEDDING_CAPACITY: 200
@@ -34,12 +36,6 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v5 # Checks out your repository
-
-      - name: Install Azure CLI
-        shell: bash
-        run: |
-          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-          az --version  # Verify installation
 
       - name: Install Kubernetes CLI (kubectl)
         shell: bash
@@ -144,10 +140,8 @@ jobs:
       - name: Install Bicep CLI
         run: az bicep install
 
-      - name: Install Azure Developer CLI
-        run: |
-          curl -fsSL https://aka.ms/install-azd.sh | bash
-        shell: bash
+      - name: Install azd
+        uses: Azure/setup-azd@v2
         
       - name: Set Deployment Region
         run: |
@@ -406,12 +400,6 @@ jobs:
       VALID_REGION: ${{ needs.deploy.outputs.VALID_REGION }}
 
     steps:
-      - name: Install Azure CLI
-        shell: bash
-        run: |
-          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-          az --version  # Verify installation
-          
       - name: Login to Azure
         shell: bash
         run: |
