@@ -15,7 +15,9 @@ on:
 env:
     url: ${{ inputs.DKM_URL }}
     accelerator_name: "DKM"
-
+permissions:
+  contents: read
+  actions: read
 jobs:
   test:
     runs-on: ubuntu-latest
