@@ -350,6 +350,7 @@ jobs:
 
       - name: Run Post Deployment Script
         shell: pwsh
+        continue-on-error: true
         run: |
           Write-Host "Running post deployment script to upload files..."
           cd Deployment
