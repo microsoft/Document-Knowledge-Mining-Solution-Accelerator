@@ -32,7 +32,7 @@ There are two methods to use your own data in this solution. It takes roughly 10
 You can upload through the user interface files that you would like processed. These files are uploaded to blob storage, processed, and added to the Azure AI Search index. File uploads are limited to 500MB and restricted to the following file formats: Office Files, TXT, PDF, TIFF, JPG, PNG.
 
 2. <u>Bulk File Processing</u><br/>
-You can take buik file processing since the web app saves uploaded files here also. This would be the ideal to upload a large number of document or files that are large in size. 
+You can take bulk file processing since the web app saves uploaded files here also. This would be the ideal to upload a large number of document or files that are large in size. 
 
     > **Document Upload Limit:** <br/>
     Please ensure that the document you upload does not exceed a maximum size of 250 MB.
