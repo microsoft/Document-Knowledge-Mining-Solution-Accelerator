@@ -395,7 +395,7 @@ jobs:
 
 
   cleanup-deployment:
-    if: always()
+    if: "!cancelled()"
     needs: [deploy, e2e-test]
     runs-on: ubuntu-latest
     env:

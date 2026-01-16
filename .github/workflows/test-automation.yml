@@ -48,7 +48,7 @@ jobs:
       - name: Run tests(1)
         id: test1
         run: |
-          xvfb-run pytest --headed --html=report/report.html --self-contained-html
+          xvfb-run pytest -m smoke --html=report/report.html --self-contained-html
         working-directory: tests/e2e-test
         continue-on-error: true
 
@@ -61,7 +61,7 @@ jobs:
         id: test2
         if: ${{ steps.test1.outcome == 'failure' }}
         run: |
-          xvfb-run pytest --headed --html=report/report.html --self-contained-html
+          xvfb-run pytest -m smoke --html=report/report.html --self-contained-html
         working-directory: tests/e2e-test
         continue-on-error: true
 
@@ -74,7 +74,7 @@ jobs:
         id: test3
         if: ${{ steps.test2.outcome == 'failure' }}
         run: |
-          xvfb-run pytest --headed --html=report/report.html --self-contained-html
+          xvfb-run pytest -m smoke --html=report/report.html --self-contained-html
         working-directory: tests/e2e-test
 
       - name: Upload test report
@@ -83,7 +83,9 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: test-report
-          path: tests/e2e-test/report/*
+          path: |
+            tests/e2e-test/report/*
+            tests/e2e-test/screenshots/*
 
       - name: Send Notification
         if: always()
