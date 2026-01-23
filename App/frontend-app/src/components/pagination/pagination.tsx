@@ -1,4 +1,4 @@
-import { Button } from "@fluentui/react-components";
+import { Button, Tooltip } from "@fluentui/react-components";
 import { DOTS, usePagination } from "../../utils/customHooks/usePagination";
 import { useState } from "react";
 import { ChevronLeft24Regular, ChevronRight24Regular } from "@fluentui/react-icons";
@@ -55,9 +55,19 @@ export function Pagination({ totalCount, pageSize, currentPage, siblingCount = 1
 
     return (
         <ul className="flex flex-wrap">
-            <Button icon={<ChevronLeft24Regular />} className="h-8" appearance="subtle" onClick={onPrevious} disabled={isDisabled || isLeftArrowDisabled}></Button>
+            <Tooltip 
+              content="Previous" 
+              relationship="label" 
+              withArrow>
+                <Button icon={<ChevronLeft24Regular />} className="h-8" appearance="subtle" onClick={onPrevious} disabled={isDisabled || isLeftArrowDisabled}></Button>
+            </Tooltip>
             {items}
-            <Button icon={<ChevronRight24Regular />} className="h-8" appearance="subtle" onClick={onNext} disabled={isDisabled || isRightArrowDisabled}></Button>
+            <Tooltip 
+            content="Next" 
+            relationship="label" 
+            withArrow>
+                <Button icon={<ChevronRight24Regular />} className="h-8" appearance="subtle" onClick={onNext} disabled={isDisabled || isRightArrowDisabled}></Button>
+            </Tooltip>
         </ul>
     );
 }

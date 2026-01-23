@@ -594,7 +594,9 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                     disabled={isLoading}
                     onSubmit={handleSend}
                     disableSend = {textAreaValue.trim().length === 0 || isLoading}
-                    contentAfter={undefined}
+                    send={{
+                        title: "Send"
+                    }}
                 />
             </div>
         </div >

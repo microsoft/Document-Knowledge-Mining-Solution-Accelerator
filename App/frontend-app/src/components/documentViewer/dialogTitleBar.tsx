@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Divider, Text, Tab, TabList, SelectTabEvent, SelectTabData, DialogTrigger } from '@fluentui/react-components';
+import { Button, Divider, Text, Tab, TabList, SelectTabEvent, SelectTabData, DialogTrigger, Tooltip } from '@fluentui/react-components';
 import { Dismiss24Regular, ArrowHookDownLeft16Filled, SparkleFilled, DocumentBulletListMultipleRegular, DocumentBulletListRegular, LayerDiagonalSparkle24Regular, InfoRegular } from '@fluentui/react-icons';
 import { DialogTitle } from '@fluentui/react-components';
 import { KMBrandRamp } from '../../styles';
@@ -66,12 +66,14 @@ export function DialogTitleBar({
       style={{ width: "100%" }}
       action={
         <DialogTrigger action="close">
-          <Button
-            appearance="subtle"
-            aria-label="close"
-            icon={<Dismiss24Regular />}
-            onClick={handleDialogClose}
-          />
+          <Tooltip content="Close" relationship="label" withArrow>
+            <Button
+              appearance="subtle"
+              aria-label="close"
+              icon={<Dismiss24Regular />}
+              onClick={handleDialogClose}
+            />
+          </Tooltip>
         </DialogTrigger>
       }
     >
