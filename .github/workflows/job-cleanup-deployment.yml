@@ -82,7 +82,6 @@ jobs:
         if: always()
         shell: bash
         run: |
-          azd auth logout || true
           az logout || echo "Warning: Failed to logout from Azure CLI"
           echo "Logged out from Azure."
       

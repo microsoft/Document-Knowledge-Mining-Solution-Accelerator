@@ -6,7 +6,7 @@ on:
       - dev
       - demo
   schedule:
-    - cron: "0 10,22 * * *" # Runs at 10:00 AM and 10:00 PM GMT
+    - cron: "0 10,22 * * *" # Runs at 10:00 AM and 10:00 PM UTC
   
   workflow_dispatch:
     inputs:
@@ -74,9 +74,9 @@ jobs:
     with:
       azure_location: ${{ github.event.inputs.azure_location || 'australiaeast' }}
       resource_group_name: ${{ github.event.inputs.resource_group_name || '' }}
-      waf_enabled: ${{ github.event.inputs.waf_enabled == 'true' }}
-      EXP: ${{ github.event.inputs.EXP == 'true' }}
-      cleanup_resources: ${{ github.event.inputs.cleanup_resources == 'true' }}
+      waf_enabled: ${{ github.event.inputs.waf_enabled }}
+      EXP: ${{ github.event.inputs.EXP }}
+      cleanup_resources: ${{ github.event.inputs.cleanup_resources }}
       run_e2e_tests: ${{ github.event.inputs.run_e2e_tests || 'GoldenPath-Testing' }}
       AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID: ${{ github.event.inputs.AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID || '' }}
       existing_webapp_url: ${{ github.event.inputs.existing_webapp_url || '' }}

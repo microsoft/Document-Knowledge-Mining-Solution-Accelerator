@@ -172,6 +172,10 @@ jobs:
         id: set_region
         shell: bash
         run: |
+          if [[ -z "$VALID_REGION" ]]; then
+            echo "❌ ERROR: VALID_REGION is not set. The quota check script (Deployment/checkquota.ps1) must set this variable before this step runs." >&2
+            exit 1
+          fi
           echo "Selected Region from Quota Check: $VALID_REGION"
           echo "AZURE_ENV_OPENAI_LOCATION=$VALID_REGION" >> $GITHUB_ENV
           echo "AZURE_ENV_OPENAI_LOCATION=$VALID_REGION" >> $GITHUB_OUTPUT
@@ -224,18 +228,6 @@ jobs:
           fi
           echo "RESOURCE_GROUP_NAME=$RESOURCE_GROUP_NAME" >> $GITHUB_OUTPUT
           echo "RESOURCE_GROUP_NAME=$RESOURCE_GROUP_NAME" >> $GITHUB_ENV
-
-      - name: Generate Unique Solution Prefix
-        id: generate_solution_prefix
-        shell: bash
-        run: |
-          set -e
-          COMMON_PART="psldg"
-          TIMESTAMP=$(date +%s)  
-          UPDATED_TIMESTAMP=$(echo $TIMESTAMP | tail -c 6) 
-          UNIQUE_SOLUTION_PREFIX="${COMMON_PART}${UPDATED_TIMESTAMP}"
-          echo "SOLUTION_PREFIX=${UNIQUE_SOLUTION_PREFIX}" >> $GITHUB_ENV
-          echo "Generated SOLUTION_PREFIX: ${UNIQUE_SOLUTION_PREFIX}" 
 
       - name: Determine Docker Image Tag
         id: determine_image_tag

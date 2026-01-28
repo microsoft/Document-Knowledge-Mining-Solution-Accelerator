@@ -63,6 +63,14 @@ jobs:
             echo "ERROR: No URL provided for testing"
             exit 1
           fi
+          
+          # Validate test suite is implemented
+          if [ "${{ env.test_suite }}" == "Smoke-Testing" ]; then
+            echo "ERROR: Smoke-Testing is not yet implemented"
+            echo "Available test suites: GoldenPath-Testing"
+            exit 1
+          fi
+          
           echo "Testing URL: ${{ env.url }}"
           echo "Test Suite: ${{ env.test_suite }}"
 
