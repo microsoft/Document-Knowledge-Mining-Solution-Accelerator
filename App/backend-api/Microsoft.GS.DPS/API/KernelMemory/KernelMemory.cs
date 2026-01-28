@@ -1,24 +1,13 @@
-﻿using AutoMapper;
-using DnsClient.Internal;
-using Microsoft.GS.DPS.Images;
-using Microsoft.GS.DPS.Model.KernelMemory;
+﻿using Microsoft.GS.DPS.Model.KernelMemory;
 using Microsoft.GS.DPS.Storage.Document;
 using Microsoft.KernelMemory;
 using Microsoft.KernelMemory.Context;
-using Microsoft.KernelMemory.Pipeline;
-using MongoDB.Bson;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 using Document = Microsoft.GS.DPS.Storage.Document.Entities.Document;
 using Microsoft.GS.DPS.API.UserInterface;
 using Microsoft.GS.DPS.Storage.AISearch;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.GS.DPS.API
 {
@@ -40,7 +29,7 @@ namespace Microsoft.GS.DPS.API
             KernelMemory.keywordExtractorPrompt = System.IO.File.ReadAllText(systemPromptFilePath);
         }
 
-        public KernelMemory(MemoryServerless kmClient, DocumentRepository documentRepository, DataCacheManager dataCache, TagUpdater tagUpdator)
+        public KernelMemory([FromKeyedServices("VectorSearch")] MemoryServerless kmClient, DocumentRepository documentRepository, DataCacheManager dataCache, TagUpdater tagUpdator)
         {
             _kmClient = kmClient;
             _documentRepository = documentRepository;

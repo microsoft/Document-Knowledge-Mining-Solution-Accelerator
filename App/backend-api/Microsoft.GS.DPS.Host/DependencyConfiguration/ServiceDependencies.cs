@@ -91,13 +91,20 @@ namespace Microsoft.GS.DPSHost.ServiceConfiguration
                     }
                 })
                 .AddSingleton<CustomDocIntelPdfDecoder>()
-                .AddSingleton<MemoryServerless>(x =>
+                .AddKeyedSingleton<MemoryServerless>("VectorSearch", (x, key) =>
                 {
                     var azureBlobConfig = x.GetRequiredService<IOptions<AzureBlobsConfig>>().Value;
                     var azureOpenAIConfig = x.GetRequiredService<IOptionsMonitor<AzureOpenAIConfig>>();
                     var azureOpenAIEmbeddingConfig = azureOpenAIConfig.Get("Embedding");
                     var azureOpenAITextConfig = azureOpenAIConfig.Get("Text");
-                    var azureAISearchConfig = x.GetRequiredService<IOptions<Microsoft.KernelMemory.AzureAISearchConfig>>().Value;
+                    var azureAISearchConfigSource = x.GetRequiredService<IOptions<Microsoft.KernelMemory.AzureAISearchConfig>>().Value;
+                    var azureAISearchConfig = new AzureAISearchConfig
+                    {
+                        Endpoint = azureAISearchConfigSource.Endpoint,
+                        APIKey = azureAISearchConfigSource.APIKey,
+                        Auth = azureAISearchConfigSource.Auth,
+                        UseHybridSearch = false // Vector search for Chat
+                    };
                     var azureAIDocIntelConfig = x.GetRequiredService<IOptions<AzureAIDocIntelConfig>>().Value;
                     var kernelMemoryConfig = x.GetRequiredService<IOptions<Microsoft.KernelMemory.KernelMemoryConfig>>().Value
                                                 ?? throw new InvalidOperationException("Unable to load KernelMemory configuration");
@@ -123,6 +130,50 @@ namespace Microsoft.GS.DPSHost.ServiceConfiguration
                         config: kernelMemoryConfig
                     );
                     
+                    // Add the handler instance instead of using generic method
+                    kmBuilder.Orchestrator.AddHandler(keywordHandler);
+                    return kmBuilder;
+
+                })
+                .AddKeyedSingleton<MemoryServerless>("HybridSearch", (x, key) =>
+                {
+                    var azureBlobConfig = x.GetRequiredService<IOptions<AzureBlobsConfig>>().Value;
+                    var azureOpenAIConfig = x.GetRequiredService<IOptionsMonitor<AzureOpenAIConfig>>();
+                    var azureOpenAIEmbeddingConfig = azureOpenAIConfig.Get("Embedding");
+                    var azureOpenAITextConfig = azureOpenAIConfig.Get("Text");
+                    var azureAISearchConfigSource = x.GetRequiredService<IOptions<Microsoft.KernelMemory.AzureAISearchConfig>>().Value;
+                    var azureAISearchConfig = new AzureAISearchConfig
+                    {
+                        Endpoint = azureAISearchConfigSource.Endpoint,
+                        APIKey = azureAISearchConfigSource.APIKey,
+                        Auth = azureAISearchConfigSource.Auth,
+                        UseHybridSearch = true  // Hybrid for document search
+                    };
+                    var azureAIDocIntelConfig = x.GetRequiredService<IOptions<AzureAIDocIntelConfig>>().Value;
+                    var kernelMemoryConfig = x.GetRequiredService<IOptions<Microsoft.KernelMemory.KernelMemoryConfig>>().Value
+                                                ?? throw new InvalidOperationException("Unable to load KernelMemory configuration");
+                    var docIntelPdfDecoder = x.GetRequiredService<CustomDocIntelPdfDecoder>();
+
+                    var kmBuilder = new KernelMemoryBuilder()
+                                .WithAzureBlobsDocumentStorage(azureBlobConfig)
+                                .WithAzureOpenAITextEmbeddingGeneration(azureOpenAIEmbeddingConfig)
+                                .WithAzureOpenAITextGeneration(azureOpenAITextConfig)
+                                .WithAzureAISearchMemoryDb(azureAISearchConfig)
+                                .WithAzureAIDocIntel(azureAIDocIntelConfig)
+                                .WithContentDecoder(docIntelPdfDecoder)
+                                .Configure(builder => builder.Services.AddLogging(l =>
+                                {
+                                    l.SetMinimumLevel(LogLevel.Error);
+                                    l.AddSimpleConsole(c => c.SingleLine = true);
+                                }))
+                                .Build<MemoryServerless>();
+
+                    var keywordHandler = new KeywordExtractingHandler(
+                        stepName: "keyword_extract",
+                        orchestrator: kmBuilder.Orchestrator,
+                        config: kernelMemoryConfig
+                    );
+
                     // Add the handler instance instead of using generic method
                     kmBuilder.Orchestrator.AddHandler(keywordHandler);
                     return kmBuilder;

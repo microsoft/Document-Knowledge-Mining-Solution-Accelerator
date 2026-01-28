@@ -101,7 +101,7 @@ namespace Microsoft.GS.DPSHost.API
             .DisableAntiforgery();
 
             app.MapGet("/Documents/{documentId}/CheckReadyStatus", async (string documentId,
-                                                                          MemoryServerless kmClient) =>
+                                                                          [FromKeyedServices("VectorSearch")] MemoryServerless kmClient) =>
             {
                 var result = await kmClient.IsDocumentReadyAsync(documentId);
 
@@ -111,7 +111,7 @@ namespace Microsoft.GS.DPSHost.API
 
 
             app.MapGet("/Documents/{documentId}/CheckProcessStatus/", async (string documentId,
-                                                                             MemoryServerless kmClient) =>
+                                                                             [FromKeyedServices("VectorSearch")] MemoryServerless kmClient) =>
             {
                 var status = await kmClient.GetDocumentStatusAsync(documentId);
                 if (status == null)
@@ -123,7 +123,7 @@ namespace Microsoft.GS.DPSHost.API
             .DisableAntiforgery();
 
             app.MapPost("/Documents/ImportText", async (string text,
-                                                        MemoryServerless kmClient) =>
+                                                        [FromKeyedServices("VectorSearch")] MemoryServerless kmClient) =>
             {
                 try
                 {
@@ -147,7 +147,7 @@ namespace Microsoft.GS.DPSHost.API
             .DisableAntiforgery();
 
             app.MapPost("/Documents/ImportWebPage", async (string url,
-                                                           MemoryServerless kmClient) =>
+                                                           [FromKeyedServices("VectorSearch")] MemoryServerless kmClient) =>
             {
                 try
                 {
@@ -174,7 +174,7 @@ namespace Microsoft.GS.DPSHost.API
             //TODO : Implement the SSE for the status of the document
             app.MapGet("/Documents/CheckStatus/{documentId}", async Task (HttpContext ctx,
                                                                           string documentId,
-                                                                          MemoryServerless kmClient, CancellationToken token) =>
+                                                                          [FromKeyedServices("VectorSearch")] MemoryServerless kmClient, CancellationToken token) =>
             {
                 ctx.Response.Headers.Append(HeaderNames.ContentType, "text/event-stream");
 
@@ -220,7 +220,7 @@ namespace Microsoft.GS.DPSHost.API
             .DisableAntiforgery();
 
 
-            app.MapPost("/Documents/Search", async (MemoryServerless kmClient,
+            app.MapPost("/Documents/Search", async ([FromKeyedServices("HybridSearch")] MemoryServerless kmClient,
                                                     SearchParameter searchParameter) =>
             {
                 var searchResult = await kmClient.SearchAsync(query: searchParameter.query,
@@ -240,7 +240,7 @@ namespace Microsoft.GS.DPSHost.API
             .DisableAntiforgery();
 
 
-            app.MapPost("/Documents/Ask", async (MemoryServerless kmClient,
+            app.MapPost("/Documents/Ask", async ([FromKeyedServices("VectorSearch")] MemoryServerless kmClient,
                                                  AskParameter askParameter) =>
 
             {

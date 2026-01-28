@@ -1,27 +1,19 @@
-﻿using Microsoft.GS.DPS.Storage.Document;
-using Entities = Microsoft.GS.DPS.Storage.Document.Entities;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.GS.DPS.Storage.Document;
 using Microsoft.KernelMemory;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.GS.DPS.Storage.Document.Entities;
-using System.Reflection.Metadata;
-using System.Text.Json;
-using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
+using Entities = Microsoft.GS.DPS.Storage.Document.Entities;
 namespace Microsoft.GS.DPS.API.UserInterface
 {
     public class Documents
     {
         private readonly DocumentRepository _documentRepository;
-        private readonly MemoryServerless _memoryWebClient;
+        private readonly MemoryServerless _kmClient;
         private readonly DataCacheManager _dataCache;
 
-        public Documents(DocumentRepository documentRepository, MemoryServerless memoryWebClient, DataCacheManager dataCache)
+        public Documents(DocumentRepository documentRepository, [FromKeyedServices("HybridSearch")] MemoryServerless memoryWebClient, DataCacheManager dataCache)
         {
             _documentRepository = documentRepository;
-            _memoryWebClient = memoryWebClient;
+            _kmClient = memoryWebClient;
             _dataCache = dataCache;
         }
 
@@ -144,7 +136,7 @@ namespace Microsoft.GS.DPS.API.UserInterface
                     query = null;
                 }
                 
-                SearchResult result = await this._memoryWebClient.SearchAsync(query ?? String.Empty, filters: filters, minRelevance: 0.0166666676);
+                SearchResult result = await this._kmClient.SearchAsync(query ?? String.Empty, filters: filters, minRelevance: 0.0166666676);
 
                 //Get Document Ids from result
                var documentIds = result.Results.Select(r => r.DocumentId).ToArray();

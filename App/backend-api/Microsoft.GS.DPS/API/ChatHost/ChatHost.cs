@@ -1,20 +1,15 @@
-﻿﻿using Microsoft.GS.DPS.Model.ChatHost;
-using Microsoft.GS.DPS.Storage.ChatSessions.Entities;
+﻿using System.Reflection;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.GS.DPS.Model.ChatHost;
 using Microsoft.GS.DPS.Storage.ChatSessions;
+using Microsoft.GS.DPS.Storage.ChatSessions.Entities;
 using Microsoft.KernelMemory;
+using Microsoft.KernelMemory.Context;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
-using System.Reflection;
-using System.Text.Json;
-using System.Runtime.CompilerServices;
-using System.Text.Json.Serialization;
-using Microsoft.KernelMemory.Context;
 
 namespace Microsoft.GS.DPS.API
 {
@@ -26,7 +21,7 @@ namespace Microsoft.GS.DPS.API
         };
     }
 
-    public class ChatHost(MemoryServerless kmClient, Kernel kernel, API.KernelMemory kernelMemory, ChatSessionRepository chatSessions)
+    public class ChatHost([FromKeyedServices("VectorSearch")] MemoryServerless kmClient, Kernel kernel, API.KernelMemory kernelMemory, ChatSessionRepository chatSessions)
     {
         private MemoryServerless _kmClient = kmClient;
         private Kernel _kernel = kernel;
