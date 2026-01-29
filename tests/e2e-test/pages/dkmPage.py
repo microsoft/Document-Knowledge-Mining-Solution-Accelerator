@@ -11,9 +11,7 @@ class DkmPage(BasePage):
     NEWTOPIC = "//button[normalize-space()='New Topic']"
     Suggested_follow_up_questions = "body > div:nth-child(3) > div:nth-child(1) > main:nth-child(2) > div:nth-child(1) > div:nth-child(4) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(3) > div:nth-child(1) > div:nth-child(6) > div:nth-child(3) > button:nth-child(2)"
     SCROLL_DOWN = "//div[10]//div[2]//div[2]//i[1]//img[1]"
-    ASK_QUESTION = (
-        "//textarea[@placeholder='Ask a question or request (ctrl + enter to submit)']"
-    )
+    ASK_QUESTION = "(//textarea[@placeholder='Ask a question or request (ctrl + enter to submit)'])[1]"
     SEARCH_BOX = "//input[@type='search']"
     HOUSING_2022 = "//body[1]/div[2]/div[1]/main[1]/div[1]/div[2]/div[4]/div[1]/div[1]/div[2]/div[2]/div[2]/span[1]"
     HOUSING_2023 = "//body[1]/div[2]/div[1]/main[1]/div[1]/div[2]/div[4]/div[1]/div[1]/div[1]/div[2]/div[2]/span[1]"
@@ -25,11 +23,16 @@ class DkmPage(BasePage):
     HANDWRITTEN_DOC1 = "//body[1]/div[2]/div[1]/main[1]/div[1]/div[2]/div[4]/div[1]/div[1]/div[1]/div[2]/div[2]/span[1]"
     HANDWRITTEN_DOC2 = "//body[1]/div[2]/div[1]/main[1]/div[1]/div[2]/div[4]/div[1]/div[1]/div[2]/div[2]/div[2]/span[1]"
     HANDWRITTEN_DOC3 = "//body[1]/div[2]/div[1]/main[1]/div[1]/div[2]/div[4]/div[1]/div[1]/div[6]/div[2]/div[2]/span[1]"
-    SEND_BUTTON = "//button[@aria-label='Send']"
+    SEND_BUTTON = "(//button[@aria-label='Send'])[1]"
     POP_UP_CHAT_SEARCH = "(//textarea[@placeholder='Ask a question or request (ctrl + enter to submit)'])[2]"
     POP_UP_CHAT_SEND = "(//button[@type='submit'])[2]"
     DOCUMENT_FILTER = "//button[normalize-space()='Accessibility Features']"
     HEADING_TITLE = "//div[.='Document Knowledge Mining']"
+    UPLOAD_BUTTON = "//button[contains(text(), 'Upload')]"
+    FILE_INPUT = "input[type='file']"
+    CLEAR_ALL_BUTTON = "//button[normalize-space()='Clear all']"
+    SEARCH_CLEAR = "//button[@aria-label='Clear']"
+    TIME_FILTER = "//button[contains(text(), 'Anytime')]"
 
     def __init__(self, page):
         self.page = page
@@ -41,7 +44,10 @@ class DkmPage(BasePage):
         self.page.wait_for_timeout(2000)
 
     def enter_a_question(self, text):
-        self.page.locator(self.ASK_QUESTION).fill(text)
+        # Close any blocking dialogs first
+        self.close_dialog_if_open()
+        # Target the main page textarea
+        self.page.locator(self.ASK_QUESTION).first.fill(text)
         self.page.wait_for_timeout(5000)
 
     def enter_in_search(self, text):
@@ -55,6 +61,8 @@ class DkmPage(BasePage):
         # self.page.wait_for_load_state('networkidle')
 
     def select_housing_checkbox(self):
+        # Close any blocking dialogs first
+        self.close_dialog_if_open()
         self.page.locator(self.HOUSING_2022).click()
         self.page.locator(self.HOUSING_2023).click()
         self.page.wait_for_timeout(5000)
@@ -81,8 +89,10 @@ class DkmPage(BasePage):
         self.page.wait_for_timeout(2000)
 
     def click_send_button(self):
+        # Close any blocking dialogs first
+        self.close_dialog_if_open()
         # Click on send button in question area
-        self.page.locator(self.SEND_BUTTON).click()
+        self.page.locator(self.SEND_BUTTON).first.click()
         self.page.wait_for_timeout(5000)
 
         # self.page.wait_for_load_state('networkidle')
@@ -143,3 +153,85 @@ class DkmPage(BasePage):
     def click_on_contract_details(self):
         self.page.locator(self.CONTRACTS_DETAILS_PAGE).click()
         self.page.wait_for_timeout(12000)
+
+    def click_upload_button(self):
+        """Click the upload documents button"""
+        self.page.locator(self.UPLOAD_BUTTON).click()
+        self.page.wait_for_timeout(2000)
+
+    def upload_file(self, file_path):
+        """Upload a file using file input"""
+        with self.page.expect_file_chooser() as fc_info:
+            self.page.locator(self.FILE_INPUT).click()
+        file_chooser = fc_info.value
+        file_chooser.set_files(file_path)
+        self.page.wait_for_timeout(3000)
+
+    def upload_multiple_files(self, file_paths):
+        """Upload multiple files"""
+        with self.page.expect_file_chooser() as fc_info:
+            self.page.locator(self.FILE_INPUT).click()
+        file_chooser = fc_info.value
+        file_chooser.set_files(file_paths)
+        self.page.wait_for_timeout(5000)
+
+    def click_clear_all(self):
+        """Click the Clear All button"""
+        self.page.locator(self.CLEAR_ALL_BUTTON).click()
+        self.page.wait_for_timeout(2000)
+
+    def clear_search_box(self):
+        """Clear the search box"""
+        self.page.locator(self.SEARCH_BOX).fill("")
+        self.page.wait_for_timeout(2000)
+
+    def close_dialog_if_open(self):
+        """Close any open dialog/modal popup"""
+        try:
+            # Check if dialog exists and is visible
+            dialog = self.page.locator("div[role='dialog'][aria-modal='true']")
+            if dialog.is_visible(timeout=2000):
+                # Try to close via close button
+                close_button = dialog.locator("button[aria-label='close'], button[aria-label='Close']")
+                if close_button.is_visible(timeout=1000):
+                    close_button.click()
+                    self.page.wait_for_timeout(1000)
+                else:
+                    # Try pressing Escape key
+                    self.page.keyboard.press("Escape")
+                    self.page.wait_for_timeout(1000)
+        except:
+            # No dialog open, continue
+            pass
+
+    def verify_send_button_disabled(self):
+        """Verify send button is disabled (checking main page button, not popup)"""
+        # Close any dialogs first
+        self.close_dialog_if_open()
+        # Target the main page send button specifically
+        send_button = self.page.locator(self.SEND_BUTTON).first
+        # The send button might not have disabled attribute, check if it's clickable
+        # In some apps, the button stays enabled but backend validation prevents submission
+        try:
+            # Check if button has disabled attribute
+            is_disabled = send_button.get_attribute("disabled") is not None
+            if is_disabled:
+                return True
+            # If no disabled attribute, check aria-disabled
+            aria_disabled = send_button.get_attribute("aria-disabled")
+            if aria_disabled == "true":
+                return True
+            # If neither, the button is enabled in UI - return False
+            return False
+        except:
+            return False
+
+    def verify_send_button_enabled(self):
+        """Verify send button is enabled (checking main page button, not popup)"""
+        # Close any dialogs first
+        self.close_dialog_if_open()
+        # Target the main page send button specifically
+        send_button = self.page.locator(self.SEND_BUTTON).first
+        # Check the disabled attribute
+        is_disabled = send_button.get_attribute("disabled") is not None
+        return not is_disabled
