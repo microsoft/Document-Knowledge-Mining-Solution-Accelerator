@@ -42,7 +42,7 @@ def capture_screenshot(page, step_name, test_prefix="test"):
     pass
 
 
-@pytest.mark.smoke
+@pytest.mark.goldenpath
 def test_golden_path_dkm(login_logout, request):
     """
     Test Case 10591: Golden Path-DKM-test golden path demo script works properly
@@ -283,7 +283,7 @@ def test_golden_path_dkm(login_logout, request):
         logger.removeHandler(handler)
 
 
-@pytest.mark.smoke
+
 def test_upload_default_github_data(login_logout, request):
     """
     Test Case 10661: DKM-Upload default GitHub repo sample data
@@ -350,7 +350,7 @@ def test_upload_default_github_data(login_logout, request):
         logger.removeHandler(handler)
 
 
-@pytest.mark.smoke
+
 def test_search_functionality(login_logout, request):
     """
     Test Case 10671: DKM-Verify the search functionality
@@ -416,7 +416,7 @@ def test_search_functionality(login_logout, request):
         logger.removeHandler(handler)
 
 
-@pytest.mark.smoke
+
 def test_chat_selected_document(login_logout, request):
     """
     Test Case 10704: DKM-Test chat selected document
@@ -496,7 +496,7 @@ def test_chat_selected_document(login_logout, request):
         logger.removeHandler(handler)
 
 
-@pytest.mark.smoke
+
 def test_chat_multiple_selected_documents(login_logout, request):
     """
     Test Case 10705: DKM-Test chat multiple selected documents
@@ -575,7 +575,7 @@ def test_chat_multiple_selected_documents(login_logout, request):
         logger.removeHandler(handler)
 
 
-@pytest.mark.smoke
+
 def test_chat_all_documents(login_logout, request):
     """
     Test Case 10706: DKM-Test chat all documents
@@ -634,7 +634,7 @@ def test_chat_all_documents(login_logout, request):
         logger.removeHandler(handler)
 
 
-@pytest.mark.smoke
+
 def test_jailbreak_questions(login_logout, request):
     """
     Test Case 10707: DKM-Test questions to jailbreak
@@ -702,7 +702,7 @@ def test_jailbreak_questions(login_logout, request):
         logger.removeHandler(handler)
 
 
-@pytest.mark.smoke
+
 def test_web_knowledge_questions(login_logout, request):
     """
     Test Case 10708: DKM-Test questions to ask web knowledge
@@ -761,7 +761,7 @@ def test_web_knowledge_questions(login_logout, request):
         logger.removeHandler(handler)
 
 
-@pytest.mark.smoke
+
 def test_send_button_disabled_by_default(login_logout, request):
     """
     Test Case 14111: Bug-13861-DKM - Send prompt icon should be disabled by default
@@ -827,7 +827,7 @@ def test_send_button_disabled_by_default(login_logout, request):
         logger.removeHandler(handler)
 
 
-@pytest.mark.smoke
+
 def test_validate_empty_spaces_chat_input(login_logout, request):
     """
     Test Case 26217: DKM - Validate chat input handling for Empty / only-spaces
@@ -899,7 +899,7 @@ def test_validate_empty_spaces_chat_input(login_logout, request):
         logger.removeHandler(handler)
 
 
-@pytest.mark.smoke
+
 def test_upload_different_file_types(login_logout, request):
     """
     Test Case 10664: DKM-Upload one file of each supported filetype
@@ -964,7 +964,7 @@ def test_upload_different_file_types(login_logout, request):
         logger.removeHandler(handler)
 
 
-@pytest.mark.smoke
+
 def test_upload_large_file(login_logout, request):
     """
     Test Case 10665: OOS_DKM-Upload very large file size
@@ -1030,7 +1030,7 @@ def test_upload_large_file(login_logout, request):
         logger.removeHandler(handler)
 
 
-@pytest.mark.smoke
+
 def test_upload_zero_byte_file(login_logout, request):
     """
     Test Case 10666: DKM-Upload zero byte file
@@ -1085,7 +1085,7 @@ def test_upload_zero_byte_file(login_logout, request):
         logger.removeHandler(handler)
 
 
-@pytest.mark.smoke
+
 def test_upload_unsupported_file(login_logout, request):
     """
     Test Case 10667: DKM-Upload unsupported file
@@ -1140,7 +1140,7 @@ def test_upload_unsupported_file(login_logout, request):
         logger.removeHandler(handler)
 
 
-@pytest.mark.smoke
+
 def test_documents_scrolling_pagination(login_logout, request):
     """
     Test Case 10670: DKM-test documents section scrolling and pagination
@@ -1201,7 +1201,7 @@ def test_documents_scrolling_pagination(login_logout, request):
         logger.removeHandler(handler)
 
 
-@pytest.mark.smoke
+
 def test_search_with_time_filter(login_logout, request):
     """
     Test Case 10672: DKM-Test search documents with time filter
@@ -1272,7 +1272,7 @@ def test_search_with_time_filter(login_logout, request):
         logger.removeHandler(handler)
 
 
-@pytest.mark.smoke
+
 def test_left_pane_filters(login_logout, request):
     """
     Test Case 10700: DKM-Test left pane filters
@@ -1341,7 +1341,7 @@ def test_left_pane_filters(login_logout, request):
         logger.removeHandler(handler)
 
 
-@pytest.mark.smoke
+
 def test_left_pane_and_search_filters(login_logout, request):
     """
     Test Case 10702: DKM-Test left pane filters collision with search filters
@@ -1412,7 +1412,7 @@ def test_left_pane_and_search_filters(login_logout, request):
         logger.removeHandler(handler)
 
 
-@pytest.mark.smoke
+
 def test_document_details_preview(login_logout, request):
     """
     Test Case 10703: DKM-Test document details preview
@@ -1492,7 +1492,7 @@ def test_document_details_preview(login_logout, request):
         logger.removeHandler(handler)
 
 
-@pytest.mark.smoke
+
 def test_confirm_references_citations(login_logout, request):
     """
     Test Case 10710: DKM-Confirm references or citations in response
@@ -1564,7 +1564,7 @@ def test_confirm_references_citations(login_logout, request):
         logger.removeHandler(handler)
 
 
-@pytest.mark.smoke
+
 def test_bug_sensitive_question_stuck(login_logout, request):
     """
     Test Case 13539: Bug 12794 - Response Not Generated for Sensitive Question
@@ -1630,7 +1630,7 @@ def test_bug_sensitive_question_stuck(login_logout, request):
         logger.removeHandler(handler)
 
 
-@pytest.mark.smoke
+
 def test_bug_chat_session_cleared(login_logout, request):
     """
     Test Case 14704: Bug-13797-DKM-Chat session cleared when switch tabs
@@ -1706,7 +1706,7 @@ def test_bug_chat_session_cleared(login_logout, request):
         logger.removeHandler(handler)
 
 
-@pytest.mark.smoke
+
 def test_bug_text_file_download(login_logout, request):
     """
     Test Case 16787: Bug 16600 - Text file getting downloaded on click
@@ -1768,7 +1768,7 @@ def test_bug_text_file_download(login_logout, request):
         logger.removeHandler(handler)
 
 
-@pytest.mark.smoke
+
 def test_bug_clear_all_button(login_logout, request):
     """
     Test Case 16788: Bug 16599 - Clear All Button should reset search box
