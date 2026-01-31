@@ -74,9 +74,9 @@ jobs:
     with:
       azure_location: ${{ github.event.inputs.azure_location || 'australiaeast' }}
       resource_group_name: ${{ github.event.inputs.resource_group_name || '' }}
-      waf_enabled: ${{ github.event.inputs.waf_enabled == true }}
-      EXP: ${{ github.event.inputs.EXP == true }}
-      cleanup_resources: ${{ github.event.inputs.cleanup_resources == true }}
+      waf_enabled: ${{ github.event.inputs.waf_enabled == 'true' }}
+      EXP: ${{ github.event.inputs.EXP == 'true' }}
+      cleanup_resources: ${{ github.event.inputs.cleanup_resources == 'true' }}
       run_e2e_tests: ${{ github.event.inputs.run_e2e_tests || 'GoldenPath-Testing' }}
       AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID: ${{ github.event.inputs.AZURE_ENV_LOG_ANALYTICS_WORKSPACE_ID || '' }}
       existing_webapp_url: ${{ github.event.inputs.existing_webapp_url || '' }}
