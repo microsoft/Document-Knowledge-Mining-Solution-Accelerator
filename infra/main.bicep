@@ -753,6 +753,54 @@ module avmSearchSearchServices 'br/public:avm/res/search/search-service:0.11.1' 
     enableTelemetry: enableTelemetry
     diagnosticSettings: enableMonitoring ? [{ workspaceResourceId: logAnalyticsWorkspaceResourceId }] : null
     sku: enableScalability ? 'standard' : 'basic'
+    replicaCount: 1
+    partitionCount: 1
+    roleAssignments: [
+      {
+        roleDefinitionIdOrName: 'Search Index Data Contributor' // Cognitive Search Contributor
+        principalId: userAssignedIdentity.outputs.principalId
+        principalType: 'ServicePrincipal'
+      }
+      {
+        roleDefinitionIdOrName: 'Search Index Data Reader' //'5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'// Cognitive Services OpenAI User
+        principalId: userAssignedIdentity.outputs.principalId
+        principalType: 'ServicePrincipal'
+      }
+    ]
+    semanticSearch: 'free'
+    // secretsExportConfiguration: {
+    //   keyVaultResourceId: keyvault.outputs.resourceId
+    //   primaryAdminKeyName: varKvSecretNameAzureSearchKey
+    // }
+    // WAF aligned configuration for Private Networking
+    publicNetworkAccess: enablePrivateNetworking ? 'Disabled' : 'Enabled'
+    privateEndpoints: enablePrivateNetworking
+      ? [
+          {
+            name: 'pep-${aiSearchName}'
+            customNetworkInterfaceName: 'nic-${aiSearchName}'
+            privateDnsZoneGroup: {
+              privateDnsZoneGroupConfigs: [
+                { privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.search]!.outputs.resourceId }
+              ]
+            }
+            subnetResourceId: virtualNetwork!.outputs.pepsSubnetResourceId
+          }
+        ]
+      : []
+  }
+}
+
+// Separate module for Search Service to enable managed identity, as this reduces deployment time
+module avmSearchSearchServicesEnableIdentity 'br/public:avm/res/search/search-service:0.11.1' = {
+  name: take('avm.res.search-services-identity.${aiSearchName}', 64)
+  params: {
+    name: aiSearchName
+    tags: tags
+    location: solutionLocation
+    enableTelemetry: enableTelemetry
+    diagnosticSettings: enableMonitoring ? [{ workspaceResourceId: logAnalyticsWorkspaceResourceId }] : null
+    sku: enableScalability ? 'standard' : 'basic'
     managedIdentities: { userAssignedResourceIds: [userAssignedIdentity!.outputs.resourceId] }
     replicaCount: 1
     partitionCount: 1
@@ -790,6 +838,9 @@ module avmSearchSearchServices 'br/public:avm/res/search/search-service:0.11.1' 
         ]
       : []
   }
+  dependsOn: [
+    avmSearchSearchServices
+  ]
 }
 
 // ========== Cognitive Services - OpenAI module ========== //
