@@ -106,18 +106,22 @@ param aiDeploymentsLocation string
 @description('Optional created by user name')
 param createdBy string = contains(deployer(), 'userPrincipalName')? split(deployer().userPrincipalName, '@')[0]: deployer().objectId
 
+var existingTags = resourceGroup().tags ?? {}
+
 // ========== Resource Group Tag ========== //
 resource resourceGroupTags 'Microsoft.Resources/tags@2021-04-01' = {
   name: 'default'
   properties: {
-    tags: {
-      ...resourceGroup().tags
-      ...tags
-      TemplateName: 'DKM'
-      Type: enablePrivateNetworking ? 'WAF' : 'Non-WAF'
-      CreatedBy: createdBy
-      DeploymentName: deployment().name
-    }
+    tags: union(
+      existingTags,
+      tags,
+      {
+        TemplateName: 'DKM'
+        Type: enablePrivateNetworking ? 'WAF' : 'Non-WAF'
+        CreatedBy: createdBy
+        DeploymentName: deployment().name
+      }
+    )
   }
 }
 
