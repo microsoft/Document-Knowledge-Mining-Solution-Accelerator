@@ -9,6 +9,10 @@ param solutionName string = 'kmgs'
 @description('Optional. Azure location for the solution. If not provided, it defaults to the resource group location.')
 param location string = ''
 
+@minLength(3)
+@description('Optional. Secondary location for databases creation.')
+param secondaryLocation string = 'uksouth'
+
 @maxLength(5)
 @description('Optional. A unique token for the solution. This is used to ensure resource names are unique for global resources. Defaults to a 5-character substring of the unique string generated from the subscription ID, resource group name, and solution name.')
 param solutionUniqueToken string = substring(uniqueString(subscription().id, resourceGroup().name, solutionName), 0, 5)
@@ -138,7 +142,7 @@ var replicaRegionPairs = {
   uksouth: 'westeurope'
   westeurope: 'northeurope'
 }
-var replicaLocation = replicaRegionPairs[solutionLocation]
+var replicaLocation = replicaRegionPairs[?solutionLocation] ?? secondaryLocation
 
 // Region pairs list based on article in [Azure Database for MySQL Flexible Server - Azure Regions](https://learn.microsoft.com/azure/mysql/flexible-server/overview#azure-regions) for supported high availability regions for CosmosDB.
 var cosmosDbZoneRedundantHaRegionPairs = {
