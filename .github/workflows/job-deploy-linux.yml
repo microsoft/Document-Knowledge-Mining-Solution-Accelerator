@@ -171,52 +171,10 @@ jobs:
             echo "🔧 Configuring Non-WAF deployment - using default main.parameters.json..."
           fi
 
-      - name: Install Azure CLI
+      - name: Install AKS Preview Extension
         shell: bash
         run: |
-          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-          az --version  # Verify installation
-
-      - name: Install Kubernetes CLI (kubectl)
-        shell: bash
-        run: |
-          az aks install-cli
-          az extension add --name aks-preview
-
-      - name: Install Helm
-        shell: bash
-        run: |
-          # If helm is already available on the runner, print version and skip installation
-          if command -v helm >/dev/null 2>&1; then
-            echo "helm already installed: $(helm version --short 2>/dev/null || true)"
-            exit 0
-          fi
-
-          # Ensure prerequisites are present
-          sudo apt-get update
-          sudo apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
-
-          # Ensure keyrings dir exists
-          sudo mkdir -p /usr/share/keyrings
-
-          # Add Helm GPG key (use -fS to fail fast on curl errors)
-          curl -fsSL https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg >/dev/null
-
-          # Add the Helm apt repository
-          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
-
-          # Install helm
-          sudo apt-get update
-          sudo apt-get install -y helm
-
-          # Verify
-          echo "Installed helm version:"
-          helm version          
-
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver: docker
+          az extension add --name aks-preview --only-show-errors || true
 
       - name: Setup Azure Developer CLI
         uses: Azure/setup-azd@v2

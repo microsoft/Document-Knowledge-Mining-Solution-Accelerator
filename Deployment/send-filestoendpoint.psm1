@@ -11,6 +11,9 @@ function Send-FilesToEndpoint {
     # Load necessary .NET assemblies
     Add-Type -AssemblyName "System.Net.Http"
 
+    # Enforce TLS 1.2 (required by most Azure endpoints)
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+
     # Check if the Data folder exists
     if (-Not (Test-Path -Path $DataFolderPath)) {
         Write-Error "The specified Data folder path does not exist: $DataFolderPath"
@@ -27,8 +30,8 @@ function Send-FilesToEndpoint {
 
     $totalFiles = $files.Count
     $currentFileIndex = 0
-    $maxRetries = 3
-    $retryDelaySeconds = 5
+    $maxRetries = 5
+    $retryDelaySeconds = 10
     $failedFiles = @()
     $successfulFiles = 0
 
@@ -58,14 +61,17 @@ function Send-FilesToEndpoint {
         
         while ($attempt -lt $maxRetries -and -not $uploadSuccess) {
             $attempt++
+            $content = $null
             try {
                 if ($attempt -gt 1) {
-                    Write-Host "🔄 Retry attempt $attempt of $maxRetries for file: $($file.Name)" -ForegroundColor Cyan
-                    Start-Sleep -Seconds $retryDelaySeconds
+                    $backoff = $retryDelaySeconds * [math]::Pow(2, $attempt - 2)
+                    Write-Host "🔄 Retry attempt $attempt of $maxRetries for file: $($file.Name) (waiting ${backoff}s)" -ForegroundColor Cyan
+                    Start-Sleep -Seconds $backoff
                 }
                 
                 # Read the file content as byte array
                 $fileContent = [System.IO.File]::ReadAllBytes($file.FullName)
+                Write-Host "📁 File size: $([math]::Round($file.Length / 1MB, 2)) MB - $($file.Name)" -ForegroundColor Gray
 
                 # Create the multipart form data content
                 $content = [System.Net.Http.MultipartFormDataContent]::new()
@@ -87,21 +93,29 @@ function Send-FilesToEndpoint {
                 } 
                 else {
                     $statusCode = $response.StatusCode
+                    $responseBody = $response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
                     if ($attempt -lt $maxRetries) {
                         Write-Host "⚠️  Failed to upload file: $($file.Name). Status code: $statusCode. Will retry..." -ForegroundColor Yellow
+                        Write-Host "   Response: $responseBody" -ForegroundColor Gray
                     } else {
                         Write-Host "❌ Failed to upload file: $($file.Name). Status code: $statusCode. Max retries reached." -ForegroundColor Red
+                        Write-Host "   Response: $responseBody" -ForegroundColor Gray
                         $failedFiles += @{FileName = $file.Name; Reason = "HTTP Status: $statusCode"}
                     }
                 }
             }
             catch {
+                $innerMsg = if ($_.Exception.InnerException) { $_.Exception.InnerException.Message } else { "" }
+                $fullError = "$($_.Exception.Message) $innerMsg".Trim()
                 if ($attempt -lt $maxRetries) {
-                    Write-Host "⚠️  Error uploading file: $($file.Name). Error: $($_.Exception.Message). Will retry..." -ForegroundColor Yellow
+                    Write-Host "⚠️  Error uploading file: $($file.Name). Error: $fullError. Will retry..." -ForegroundColor Yellow
                 } else {
-                    Write-Host "❌ Error uploading file: $($file.Name). Error: $($_.Exception.Message). Max retries reached." -ForegroundColor Red
-                    $failedFiles += @{FileName = $file.Name; Reason = $_.Exception.Message}
+                    Write-Host "❌ Error uploading file: $($file.Name). Error: $fullError. Max retries reached." -ForegroundColor Red
+                    $failedFiles += @{FileName = $file.Name; Reason = $fullError}
                 }
+            }
+            finally {
+                if ($null -ne $content) { $content.Dispose() }
             }
         }
     }
