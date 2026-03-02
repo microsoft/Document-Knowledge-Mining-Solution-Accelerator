@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.40.2.10011",
-      "templateHash": "454231766837079804"
+      "templateHash": "8417814553440700358"
     }
   },
   "parameters": {
@@ -24,14 +24,6 @@
       "defaultValue": "",
       "metadata": {
         "description": "Optional. Azure location for the solution. If not provided, it defaults to the resource group location."
-      }
-    },
-    "secondaryLocation": {
-      "type": "string",
-      "defaultValue": "uksouth",
-      "minLength": 3,
-      "metadata": {
-        "description": "Optional. Secondary location for databases creation."
       }
     },
     "solutionUniqueToken": {
@@ -215,7 +207,7 @@
       "uksouth": "westeurope",
       "westeurope": "northeurope"
     },
-    "replicaLocation": "[coalesce(tryGet(variables('replicaRegionPairs'), variables('solutionLocation')), parameters('secondaryLocation'))]",
+    "replicaLocation": "[variables('replicaRegionPairs')[variables('solutionLocation')]]",
     "cosmosDbZoneRedundantHaRegionPairs": {
       "australiaeast": "uksouth",
       "centralus": "eastus2",
@@ -44138,7 +44130,7 @@
             "value": "[parameters('enableTelemetry')]"
           },
           "kubernetesVersion": {
-            "value": "1.34.2"
+            "value": "1.32.7"
           },
           "dnsPrefix": {
             "value": "[format('aks-{0}', variables('solutionSuffix'))]"
