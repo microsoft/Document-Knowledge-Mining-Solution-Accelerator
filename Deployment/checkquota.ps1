@@ -8,24 +8,20 @@ Write-Output "📍 Processed Regions: $($REGIONS -join ', ')"
 $SUBSCRIPTION_ID = $env:AZURE_SUBSCRIPTION_ID
 $GPT_MIN_CAPACITY = $env:GPT_MIN_CAPACITY
 $TEXT_EMBEDDING_MIN_CAPACITY = $env:TEXT_EMBEDDING_MIN_CAPACITY
-$AZURE_CLIENT_ID = $env:AZURE_CLIENT_ID
-$AZURE_TENANT_ID = $env:AZURE_TENANT_ID
-$AZURE_CLIENT_SECRET = $env:AZURE_CLIENT_SECRET
-
-# Authenticate using Service Principal
-Write-Host "Authentication using Service Principal..."
 # Ensure Azure PowerShell module is installed and imported
 Install-Module -Name Az -AllowClobber -Force -Scope CurrentUser
 Import-Module Az
 
-# Create a PSCredential object for authentication
-$creds = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $AZURE_CLIENT_ID, (ConvertTo-SecureString $AZURE_CLIENT_SECRET -AsPlainText -Force)
-
-# Attempt to connect using Service Principal
+# Verify existing Azure session (authentication is handled by the caller workflow via OIDC)
 try {
-    Connect-AzAccount -ServicePrincipal -TenantId $AZURE_TENANT_ID -Credential $creds
+    $context = Get-AzContext
+    if (-not $context) {
+        Write-Host "❌ Error: No active Azure session found. Ensure the caller workflow authenticates via azure/login@v2 with enable-AzPSSession: true."
+        exit 1
+    }
+    Write-Host "✅ Using existing Azure session: $($context.Account.Id)"
 } catch {
-    Write-Host "❌ Error: Failed to authenticate using Service Principal. $_"
+    Write-Host "❌ Error: Failed to verify Azure session. $_"
     exit 1
 }
 

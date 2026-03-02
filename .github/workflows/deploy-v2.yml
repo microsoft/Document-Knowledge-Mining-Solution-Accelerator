@@ -68,6 +68,11 @@ on:
         default: ''
         type: string
 
+permissions:
+  id-token: write
+  contents: read
+  actions: read
+
 jobs:
   validate-inputs:
     name: Validate Input Parameters

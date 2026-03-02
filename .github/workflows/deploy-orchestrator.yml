@@ -77,7 +77,8 @@ jobs:
     secrets: inherit
 
   send-notification:
-    if: "!cancelled()"
+    # if: "!cancelled()"
+    if: false # Temporarily disable notification job
     needs: [deploy, e2e-test]
     uses: ./.github/workflows/job-send-notification.yml
     with:

@@ -36,6 +36,7 @@ on:
 jobs:
   deploy-linux:
     runs-on: ubuntu-latest
+    environment: production
     env:
       AZURE_DEV_COLLECT_TELEMETRY: ${{ vars.AZURE_DEV_COLLECT_TELEMETRY }}
     outputs:
@@ -221,10 +222,15 @@ jobs:
         uses: Azure/setup-azd@v2
 
       - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Login to azd
         run: |
-          az login --service-principal --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
-          az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          azd auth login --client-id ${{ secrets.AZURE_CLIENT_ID }} --client-secret ${{ secrets.AZURE_CLIENT_SECRET }} --tenant-id ${{ secrets.AZURE_TENANT_ID }}
+          azd auth login --client-id ${{ secrets.AZURE_CLIENT_ID }} --federated-credential-provider "github" --tenant-id ${{ secrets.AZURE_TENANT_ID }}
 
 
       - name: Deploy using azd up
@@ -299,15 +305,20 @@ jobs:
               echo "AKS node resource group: $krg_name"
             fi
           fi
+      
+      - name: Login to Azure to refresh credentials for subsequent steps
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          enable-AzPSSession: true
 
       - name: Run Deployment Script with Input
         shell: pwsh
         env:
-          # From GitHub secrets (for login)
+          # From GitHub secrets
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          AZURE_TENANT_ID:       ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_ID:       ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET:   ${{ secrets.AZURE_CLIENT_SECRET }}
 
           # From workflow inputs and deployment outputs
           RESOURCE_GROUP_NAME:          ${{ inputs.RESOURCE_GROUP_NAME }}
