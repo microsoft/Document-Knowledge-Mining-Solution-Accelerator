@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.40.2.10011",
-      "templateHash": "8417814553440700358"
+      "templateHash": "14645128480975829011"
     }
   },
   "parameters": {
@@ -36561,8 +36561,8 @@
         }
       },
       "dependsOn": [
-        "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').storageQueue)]",
         "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').storageBlob)]",
+        "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').storageQueue)]",
         "userAssignedIdentity",
         "virtualNetwork"
       ]
@@ -44130,7 +44130,7 @@
             "value": "[parameters('enableTelemetry')]"
           },
           "kubernetesVersion": {
-            "value": "1.32.7"
+            "value": "1.34.2"
           },
           "dnsPrefix": {
             "value": "[format('aks-{0}', variables('solutionSuffix'))]"
