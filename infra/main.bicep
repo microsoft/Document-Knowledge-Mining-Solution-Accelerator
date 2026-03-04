@@ -565,7 +565,7 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
       }
       {
         name: 'Application:Services:AzureAISearch:Endpoint'
-        value: 'https://${avmSearchSearchServices.outputs.name}.search.windows.net'
+        value: 'https://${avmSearchSearchServices.name}.search.windows.net'
       }
       {
         name: 'KernelMemory:Services:AzureAIDocIntel:Auth'
@@ -581,7 +581,7 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
       }
       {
         name: 'KernelMemory:Services:AzureAISearch:Endpoint'
-        value: 'https://${avmSearchSearchServices.outputs.name}.search.windows.net'
+        value: 'https://${avmSearchSearchServices.name}.search.windows.net'
       }
       {
         name: 'KernelMemory:Services:AzureBlobs:Account'
@@ -744,8 +744,17 @@ module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = {
 
 // ========== AI Foundry: AI Search ========== //
 var aiSearchName = 'srch-${solutionSuffix}'
-module avmSearchSearchServices 'br/public:avm/res/search/search-service:0.11.1' = {
-  name: take('avm.res.cognitive-search-services.${aiSearchName}', 64)
+resource avmSearchSearchServices 'Microsoft.Search/searchServices@2024-06-01-preview' = {
+  name: aiSearchName
+  location: solutionLocation
+  sku: {
+    name: enableScalability ? 'standard' : 'basic'
+  }
+}
+
+// Separate module for Search Service to enable managed identity and update other properties, as this reduces deployment time
+module avmSearchSearchServicesUpdate 'br/public:avm/res/search/search-service:0.11.1' = {
+  name: take('avm.res.search-services-identity.${aiSearchName}', 64)
   params: {
     name: aiSearchName
     tags: tags
@@ -790,6 +799,9 @@ module avmSearchSearchServices 'br/public:avm/res/search/search-service:0.11.1' 
         ]
       : []
   }
+  dependsOn: [
+    avmSearchSearchServices
+  ]
 }
 
 // ========== Cognitive Services - OpenAI module ========== //
@@ -1042,7 +1054,7 @@ output AZURE_COGNITIVE_SERVICE_NAME string = documentIntelligence.outputs.name
 output AZURE_COGNITIVE_SERVICE_ENDPOINT string = documentIntelligence.outputs.endpoint
 
 @description('Contains Azure Search Service Name.')
-output AZURE_SEARCH_SERVICE_NAME string = avmSearchSearchServices.outputs.name
+output AZURE_SEARCH_SERVICE_NAME string = avmSearchSearchServices.name
 
 @description('Contains Azure AKS Name.')
 output AZURE_AKS_NAME string = managedCluster.outputs.name
@@ -1060,7 +1072,7 @@ output AZURE_OPENAI_SERVICE_NAME string = avmOpenAi.outputs.name
 output AZURE_OPENAI_SERVICE_ENDPOINT string = avmOpenAi.outputs.endpoint
 
 @description('Contains Azure Search Service Endpoint.')
-output AZ_SEARCH_SERVICE_ENDPOINT string = avmSearchSearchServices.outputs.name
+output AZ_SEARCH_SERVICE_ENDPOINT string = avmSearchSearchServices.name
 
 @description('Contains Azure GPT-4o Model Deployment Name.')
 output AZ_GPT4O_MODEL_ID string = gptModelDeployment.deploymentName
