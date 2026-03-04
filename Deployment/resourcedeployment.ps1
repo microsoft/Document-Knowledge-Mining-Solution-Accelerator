@@ -120,11 +120,14 @@ function LoginAzure([string]$tenantId, [string]$subscriptionID) {
         }
     }
     if ($env:CI -eq "true"){
-        az login --service-principal `
-            --username $env:AZURE_CLIENT_ID `
-            --password $env:AZURE_CLIENT_SECRET `
-            --tenant $env:AZURE_TENANT_ID `
-        Write-Host "CI deployment mode"
+        # Authentication is handled by the caller workflow via OIDC (azure/login@v2)
+        $account = az account show 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "❌ Error: No active Azure CLI session found. Ensure the caller workflow authenticates via azure/login@v2." -ForegroundColor Red
+            failureBanner
+            exit 1
+        }
+        Write-Host "CI deployment mode - using existing OIDC session"
     }
     else{
         az login --tenant $tenantId

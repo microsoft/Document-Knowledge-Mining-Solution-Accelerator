@@ -77,7 +77,8 @@ jobs:
     secrets: inherit
 
   send-notification:
-    if: "!cancelled()"
+    # if: "!cancelled()"
+    if: false # Temporarily disable notification job
     needs: [deploy, e2e-test]
     uses: ./.github/workflows/job-send-notification.yml
     with:
@@ -96,7 +97,7 @@ jobs:
     secrets: inherit
 
   cleanup-deployment:
-    if: "!cancelled() && needs.deploy.result == 'success' && needs.deploy.outputs.RESOURCE_GROUP_NAME != '' && inputs.existing_webapp_url == '' && (inputs.trigger_type != 'workflow_dispatch' || inputs.cleanup_resources)"
+    if: "!cancelled() && needs.deploy.outputs.RESOURCE_GROUP_NAME != '' && inputs.existing_webapp_url == '' && (inputs.trigger_type != 'workflow_dispatch' || inputs.cleanup_resources)"
     needs: [deploy, e2e-test]
     uses: ./.github/workflows/job-cleanup-deployment.yml
     with:
