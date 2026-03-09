@@ -791,7 +791,7 @@ try {
         foreach ($nodePool in $nodePools) {
             Write-Host "Upgrading node pool: $nodePool" -ForegroundColor Cyan
             Write-Host "Node pool $nodePool upgrade initiated." -ForegroundColor Green
-            az aks nodepool upgrade --resource-group $deploymentResult.ResourceGroupName --cluster-name $deploymentResult.AksName --name $nodePool 
+            az aks nodepool upgrade --resource-group $deploymentResult.ResourceGroupName --cluster-name $deploymentResult.AksName --name $nodePool --yes
         }
     }
     catch {
