@@ -15,7 +15,6 @@ on:
 env:
     url: ${{ inputs.DKM_URL }}
     accelerator_name: "DKM"
-
 jobs:
   test:
     runs-on: ubuntu-latest
