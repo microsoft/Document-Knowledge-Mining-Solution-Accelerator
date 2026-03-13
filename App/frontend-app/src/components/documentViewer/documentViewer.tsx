@@ -2,21 +2,15 @@ import {
     Dialog,
     DialogBody,
     DialogSurface,
-    Divider,
     SelectTabData,
     SelectTabEvent,
     TabListProps,
-    Text,
     makeStyles,
     shorthands,
 } from "@fluentui/react-components";
 import { useEffect, useState } from "react";
 import { MetadataTable } from "./metadataTable";
-import TableTab from "./tableTab";
-import { Embedded, Result } from "../../api/apiTypes/embedded";
 import { Document } from "../../api/apiTypes/embedded";
-import { downloadDocument, getEmbedded } from "../../api/documentsService";
-import { Tokens } from "../../api/apiTypes/documentResults";
 import { IFrameComponent } from "./iFrameComponent";
 import { DialogContentComponent } from "./dialogContentComponent";
 import { PagesTab } from "./PagesTab";
@@ -68,17 +62,15 @@ interface Cell {
 export function DocDialog(
     { metadata, isOpen, allChunkTexts, clearChatFlag, onClose, ...props }: DocDialogProps & Partial<TabListProps>
 ) {
-    const {t} = useTranslation();
     const styles = useStyles();
     
     const [selectedTab, setSelectedTab] = useState<string>("Document");
     const [urlWithSasToken, setUrlWithSasToken] = useState<string | undefined>(undefined);
     const [selectedPage, setSelectedPage] = useState<number | null>(null);
-    const [tablesData, setTablesData] = useState<string[]>([]);
-    const [pageMetadata, setPageMetadata] = useState<Document[] | null>(null);
+    const [pageMetadata] = useState<Document[] | null>(null);
     const [iframeKey, setIframeKey] = useState(0);
     const [isExpanded, setIsExpanded] = useState(false);
-    const [clearedChatFlag, setClearChatFlag] = useState(clearChatFlag);
+    const [clearedChatFlag,setClearChatFlag] = useState(clearChatFlag);
     const [iframeSrc, setIframeSrc] = useState<string | undefined>(undefined);
     // const [aiKnowledgeMetadata, setAIKnowledgeMetadata] = useState<Document | null>(null);
 
@@ -211,7 +203,6 @@ export function DocDialog(
     }, [iframeKey]);
 
     const AI_KNOWLEDGE_FIELDS = window.ENV.AI_KNOWLEDGE_FIELDS;
-    const METADATA_EXCLUSION_LIST = window.ENV.METADATA_EXCLUSION_LIST;
 
     let aiKnowledgeMetadata = {};
 

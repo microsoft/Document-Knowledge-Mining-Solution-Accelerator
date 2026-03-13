@@ -1,4 +1,3 @@
-import { ApiError } from "../../types/apiError";
 
 export const httpClient = {
     fetch,

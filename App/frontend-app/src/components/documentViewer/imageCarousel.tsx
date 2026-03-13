@@ -1,13 +1,7 @@
 import { useEffect, useState } from "react";
 import { Document } from "../../api/apiTypes/embedded";
 import { GetImage } from "../../api/storageService";
-import { Button, Image, Spinner } from "@fluentui/react-components";
-import {
-    ChevronCircleLeftRegular,
-    ChevronCircleRightRegular,
-    ChevronLeftFilled,
-    ChevronRightFilled,
-} from "@fluentui/react-icons";
+import { Image, Spinner } from "@fluentui/react-components";
 import { useTranslation } from "react-i18next";
 
 interface ImageCarouselProps {

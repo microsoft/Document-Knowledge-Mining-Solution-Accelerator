@@ -5,10 +5,8 @@ import { Button, InputOnChangeData, Tooltip, useId } from "@fluentui/react-compo
 import { useDebouncedCallback } from "use-debounce";
 import {
     Keyboard24Regular,
-    Mic24Regular,
     SearchVisual24Regular,
-    Search24Regular,
-    ArrowUpload24Filled,
+    Search24Regular
 } from "@fluentui/react-icons";
 import "./searchInput.scss";
 import { UploadMultipleFiles } from "../../api/storageService";
@@ -27,18 +25,6 @@ interface SearchBoxProps {
     onSearchChanged: (searchValue: string) => void;
     onKeyDown?: (event: KeyboardEvent<HTMLInputElement>) => void;  // Include onKeyDown as a prop
 }
-
-const MicButton = () => {
-    return <Button className="mic_button" icon={<Mic24Regular />} appearance="subtle" />;
-};
-
-const KeyBoardButton = () => {
-    return <Button className="keyboard_button" icon={<Keyboard24Regular />} appearance="subtle" />;
-};
-
-const SearchVisualButton = () => {
-    return <Button className="searchVisual_button" icon={<SearchVisual24Regular />} appearance="subtle" />;
-};
 
 const UploadButton = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -65,10 +51,6 @@ const UploadButton = () => {
                 alert("Error uploading files");
             }
         }
-    };
-
-    const handleClick = () => {
-        fileInputRef.current?.click();
     };
 
     return (

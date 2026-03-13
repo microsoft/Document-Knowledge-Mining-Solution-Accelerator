@@ -2,8 +2,6 @@ import { Routes, Route } from "react-router-dom";
 import { Home } from "./pages/home/home";
 import { ChatPage } from "./pages/chat/chatPage";
 // import { PersonalDocumentsPage } from "./pages/personalDocuments/personalDocumentsPage";
-import { useState } from "react";
-import { SearchFacet } from "./types/searchRequest";
 
 function App() {
     

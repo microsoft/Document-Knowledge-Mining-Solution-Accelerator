@@ -1,4 +1,3 @@
-import { Facets } from "../../types/facets";
 
 export interface DocumentResults {
     documents: Document[]

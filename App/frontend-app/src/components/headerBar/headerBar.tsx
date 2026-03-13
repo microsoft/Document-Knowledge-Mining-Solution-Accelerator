@@ -58,7 +58,6 @@ export function HeaderBar({ location }: { location?: NavLocation }) {
     const linkClasses = "cursor-pointer hover:no-underline hover:border-b-[3px] h-9 min-h-0 block text-white";
     const linkCurrent = "pointer-events-none border-b-[3px]";
     const isAuthenticated = accounts.length > 0;
-    const isAdmin = isPlatformAdmin(accounts);
 
     const navItems: (NavItem | null)[] = useMemo(
         () => [
@@ -100,10 +99,6 @@ export function HeaderBar({ location }: { location?: NavLocation }) {
 
     function toggleMenu() {
         setOpenDrawer((openDrawer) => !openDrawer);
-    }
-
-    function signIn() {
-        instance.loginRedirect(Auth.getAuthenticationRequest() as RedirectRequest);
     }
 
     function signOut() {
