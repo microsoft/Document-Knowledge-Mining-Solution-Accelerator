@@ -96,14 +96,17 @@ jobs:
           echo "TEST_SUITE_NAME=$TEST_SUITE_NAME" >> $GITHUB_OUTPUT
           echo "Test Suite: $TEST_SUITE_NAME"
 
-      - name: Determine Cleanup Status Display
-        id: cleanup_status
+      - name: Determine Cleanup Status
+        id: cleanup
         shell: bash
+        env:
+          CLEANUP_RESULT: ${{ inputs.cleanup_result }}
         run: |
-          CLEANUP_RESULT="${{ inputs.cleanup_result }}"
-          CLEANUP_STATUS=$(echo "$CLEANUP_RESULT" | tr '[:lower:]' '[:upper:]')
-          echo "CLEANUP_STATUS=$CLEANUP_STATUS" >> $GITHUB_OUTPUT
-          echo "Cleanup Status: $CLEANUP_STATUS"
+          case "$CLEANUP_RESULT" in
+            success) echo "CLEANUP_STATUS=SUCCESS" >> $GITHUB_OUTPUT ;;
+            failure) echo "CLEANUP_STATUS=FAILED" >> $GITHUB_OUTPUT ;;
+            *) echo "CLEANUP_STATUS=SKIPPED" >> $GITHUB_OUTPUT ;;
+          esac
 
       - name: Send Quota Failure Notification
         if: inputs.deploy_result == 'failure' && inputs.QUOTA_FAILED == 'true'
@@ -113,7 +116,7 @@ jobs:
           EMAIL_BODY=$(cat <<EOF
           {
             "body": "<p>Dear Team,</p><p>We would like to inform you that the ${{ env.accelerator_name }} deployment has failed due to insufficient quota in the requested regions.</p><p><strong>Issue Details:</strong><br>• Quota check failed for GPT model<br>• Required GPT Capacity: ${{ env.GPT_MIN_CAPACITY }}<br>• Checked Regions: ${{ vars.AZURE_REGIONS }}</p><p><strong>Run URL:</strong> <a href='${RUN_URL}'>${RUN_URL}</a></p><p>Please resolve the quota issue and retry the deployment.</p><p>Best regards,<br>Your Automation Team</p>",
-            "subject": "[CI/CD-Notification] | [${{ env.accelerator_name }}] | Quota Check | FAILED | Insufficient Quota | Cleanup: ${{ steps.cleanup_status.outputs.CLEANUP_STATUS }}"
+            "subject": "[CI/CD-Automation] | [${{ env.accelerator_name }}] | Deployment | FAILED | Insufficient Quota | Cleanup: ${{ steps.cleanup.outputs.CLEANUP_STATUS }}"
           }
           EOF
           )
@@ -132,7 +135,7 @@ jobs:
           EMAIL_BODY=$(cat <<EOF
           {
             "body": "<p>Dear Team,</p><p>We would like to inform you that the ${{ env.accelerator_name }} deployment process has encountered an issue and has failed to complete successfully.</p><p><strong>Deployment Details:</strong><br>• Resource Group: ${RESOURCE_GROUP}<br>• WAF Enabled: ${{ env.WAF_ENABLED }}<br>• EXP Enabled: ${{ env.EXP }}</p><p><strong>Run URL:</strong> <a href='${RUN_URL}'>${RUN_URL}</a></p><p>Please investigate the deployment failure at your earliest convenience.</p><p>Best regards,<br>Your Automation Team</p>",
-            "subject": "[CI/CD-Notification] | [${{ env.accelerator_name }}] | Deployment | FAILED | Build Error | Cleanup: ${{ steps.cleanup_status.outputs.CLEANUP_STATUS }}"
+            "subject": "[CI/CD-Automation] | [${{ env.accelerator_name }}] | Deployment | FAILED | Deployment Error | Cleanup: ${{ steps.cleanup.outputs.CLEANUP_STATUS }}"
           }
           EOF
           )
@@ -155,7 +158,7 @@ jobs:
             EMAIL_BODY=$(cat <<EOF
           {
             "body": "<p>Dear Team,</p><p>We would like to inform you that the ${{ env.accelerator_name }} deployment has completed successfully.</p><p><strong>Deployment Details:</strong><br>• Resource Group: ${RESOURCE_GROUP}<br>• Web App URL: <a href='${WEBAPP_URL}'>${WEBAPP_URL}</a><br>• E2E Tests: Skipped (as configured)</p><p><strong>Configuration:</strong><br>• WAF Enabled: ${{ env.WAF_ENABLED }}<br>• EXP Enabled: ${{ env.EXP }}</p><p><strong>Run URL:</strong> <a href='${RUN_URL}'>${RUN_URL}</a></p><p>Best regards,<br>Your Automation Team</p>",
-            "subject": "[CI/CD-Notification] | [${{ env.accelerator_name }}] | Deployment | SUCCESS | Tests Skipped | Cleanup: ${{ steps.cleanup_status.outputs.CLEANUP_STATUS }}"
+            "subject": "[CI/CD-Automation] | [${{ env.accelerator_name }}] | Deployment | SUCCESS | Tests Skipped | Cleanup: ${{ steps.cleanup.outputs.CLEANUP_STATUS }}"
           }
           EOF
             )
@@ -163,7 +166,7 @@ jobs:
             EMAIL_BODY=$(cat <<EOF
           {
             "body": "<p>Dear Team,</p><p>We would like to inform you that the ${{ env.accelerator_name }} deployment and testing process has completed successfully.</p><p><strong>Deployment Details:</strong><br>• Resource Group: ${RESOURCE_GROUP}<br>• Web App URL: <a href='${WEBAPP_URL}'>${WEBAPP_URL}</a><br>• E2E Tests: Passed ✅<br>• Test Suite: ${TEST_SUITE_NAME}<br>• Test Report: <a href='${TEST_REPORT_URL}'>View Report</a></p><p><strong>Configuration:</strong><br>• WAF Enabled: ${{ env.WAF_ENABLED }}<br>• EXP Enabled: ${{ env.EXP }}</p><p><strong>Run URL:</strong> <a href='${RUN_URL}'>${RUN_URL}</a></p><p>Best regards,<br>Your Automation Team</p>",
-            "subject": "[CI/CD-Notification] | [${{ env.accelerator_name }}] | E2E Tests | SUCCESS | ${TEST_SUITE_NAME} | Cleanup: ${{ steps.cleanup_status.outputs.CLEANUP_STATUS }}"
+            "subject": "[CI/CD-Automation] | [${{ env.accelerator_name }}] | E2E Tests | SUCCESS | ${TEST_SUITE_NAME} | Cleanup: ${{ steps.cleanup.outputs.CLEANUP_STATUS }}"
           }
           EOF
             )
@@ -186,7 +189,7 @@ jobs:
           EMAIL_BODY=$(cat <<EOF
           {
             "body": "<p>Dear Team,</p><p>We would like to inform you that ${{ env.accelerator_name }} accelerator test automation process has encountered issues and failed to complete successfully.</p><p><strong>Deployment Details:</strong><br>• Resource Group: ${RESOURCE_GROUP}<br>• Web App URL: <a href='${WEBAPP_URL}'>${WEBAPP_URL}</a><br>• Deployment Status: ✅ Success<br>• E2E Tests: ❌ Failed<br>• Test Suite: ${TEST_SUITE_NAME}</p><p><strong>Test Details:</strong><br>• Test Report: <a href='${TEST_REPORT_URL}'>View Report</a></p><p><strong>Run URL:</strong> <a href='${RUN_URL}'>${RUN_URL}</a></p><p>Please investigate the matter at your earliest convenience.</p><p>Best regards,<br>Your Automation Team</p>",
-            "subject": "[CI/CD-Notification] | [${{ env.accelerator_name }}] | E2E Tests | FAILED | ${TEST_SUITE_NAME} | Cleanup: ${{ steps.cleanup_status.outputs.CLEANUP_STATUS }}"
+            "subject": "[CI/CD-Automation] | [${{ env.accelerator_name }}] | E2E Tests | FAILED | ${TEST_SUITE_NAME} | Cleanup: ${{ steps.cleanup.outputs.CLEANUP_STATUS }}"
           }
           EOF
           )
@@ -207,7 +210,7 @@ jobs:
           EMAIL_BODY=$(cat <<EOF
           {
             "body": "<p>Dear Team,</p><p>The ${{ env.accelerator_name }} pipeline executed against the <strong>existing WebApp URL</strong> and testing process has completed successfully.</p><p><strong>Test Results:</strong><br>• Status: ✅ Passed<br>• Test Suite: ${TEST_SUITE_NAME}<br>${TEST_REPORT_URL:+• Test Report: <a href='${TEST_REPORT_URL}'>View Report</a>}<br>• Target URL: <a href='${EXISTING_URL}'>${EXISTING_URL}</a></p><p><strong>Deployment:</strong> Skipped</p><p><strong>Run URL:</strong> <a href='${RUN_URL}'>${RUN_URL}</a></p><p>Best regards,<br>Your Automation Team</p>",
-            "subject": "[CI/CD-Notification] | [${{ env.accelerator_name }}] | E2E Tests | SUCCESS | Pre-Deployed | Cleanup: ${{ steps.cleanup_status.outputs.CLEANUP_STATUS }}"
+            "subject": "[CI/CD-Automation] | [${{ env.accelerator_name }}] | E2E Tests | SUCCESS | ${TEST_SUITE_NAME} | Pre-Deployed"
           }
           EOF
           )
@@ -228,7 +231,7 @@ jobs:
           EMAIL_BODY=$(cat <<EOF
           {
             "body": "<p>Dear Team,</p><p>The ${{ env.accelerator_name }} pipeline executed against the <strong>existing WebApp URL</strong> and the test automation has encountered issues and failed to complete successfully.</p><p><strong>Failure Details:</strong><br>• Target URL: <a href='${EXISTING_URL}'>${EXISTING_URL}</a><br>${TEST_REPORT_URL:+• Test Report: <a href='${TEST_REPORT_URL}'>View Report</a>}<br>• Test Suite: ${TEST_SUITE_NAME}<br>• Deployment: Skipped</p><p><strong>Run URL:</strong> <a href='${RUN_URL}'>${RUN_URL}</a></p><p>Best regards,<br>Your Automation Team</p>",
-            "subject": "[CI/CD-Notification] | [${{ env.accelerator_name }}] | E2E Tests | FAILED | Pre-Deployed | Cleanup: ${{ steps.cleanup_status.outputs.CLEANUP_STATUS }}"
+            "subject": "[CI/CD-Automation] | [${{ env.accelerator_name }}] | E2E Tests | FAILED | ${TEST_SUITE_NAME} | Pre-Deployed"
           }
           EOF
           )
