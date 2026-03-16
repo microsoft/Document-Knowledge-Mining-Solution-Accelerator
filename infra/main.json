@@ -5,8 +5,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.40.2.10011",
-      "templateHash": "14645128480975829011"
+      "version": "0.41.2.15936",
+      "templateHash": "6006700104446037526"
     }
   },
   "parameters": {
@@ -121,7 +121,7 @@
     },
     "vmSize": {
       "type": "string",
-      "defaultValue": "Standard_DS2_v2",
+      "defaultValue": "Standard_D2s_v5",
       "metadata": {
         "description": "Optional. Size of the Jumpbox Virtual Machine when created. Set to custom value if enablePrivateNetworking is true."
       }
@@ -6630,8 +6630,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.40.2.10011",
-              "templateHash": "5819780095460630914"
+              "version": "0.41.2.15936",
+              "templateHash": "10720297436894952204"
             }
           },
           "definitions": {
@@ -10764,7 +10764,7 @@
             "value": "[take(variables('jumpboxVmName'), 15)]"
           },
           "vmSize": {
-            "value": "[coalesce(parameters('vmSize'), 'Standard_DS2_v2')]"
+            "value": "[coalesce(parameters('vmSize'), 'Standard_D2s_v5')]"
           },
           "location": {
             "value": "[variables('solutionLocation')]"
@@ -19620,8 +19620,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.40.2.10011",
-              "templateHash": "11752366541769527004"
+              "version": "0.41.2.15936",
+              "templateHash": "15442847736367173292"
             },
             "name": "Container Registry Module"
           },
