@@ -789,15 +789,18 @@ def export_blob_storage(export_dir: Path, account_name: str) -> None:
 def _export_container(
     blob_service, container_name: str, blob_dir: Path
 ) -> None:
-    """Download all blobs from a single container."""
+    """Download PDF and JSON blobs from a single container."""
+    ALLOWED_EXTENSIONS = (".pdf", ".json")
+
     container_client = blob_service.get_container_client(container_name)
     container_dir = blob_dir / container_name
     _long_path(container_dir).mkdir(parents=True, exist_ok=True)
 
     # Collect blob names and content types to preserve metadata
     logger.info("  Listing blobs in container '%s'...", container_name)
-    blob_list = list(container_client.list_blobs(include=["metadata"]))
-    logger.info("  Found %d blobs.", len(blob_list))
+    all_blobs = list(container_client.list_blobs(include=["metadata"]))
+    blob_list = [b for b in all_blobs if b.name.lower().endswith(ALLOWED_EXTENSIONS)]
+    logger.info("  Found %d blobs total, %d PDF/JSON files to export.", len(all_blobs), len(blob_list))
 
     content_type_map: dict = {}
     blob_count = 0
