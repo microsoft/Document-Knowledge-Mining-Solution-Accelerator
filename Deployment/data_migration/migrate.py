@@ -432,7 +432,11 @@ def import_search(export_dir: Path, endpoint: str) -> None:
 
     schema_files = sorted(search_dir.glob("*_schema.json"))
     for schema_file in schema_files:
-        index_name = schema_file.stem.replace("_schema", "")
+        index_name = (
+             schema_file.stem[: -len("_schema")]
+             if schema_file.stem.endswith("_schema")
+             else schema_file.stem
+         )
         logger.info("Importing search index: %s", index_name)
         _import_search_index_schema(index_client, schema_file, index_name)
         docs_file = search_dir / f"{index_name}_documents.jsonl"
@@ -562,11 +566,11 @@ def _export_collection(db, collection_name: str, cosmos_dir: Path) -> None:
 
         # Write a checksum sidecar for integrity verification
         _write_checksum(out_path, doc_count)
-    except Exception:
+    except Exception as exc:
         logger.exception(
             "  Failed to export collection '%s'", collection_name
         )
-
+        raise
 
 def _bson_to_serializable(doc: dict) -> dict:
     """Recursively convert BSON types to JSON-serializable types."""
