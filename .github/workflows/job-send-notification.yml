@@ -252,7 +252,7 @@ jobs:
             -d "$EMAIL_BODY" || echo "Failed to send test failure notification"
 
       - name: Send Existing URL Success Notification
-        if: inputs.deploy_result == 'skipped' && inputs.existing_webapp_url != '' && inputs.e2e_test_result == 'success'
+        if: inputs.deploy_result == 'skipped' && inputs.existing_webapp_url != '' && inputs.e2e_test_result == 'success' && (inputs.TEST_SUCCESS == 'true' || inputs.TEST_SUCCESS == '')
         shell: bash
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
