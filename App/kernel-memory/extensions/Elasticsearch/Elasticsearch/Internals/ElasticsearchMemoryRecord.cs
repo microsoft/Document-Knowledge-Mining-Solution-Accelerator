@@ -122,8 +122,6 @@ public sealed class ElasticsearchMemoryRecord
             filePart = filePartList?[0] ?? string.Empty;
         }
 
-        string betterId = $"{documentId}|{filePart}";
-
         record.Payload.Remove("text"); // We move the text to the content field. No need to index twice.
 
         ElasticsearchMemoryRecord result = new()

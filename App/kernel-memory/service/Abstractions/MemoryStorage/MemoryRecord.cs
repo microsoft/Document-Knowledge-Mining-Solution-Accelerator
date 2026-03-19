@@ -128,7 +128,6 @@ public class MemoryRecord
                 this._payload[Constants.ReservedPayloadUrlField] = string.Empty;
             }
 
-            version = SchemaVersion20231218A;
             this._payload[Constants.ReservedPayloadSchemaVersionField] = SchemaVersion20231218A;
         }
 

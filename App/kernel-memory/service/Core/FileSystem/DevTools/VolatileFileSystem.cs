@@ -219,7 +219,7 @@ internal sealed class VolatileFileSystem : IFileSystem
     public Task<StreamableFileContent> ReadFileInfoAsync(string volume, string relPath, string fileName, CancellationToken cancellationToken = default)
     {
         volume = ValidateVolumeName(volume);
-        StreamableFileContent result = new();
+        StreamableFileContent result;
 
         if (this._volumes.TryGetValue(volume, out ConcurrentDictionary<string, BinaryData>? volumeData))
         {

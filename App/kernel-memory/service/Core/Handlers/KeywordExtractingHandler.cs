@@ -49,8 +49,6 @@ public sealed class KeywordExtractingHandler : IPipelineStepHandler
 
         foreach (FileDetails uploadedFile in pipeline.Files)
         {
-            Dictionary<string, DataPipeline.GeneratedFileDetails> extractedTagsFile = new();
-
             foreach (KeyValuePair<string, DataPipeline.GeneratedFileDetails> generatedFile in uploadedFile.GeneratedFiles)
             {
                 var file = generatedFile.Value;
@@ -66,13 +64,11 @@ public sealed class KeywordExtractingHandler : IPipelineStepHandler
                 {
                     this._log.LogDebug("Extracting Tags from the file {FileName}", file.Name);
 
-                    var sourceFile = uploadedFile.Name;
-                    string extactedFileContent = string.Empty;
 
                     BinaryData fileContent = await this._orchestrator.ReadFileAsync(pipeline, file.Name, cancellationToken).ConfigureAwait(false);
 
                     //set file content to extactedFileContent
-                    extactedFileContent = fileContent.ToString();
+                    string extactedFileContent = fileContent.ToString();
 
                     //extract tags as a Json file
                     var destFile = $"{uploadedFile.Name}.tags.json";
@@ -126,8 +122,6 @@ public sealed class KeywordExtractingHandler : IPipelineStepHandler
 
                         //Add Tags from Extracted Keywords
                         List<Dictionary<string, List<string>>> tags = JsonSerializer.Deserialize<List<Dictionary<string, List<string>>>>(response.ToString());
-
-                        Dictionary<string, List<string>> keyValueCollection = new Dictionary<string, List<string>>();
 
                         foreach (var category in tags)
                         {

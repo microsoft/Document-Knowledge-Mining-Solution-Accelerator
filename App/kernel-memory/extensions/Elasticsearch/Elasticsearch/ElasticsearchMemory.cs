@@ -81,7 +81,7 @@ public class ElasticsearchMemory : IMemoryDb
             }
         };
 
-        var mapResponse = await this._client.Indices.PutMappingAsync(index, x => x
+        await this._client.Indices.PutMappingAsync(index, x => x
                 .Properties<ElasticsearchMemoryRecord>(propDesc =>
                 {
                     propDesc.Keyword(x => x.Id);

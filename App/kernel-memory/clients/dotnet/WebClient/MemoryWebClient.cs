@@ -429,11 +429,11 @@ public sealed class MemoryWebClient : IKernelMemory
 
         using StringContent indexContent = new(index);
         using StringContent contextArgsContent = new(JsonSerializer.Serialize(context?.Arguments));
-        using (StringContent documentIdContent = new(uploadRequest.DocumentId))
-        {
-            List<IDisposable> disposables = [];
-            formData.Add(indexContent, Constants.WebService.IndexField);
-            formData.Add(documentIdContent, Constants.WebService.DocumentIdField);
+        using StringContent documentIdContent = new(uploadRequest.DocumentId);
+        
+        List<IDisposable> disposables = [];
+        formData.Add(indexContent, Constants.WebService.IndexField);
+        formData.Add(documentIdContent, Constants.WebService.DocumentIdField);
 
             if (context?.Arguments != null)
             {
@@ -500,7 +500,6 @@ public sealed class MemoryWebClient : IKernelMemory
                     disposable.Dispose();
                 }
             }
-        }
 
         return uploadRequest.DocumentId;
     }
