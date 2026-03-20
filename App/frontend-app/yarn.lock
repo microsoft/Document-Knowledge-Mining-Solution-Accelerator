@@ -5082,9 +5082,9 @@ flat-cache@^4.0.0:
     keyv "^4.5.4"
 
 flatted@^3.2.9:
-  version "3.3.3"
-  resolved "https://registry.yarnpkg.com/flatted/-/flatted-3.3.3.tgz#67c8fad95454a7c7abebf74bb78ee74a44023358"
-  integrity sha512-GX+ysw4PBCz0PzosHDepZGANEuFCMLrnRTiEy9McGjmkCQYwRq4A/X786G/fjM/+OjsWSU1ZrY5qyARZmO/uwg==
+  version "3.4.2"
+  resolved "https://registry.yarnpkg.com/flatted/-/flatted-3.4.2.tgz#f5c23c107f0f37de8dbdf24f13722b3b98d52726"
+  integrity sha512-PjDse7RzhcPkIJwy5t7KPWQSZ9cAbzQXcafsetQoD7sOJRQlGikNbx7yZp2OotDnJyrDcbyRq3Ttb18iYOqkxA==
 
 follow-redirects@^1.15.6:
   version "1.15.11"
@@ -6399,7 +6399,7 @@ keyv@^4.5.4:
     i18next "^25.5.3"
     i18next-browser-languagedetector "^8.2.0"
     i18next-http-backend "^3.0.2"
-    km-app "file:../../../../../../../AppData/Local/Yarn/Cache/v6/npm-km-app-1.0.0-3364c375-9406-4ea7-a926-82d2ee61d0ba-1760537549847/node_modules/km-app"
+    km-app "file:."
     marked "^16.3.0"
     notistack "^3.0.2"
     pdfjs-dist "^5.4.149"
