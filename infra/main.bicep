@@ -853,7 +853,7 @@ module openaiPrivateEndpoint 'br/public:avm/res/network/private-endpoint:0.8.1' 
   params: {
     name: 'pep-${openAiAccountName}'
     customNetworkInterfaceName: 'nic-${openAiAccountName}'
-    location: aiDeploymentsLocation
+    location: solutionLocation
     tags: tags
     privateLinkServiceConnections: [
       {

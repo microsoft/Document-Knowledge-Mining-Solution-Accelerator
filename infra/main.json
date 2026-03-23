@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.41.2.15936",
-      "templateHash": "15909948909942494488"
+      "templateHash": "10312392234570679648"
     }
   },
   "parameters": {
@@ -41537,7 +41537,7 @@
             "value": "[format('nic-{0}', variables('openAiAccountName'))]"
           },
           "location": {
-            "value": "[parameters('aiDeploymentsLocation')]"
+            "value": "[variables('solutionLocation')]"
           },
           "tags": {
             "value": "[parameters('tags')]"
