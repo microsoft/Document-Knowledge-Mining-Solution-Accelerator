@@ -93,7 +93,7 @@ internal sealed class VolatileFileSystem : IFileSystem
     /// <inheritdoc />
     public Task<IEnumerable<string>> ListVolumesAsync(CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(this._volumes.Keys.Select(x => x));
+        return Task.FromResult(this._volumes.Keys);
     }
 
     #endregion

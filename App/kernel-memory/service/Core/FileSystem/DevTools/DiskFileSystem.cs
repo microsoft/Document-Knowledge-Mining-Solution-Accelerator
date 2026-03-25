@@ -79,7 +79,7 @@ internal sealed class DiskFileSystem : IFileSystem
             }
             catch (IOException e) when (e.Message.Contains("not empty", StringComparison.OrdinalIgnoreCase))
             {
-                await Task.Delay(TimeSpan.FromMilliseconds(attempt * 75), cancellationToken).ConfigureAwait(false);
+                await Task.Delay(TimeSpan.FromMilliseconds(attempt * 75.0), cancellationToken).ConfigureAwait(false);
             }
         }
     }

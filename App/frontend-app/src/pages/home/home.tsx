@@ -167,7 +167,7 @@ export function Home({ isSearchResultsPage }: HomeProps) {
         if(!q){
             setClearSearchBox(false)
         }
-    },[searchParams])
+    },[searchParams]);
     
     function onSearchChanged(searchValue: string): void {
        if (searchValue) {

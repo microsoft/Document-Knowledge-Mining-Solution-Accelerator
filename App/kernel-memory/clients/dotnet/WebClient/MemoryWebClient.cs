@@ -406,12 +406,9 @@ public sealed class MemoryWebClient : IKernelMemory
         }
 
         values = lastModifiedValues?.ToList();
-        if (values != null && values.Count != 0)
+        if (values != null && values.Count != 0 && !DateTimeOffset.TryParse(values.First(), out lastModified))
         {
-            if (!DateTimeOffset.TryParse(values.First(), out lastModified))
-            {
-                lastModified = DateTimeOffset.MinValue;
-            }
+            lastModified = DateTimeOffset.MinValue;
         }
 
         return (contentType, contentLength, lastModified);

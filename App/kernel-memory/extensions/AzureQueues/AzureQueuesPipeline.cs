@@ -201,7 +201,7 @@ public sealed class AzureQueuesPipeline : IQueue
                     }
                     else
                     {
-                        var backoffDelay = TimeSpan.FromSeconds(1 * message.DequeueCount);
+                        var backoffDelay = TimeSpan.FromSeconds(1.0 * message.DequeueCount);
                         this._log.LogWarning("Message '{0}' failed to process, putting message back in the queue with a delay of {1} msecs",
                             message.MessageId, backoffDelay.TotalMilliseconds);
                         await this.UnlockMessageAsync(message, backoffDelay, cancellationToken: default).ConfigureAwait(false);
@@ -222,7 +222,7 @@ public sealed class AzureQueuesPipeline : IQueue
                 // - failed to unlock message in the queue
                 // - failed to move message to poison queue
 
-                var backoffDelay = TimeSpan.FromSeconds(1 * message.DequeueCount);
+                var backoffDelay = TimeSpan.FromSeconds(1.0 * message.DequeueCount);
                 this._log.LogWarning(e, "Message '{0}' processing failed with exception, putting message back in the queue with a delay of {1} msecs",
                     message.MessageId, backoffDelay.TotalMilliseconds);
 

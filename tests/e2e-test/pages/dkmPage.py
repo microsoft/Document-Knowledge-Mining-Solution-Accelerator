@@ -35,6 +35,7 @@ class DkmPage(BasePage):
     TIME_FILTER = "//button[contains(text(), 'Anytime')]"
 
     def __init__(self, page):
+        super().__init__(page)
         self.page = page
 
     def validate_home_page(self):
@@ -200,7 +201,7 @@ class DkmPage(BasePage):
                     # Try pressing Escape key
                     self.page.keyboard.press("Escape")
                     self.page.wait_for_timeout(1000)
-        except:
+        except Exception:
             # No dialog open, continue
             pass
 
@@ -223,7 +224,7 @@ class DkmPage(BasePage):
                 return True
             # If neither, the button is enabled in UI - return False
             return False
-        except:
+        except Exception:
             return False
 
     def verify_send_button_enabled(self):

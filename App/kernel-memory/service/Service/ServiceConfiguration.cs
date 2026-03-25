@@ -515,16 +515,14 @@ internal sealed class ServiceConfiguration
         }
 
         // Check embedding generation ingestion settings
-        if (this._memoryConfiguration.DataIngestion.EmbeddingGenerationEnabled)
+        if (this._memoryConfiguration.DataIngestion.EmbeddingGenerationEnabled &&
+            this._memoryConfiguration.DataIngestion.EmbeddingGeneratorTypes.Count == 0)
         {
-            if (this._memoryConfiguration.DataIngestion.EmbeddingGeneratorTypes.Count == 0)
-            {
-                if (!exitOnError) { return false; }
+            if (!exitOnError) { return false; }
 
-                Console.WriteLine("\n******\nData ingestion embedding generation (DataIngestion.EmbeddingGeneratorTypes) is not configured.\n" +
-                                  $"Please configure the service and retry.\n\n{help}\n******\n");
-                Environment.Exit(-1);
-            }
+            Console.WriteLine("\n******\nData ingestion embedding generation (DataIngestion.EmbeddingGeneratorTypes) is not configured.\n" +
+                              $"Please configure the service and retry.\n\n{help}\n******\n");
+            Environment.Exit(-1);
         }
 
         // Check embedding generation retrieval settings

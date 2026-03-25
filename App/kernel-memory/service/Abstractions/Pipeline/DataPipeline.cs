@@ -335,12 +335,12 @@ public sealed class DataPipeline
             this.UploadComplete = false;
         }
 
-        this.RemainingSteps = this.Steps.Select(x => x).ToList();
+        this.RemainingSteps = this.Steps.ToList();
         this.Creation = DateTimeOffset.UtcNow;
         this.LastUpdate = this.Creation;
 
         this.Validate();
-
+    
         return this;
     }
 

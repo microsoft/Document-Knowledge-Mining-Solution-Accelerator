@@ -49,7 +49,7 @@ namespace Microsoft.GS.DPS.API
             var assemblyLocation = Assembly.GetExecutingAssembly().Location;
             var assemblyDirectory = System.IO.Path.GetDirectoryName(assemblyLocation);
             // binding assembly directory with file path (Prompts/Chat_SystemPrompt.txt)
-            var systemPromptFilePath = System.IO.Path.Combine(assemblyDirectory, "Prompts/Chat_SystemPrompt.txt");
+            var systemPromptFilePath = System.IO.Path.Combine(assemblyDirectory, "Prompts", "Chat_SystemPrompt.txt");
             ChatHost.s_systemPrompt = System.IO.File.ReadAllText(systemPromptFilePath);
             ChatHost.s_assistancePrompt =
                     @"
