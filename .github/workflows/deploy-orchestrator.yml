@@ -106,7 +106,7 @@ jobs:
       existing_webapp_url: ${{ inputs.existing_webapp_url }}
       RESOURCE_GROUP_NAME: ${{ needs.deploy.outputs.RESOURCE_GROUP_NAME }}
       AZURE_LOCATION: ${{ needs.deploy.outputs.AZURE_LOCATION }}
-      AZURE_ENV_CU_LOCATION: ${{ needs.deploy.outputs.AZURE_ENV_CU_LOCATION }}
+      AZURE_ENV_AI_SERVICE_LOCATION: ${{ needs.deploy.outputs.AZURE_ENV_AI_SERVICE_LOCATION }}
       ENV_NAME: ${{ needs.deploy.outputs.ENV_NAME }}
       IMAGE_TAG: ${{ needs.deploy.outputs.IMAGE_TAG }}
     secrets: inherit

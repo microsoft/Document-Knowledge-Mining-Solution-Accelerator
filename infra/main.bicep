@@ -101,7 +101,7 @@ param enableScalability bool = false
   }
 })
 @description('Required. Location for AI Foundry deployment. This is the location where the AI Foundry resources will be deployed.')
-param aiDeploymentsLocation string
+param azureAiServiceLocation string
 
 @description('Optional created by user name')
 param createdBy string = contains(deployer(), 'userPrincipalName')? split(deployer().userPrincipalName, '@')[0]: deployer().objectId
@@ -810,7 +810,7 @@ module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
   name: take('avm.res.cognitiveservices.account.${openAiAccountName}', 64)
   params: {
     name: openAiAccountName
-    location: aiDeploymentsLocation
+    location: azureAiServiceLocation
     kind: 'OpenAI'
     sku: 'S0'
     tags: tags
