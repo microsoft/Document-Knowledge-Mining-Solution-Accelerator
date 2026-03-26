@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -93,7 +94,7 @@ internal sealed class VolatileFileSystem : IFileSystem
     /// <inheritdoc />
     public Task<IEnumerable<string>> ListVolumesAsync(CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(this._volumes.Keys);
+        return Task.FromResult(this._volumes.Keys.Select(x => x));
     }
 
     #endregion
@@ -352,6 +353,7 @@ internal sealed class VolatileFileSystem : IFileSystem
         return Task.CompletedTask;
     }
 
+    [DoesNotReturn]
     private void ThrowVolumeNotFound(string volume)
     {
         // Don't log errors here, this can be expected, let the caller handle the exception
