@@ -1,9 +1,8 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+﻿﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -220,7 +219,7 @@ internal sealed class VolatileFileSystem : IFileSystem
     public Task<StreamableFileContent> ReadFileInfoAsync(string volume, string relPath, string fileName, CancellationToken cancellationToken = default)
     {
         volume = ValidateVolumeName(volume);
-        StreamableFileContent result;
+        StreamableFileContent result = new();
 
         if (this._volumes.TryGetValue(volume, out ConcurrentDictionary<string, BinaryData>? volumeData))
         {
@@ -353,7 +352,6 @@ internal sealed class VolatileFileSystem : IFileSystem
         return Task.CompletedTask;
     }
 
-    [DoesNotReturn]
     private void ThrowVolumeNotFound(string volume)
     {
         // Don't log errors here, this can be expected, let the caller handle the exception
