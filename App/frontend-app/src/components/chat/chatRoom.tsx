@@ -220,8 +220,8 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
             try {
                 if (response && response.answer) {
 
-                    const formattedAnswer = removeNewlines(response.answer)
-                    const chatResp = await marked.parse(formattedAnswer) // Convert to HTML if Markdown detected
+                    const formattedAnswer = removeNewlines(response.answer);
+                    const chatResp = await marked.parse(formattedAnswer); // Convert to HTML if Markdown detected
 
 
 

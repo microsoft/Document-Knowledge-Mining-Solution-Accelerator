@@ -200,6 +200,7 @@ public sealed class SummarizationHandler : IPipelineStepHandler
         // After the first run (after overlaps have been introduced), check if the summarization is causing the content to grow
         bool firstRun = overlapToRemove;
         int previousLength = contentLength;
+        var newContent = new StringBuilder();
         while (!done)
         {
             var paragraphs = new List<string>();
@@ -217,7 +218,7 @@ public sealed class SummarizationHandler : IPipelineStepHandler
             }
 
             this._log.LogTrace("Paragraphs to summarize: {0}", paragraphs.Count);
-            var newContent = new StringBuilder();
+            newContent.Clear();
             for (int index = 0; index < paragraphs.Count; index++)
             {
                 string paragraph = paragraphs[index];

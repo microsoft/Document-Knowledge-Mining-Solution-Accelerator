@@ -266,13 +266,14 @@ public sealed class PostgresMemory : IMemoryDb, IDisposable
 
         var tagCounter = 0;
         var orConditions = new List<string>();
+        var andSql = new StringBuilder();
 
         foreach (MemoryFilter filter in filters.Where(f => !f.IsEmpty()))
         {
-            var andSql = new StringBuilder();
+            andSql.Clear();
             andSql.AppendLine("(");
 
-            if (filter is PostgresMemoryFilter extendedFilter)
+            if (filter is PostgresMemoryFilter)
             {
                 // use PostgresMemoryFilter filtering logic
                 throw new NotImplementedException("PostgresMemoryFilter is not supported yet");

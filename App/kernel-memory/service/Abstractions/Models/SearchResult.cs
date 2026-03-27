@@ -30,7 +30,6 @@ public class SearchResult
         {
             return this.Results.Count == 0;
         }
-        private set { }
     }
 
     /// <summary>

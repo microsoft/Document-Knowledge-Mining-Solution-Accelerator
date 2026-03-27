@@ -51,10 +51,8 @@ public sealed class MsWordDecoder : IContentDecoder
         this._log.LogDebug("Extracting text from MS Word file");
 
         var result = new FileContent(MimeTypes.PlainText);
-        var wordprocessingDocument = WordprocessingDocument.Open(data, false);
-        try
-        {
-            StringBuilder sb = new();
+        using var wordprocessingDocument = WordprocessingDocument.Open(data, false);
+        StringBuilder sb = new();
 
             MainDocumentPart? mainPart = wordprocessingDocument.MainDocumentPart;
             if (mainPart is null)
@@ -93,10 +91,5 @@ public sealed class MsWordDecoder : IContentDecoder
             result.Sections.Add(new FileSection(pageNumber, lastPageContent, true));
 
             return Task.FromResult(result);
-        }
-        finally
-        {
-            wordprocessingDocument.Dispose();
-        }
     }
 }

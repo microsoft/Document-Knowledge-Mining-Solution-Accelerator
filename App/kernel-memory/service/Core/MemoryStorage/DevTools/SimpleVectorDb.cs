@@ -217,7 +217,7 @@ public class SimpleVectorDb : IMemoryDb
                 // Check if the tag name + value is present
                 for (int index = 0; match && index < condition.Value.Count; index++)
                 {
-                    match = match && (tags.ContainsKey(condition.Key) && tags[condition.Key].Contains(condition.Value[index]));
+                    match = match && (tags.TryGetValue(condition.Key, out var tagValues) && tagValues.Contains(condition.Value[index]));
                 }
             }
 

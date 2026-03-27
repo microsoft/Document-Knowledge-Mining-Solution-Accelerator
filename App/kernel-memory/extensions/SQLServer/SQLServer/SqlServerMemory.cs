@@ -109,21 +109,12 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
 
             COMMIT;";
 
-        var connection = new SqlConnection(this._config.ConnectionString);
+        using var connection = new SqlConnection(this._config.ConnectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-        try
-        {
-            SqlCommand command = connection.CreateCommand();
-            command.CommandText = sql;
-            command.Parameters.AddWithValue("@index", index);
-            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-            command.Dispose();
-        }
-        finally
-        {
-            await connection.CloseAsync().ConfigureAwait(false);
-            connection.Dispose();
-        }
+        using SqlCommand command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.AddWithValue("@index", index);
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
@@ -160,23 +151,14 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
 
             COMMIT;";
 
-        var connection = new SqlConnection(this._config.ConnectionString);
+        using var connection = new SqlConnection(this._config.ConnectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-        try
-        {
-            SqlCommand command = connection.CreateCommand();
-            command.CommandText = sql;
-            command.Parameters.AddWithValue("@index", index);
-            command.Parameters.AddWithValue("@key", record.Id);
+        using SqlCommand command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.AddWithValue("@index", index);
+        command.Parameters.AddWithValue("@key", record.Id);
 
-            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-            command.Dispose();
-        }
-        finally
-        {
-            await connection.CloseAsync().ConfigureAwait(false);
-            connection.Dispose();
-        }
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
@@ -203,21 +185,12 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
 
             COMMIT;";
 
-        var connection = new SqlConnection(this._config.ConnectionString);
+        using var connection = new SqlConnection(this._config.ConnectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-        SqlCommand command = connection.CreateCommand();
-        try
-        {
-            command.CommandText = sql;
-            command.Parameters.AddWithValue("@index", index);
-            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-        finally
-        {
-            command.Dispose();
-            await connection.CloseAsync().ConfigureAwait(false);
-            connection.Dispose();
-        }
+        using SqlCommand command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.AddWithValue("@index", index);
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
@@ -229,26 +202,17 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
 
         var sql = $"SELECT [id] FROM {this.GetFullTableName(this._config.MemoryCollectionTableName)}";
 
-        var connection = new SqlConnection(this._config.ConnectionString);
+        using var connection = new SqlConnection(this._config.ConnectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-        SqlCommand command = connection.CreateCommand();
-        try
+        using SqlCommand command = connection.CreateCommand();
+        command.CommandText = sql;
+        var dataReader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await dataReader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
-            command.CommandText = sql;
-            var dataReader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-            while (await dataReader.ReadAsync(cancellationToken).ConfigureAwait(false))
-            {
-                indexes.Add(dataReader.GetString(dataReader.GetOrdinal("id")));
-            }
+            indexes.Add(dataReader.GetString(dataReader.GetOrdinal("id")));
+        }
 
-            await dataReader.DisposeAsync().ConfigureAwait(false);
-        }
-        finally
-        {
-            command.Dispose();
-            await connection.CloseAsync().ConfigureAwait(false);
-            connection.Dispose();
-        }
+        await dataReader.DisposeAsync().ConfigureAwait(false);
 
         return indexes;
     }
@@ -278,48 +242,40 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
 
         var list = new List<MemoryRecord>();
 
-        var connection = new SqlConnection(this._config.ConnectionString);
+        using var connection = new SqlConnection(this._config.ConnectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-        SqlCommand command = connection.CreateCommand();
-        try
-        {
-            var tagFilters = new TagCollection();
+        using SqlCommand command = connection.CreateCommand();
+        var tagFilters = new TagCollection();
 
-            command.CommandText = $@"
-                WITH [filters] AS
+        command.CommandText = $@"
+            WITH [filters] AS
 		        (
 			        SELECT
 				        cast([filters].[key] AS NVARCHAR(256)) COLLATE SQL_Latin1_General_CP1_CI_AS AS [name],
 				        cast([filters].[value] AS NVARCHAR(256)) COLLATE SQL_Latin1_General_CP1_CI_AS AS [value]
 			        FROM openjson(@filters) [filters]
 		        )
-                SELECT TOP (@limit)
-                    {queryColumns}
-                FROM
-                    {this.GetFullTableName(this._config.MemoryTableName)}
+            SELECT TOP (@limit)
+                {queryColumns}
+            FROM
+                {this.GetFullTableName(this._config.MemoryTableName)}
 		        WHERE 1=1
-                AND {this.GetFullTableName(this._config.MemoryTableName)}.[collection] = @index
-                {this.GenerateFilters(index, command.Parameters, filters)};";
+            AND {this.GetFullTableName(this._config.MemoryTableName)}.[collection] = @index
+            {this.GenerateFilters(index, command.Parameters, filters)};";
 
-            command.Parameters.AddWithValue("@index", index);
-            command.Parameters.AddWithValue("@limit", limit);
-            command.Parameters.AddWithValue("@filters", JsonSerializer.Serialize(tagFilters));
+        command.Parameters.AddWithValue("@index", index);
+        command.Parameters.AddWithValue("@limit", limit);
+        command.Parameters.AddWithValue("@filters", JsonSerializer.Serialize(tagFilters));
 
-            var dataReader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-            while (await dataReader.ReadAsync(cancellationToken).ConfigureAwait(false))
-            {
-                // Iterates over the entries and saves them in a list so that the connection can be closed before returning the results.
-                var entry = await this.ReadEntryAsync(dataReader, withEmbeddings, cancellationToken).ConfigureAwait(false);
-                list.Add(entry);
-            }
-
-            await dataReader.DisposeAsync().ConfigureAwait(false);
-        }
-        finally
+        var dataReader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await dataReader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
-            command.Dispose();
-            connection.Dispose();
+            // Iterates over the entries and saves them in a list so that the connection can be closed before returning the results.
+            var entry = await this.ReadEntryAsync(dataReader, withEmbeddings, cancellationToken).ConfigureAwait(false);
+            list.Add(entry);
         }
+
+        await dataReader.DisposeAsync().ConfigureAwait(false);
 
         foreach (var item in list)
         {
@@ -353,13 +309,11 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
                             $"{this.GetFullTableName(this._config.MemoryTableName)}.[embedding]";
         }
 
-        var connection = new SqlConnection(this._config.ConnectionString);
+        using var connection = new SqlConnection(this._config.ConnectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-        SqlCommand command = connection.CreateCommand();
-        try
-        {
-            var generatedFilters = this.GenerateFilters(index, command.Parameters, filters);
-            command.CommandText = $@"
+        using SqlCommand command = connection.CreateCommand();
+        var generatedFilters = this.GenerateFilters(index, command.Parameters, filters);
+        command.CommandText = $@"
                 WITH
                 [embedding] as
                 (
@@ -418,13 +372,6 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
             }
 
             await dataReader.DisposeAsync().ConfigureAwait(false);
-        }
-        finally
-        {
-            command.Dispose();
-            await connection.CloseAsync().ConfigureAwait(false);
-            connection.Dispose();
-        }
     }
 
     /// <inheritdoc/>
@@ -517,13 +464,12 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
 
                 COMMIT;";
 
-        var connection = new SqlConnection(this._config.ConnectionString);
+        using var connection = new SqlConnection(this._config.ConnectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-        try
-        {
-            foreach (var record in list)
+        
+        foreach (var record in list)
             {
-                SqlCommand command = connection.CreateCommand();
+                using SqlCommand command = connection.CreateCommand();
                 command.CommandText = sql;
                 command.Parameters.AddWithValue("@index", index);
                 command.Parameters.AddWithValue("@key", record.Id);
@@ -531,15 +477,8 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
                 command.Parameters.AddWithValue("@tags", JsonSerializer.Serialize(record.Tags) ?? (object)DBNull.Value);
                 command.Parameters.AddWithValue("@embedding", JsonSerializer.Serialize(record.Vector.Data.ToArray()));
                 await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-                command.Dispose();
 
                 yield return record.Id;
-            }
-        }
-        finally
-        {
-            await connection.CloseAsync().ConfigureAwait(false);
-            connection.Dispose();
         }
     }
 
@@ -582,22 +521,13 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
     /// </summary>
     private async Task CacheSqlServerMajorVersionNumberAsync(CancellationToken cancellationToken)
     {
-        var connection = new SqlConnection(this._config.ConnectionString);
+        using var connection = new SqlConnection(this._config.ConnectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-        SqlCommand command = connection.CreateCommand();
+        using SqlCommand command = connection.CreateCommand();
 
-        try
-        {
-            command.CommandText = "SELECT SERVERPROPERTY('ProductMajorVersion')";
-            var result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
-            this._cachedServerVersion = Convert.ToInt32(result, CultureInfo.InvariantCulture);
-        }
-        finally
-        {
-            command.Dispose();
-            await connection.CloseAsync().ConfigureAwait(false);
-            connection.Dispose();
-        }
+        command.CommandText = "SELECT SERVERPROPERTY('ProductMajorVersion')";
+        var result = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+        this._cachedServerVersion = Convert.ToInt32(result, CultureInfo.InvariantCulture);
     }
 
     /// <summary>
@@ -629,20 +559,11 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
                         CONSTRAINT UK_{this._config.MemoryTableName} UNIQUE([collection], [key])
                     );";
 
-        var connection = new SqlConnection(this._config.ConnectionString);
+        using var connection = new SqlConnection(this._config.ConnectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-        SqlCommand command = connection.CreateCommand();
-        try
-        {
-            command.CommandText = sql;
-            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-        }
-        finally
-        {
-            command.Dispose();
-            await connection.CloseAsync().ConfigureAwait(false);
-            connection.Dispose();
-        }
+        using SqlCommand command = connection.CreateCommand();
+        command.CommandText = sql;
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>

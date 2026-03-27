@@ -383,7 +383,11 @@ public static class WebAPIEndpoints
                 {
                     return Results.Problem(title: "File not found", detail: e.Message, statusCode: 404);
                 }
-                catch (Exception e)
+                catch (IOException e)
+                {
+                    return Results.Problem(title: "File download failed", detail: e.Message, statusCode: 503);
+                }
+                catch (UnauthorizedAccessException e)
                 {
                     return Results.Problem(title: "File download failed", detail: e.Message, statusCode: 503);
                 }

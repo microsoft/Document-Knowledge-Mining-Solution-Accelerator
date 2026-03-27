@@ -46,7 +46,7 @@ export function MetadataTable({ metadata }: MetadataTableProps) {
             ];
         }
 
-        if (typeof value === "object" && value !== null) {
+        if (typeof value === "object") {
             return [
                 {
                     key: { label: key },

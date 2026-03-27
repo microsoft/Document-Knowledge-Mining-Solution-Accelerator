@@ -112,13 +112,7 @@ class DkmPage(BasePage):
         raise PlaywrightTimeoutError(
             "Response is not generated and it has been timed out."
         )
-        # try:
-        #  # Wait for it to appear in the DOM and be visible
-        #     locator = self.page.locator(self.ASK_QUESTION)
-        #     locator.wait_for(state="enabled", timeout=200000)  # adjust timeout as needed
-        # except PlaywrightTimeoutError:
-        #     raise Exception("Response is not generated and it has been timed out.")
-
+        
     def wait_until_chat_details_response_loaded(self, timeout=200000):
 
         start_time = time.time()

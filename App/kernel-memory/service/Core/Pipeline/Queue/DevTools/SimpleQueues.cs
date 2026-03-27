@@ -227,7 +227,11 @@ public sealed class SimpleQueues : IQueue
                 this._log.LogError(e, "Directory missing, recreating");
                 await this._fileSystem.CreateVolumeAsync(this._queueName).ConfigureAwait(false);
             }
-            catch (Exception e)
+            catch (IOException e)
+            {
+                this._log.LogError(e, "Unexpected error while polling the queue");
+            }
+            catch (UnauthorizedAccessException e)
             {
                 this._log.LogError(e, "Unexpected error while polling the queue");
             }

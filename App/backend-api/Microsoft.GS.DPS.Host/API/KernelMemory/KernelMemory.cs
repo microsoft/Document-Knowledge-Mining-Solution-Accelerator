@@ -94,7 +94,7 @@ namespace Microsoft.GS.DPSHost.API
                     return Results.Ok(new DocumentDeletedResult() { IsDeleted = true });
                 }
 #pragma warning disable CA1031 // Must catch all to log and keep the process alive
-                catch (Exception ex)
+                catch (Exception)
                 {
                     return Results.BadRequest(new DocumentDeletedResult() { IsDeleted = false });
                 }
@@ -198,7 +198,6 @@ namespace Microsoft.GS.DPSHost.API
 
                     if (status.RemainingSteps.Count == 0)
                     {
-                        completeFlag = true;
                         break;
                     }
                     var totalSteps = status.Steps.Count;

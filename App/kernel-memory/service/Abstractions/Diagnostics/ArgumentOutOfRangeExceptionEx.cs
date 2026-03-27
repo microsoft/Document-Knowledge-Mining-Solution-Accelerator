@@ -144,7 +144,7 @@ public static class ArgumentOutOfRangeExceptionEx
 
     public static void ThrowIfZero(float value, string paramName, string message)
     {
-        if (value != 0) { return; }
+        if (Math.Abs(value) > 0) { return; }
 
         throw new ArgumentOutOfRangeException(paramName, message);
     }
@@ -195,7 +195,7 @@ public static class ArgumentOutOfRangeExceptionEx
 
     public static void ThrowIfZero(double value, string paramName, string message)
     {
-        if (value != 0) { return; }
+        if (Math.Abs(value) > 0) { return; }
 
         throw new ArgumentOutOfRangeException(paramName, message);
     }

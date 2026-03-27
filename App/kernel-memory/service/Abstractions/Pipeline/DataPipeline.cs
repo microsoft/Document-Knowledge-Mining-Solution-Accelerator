@@ -340,7 +340,7 @@ public sealed class DataPipeline
         this.LastUpdate = this.Creation;
 
         this.Validate();
-    
+
         return this;
     }
 
@@ -391,13 +391,10 @@ public sealed class DataPipeline
 
     public void Validate()
     {
-        if (string.IsNullOrEmpty(this.DocumentId))
+        // Rule exception: when deleting an index, the document ID is empty
+        if (string.IsNullOrEmpty(this.DocumentId) && !this.IsIndexDeletionPipeline())
         {
-            // Rule exception: when deleting an index, the document ID is empty
-            if (!this.IsIndexDeletionPipeline())
-            {
-                throw new ArgumentException("Data pipeline: the pipeline ID is empty", nameof(this.DocumentId));
-            }
+            throw new ArgumentException("Data pipeline: the pipeline ID is empty", nameof(this.DocumentId));
         }
 
         if (string.IsNullOrEmpty(this.Index))

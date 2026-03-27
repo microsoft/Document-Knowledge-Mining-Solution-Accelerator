@@ -74,14 +74,13 @@ namespace Microsoft.GS.DPS.API
 
         private async Task<ChatSession> makeNewSession(string? chatSessionId)
         {
-            var sessionId = string.Empty;
             if(string.IsNullOrEmpty(chatSessionId))
             {
-                sessionId = Guid.NewGuid().ToString();
+                this.sessionId = Guid.NewGuid().ToString();
             }
             else
             {
-                sessionId = chatSessionId;
+                this.sessionId = chatSessionId;
             }
 
             //Create New Chat History
@@ -92,7 +91,7 @@ namespace Microsoft.GS.DPS.API
             //Create a new ChatSession Entity for Saving into Azure Cosmos
             return new ChatSession()
             {
-                SessionId = sessionId, // New Session ID
+                SessionId = this.sessionId, // New Session ID
                 StartTime = DateTime.UtcNow // Session Created Time
             };
 

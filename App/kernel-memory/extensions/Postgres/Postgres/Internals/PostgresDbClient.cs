@@ -388,7 +388,11 @@ internal sealed class PostgresDbClient : IDisposable
             {
                 throw new IndexNotFoundException(e.Message, e);
             }
-            catch (Exception e)
+            catch (NpgsqlException e)
+            {
+                throw new PostgresException(e.Message, e);
+            }
+            catch (InvalidOperationException e)
             {
                 throw new PostgresException(e.Message, e);
             }

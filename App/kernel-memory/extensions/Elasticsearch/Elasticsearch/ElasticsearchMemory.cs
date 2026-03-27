@@ -59,7 +59,7 @@ public class ElasticsearchMemory : IMemoryDb
             return;
         }
 
-        var createIdxResponse = await this._client.Indices.CreateAsync(index,
+        await this._client.Indices.CreateAsync(index,
             cfg =>
             {
                 cfg.Settings(setts =>
