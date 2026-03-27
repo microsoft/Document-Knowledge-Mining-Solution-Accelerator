@@ -235,6 +235,10 @@ public sealed class SimpleQueues : IQueue
             {
                 this._log.LogError(e, "Unexpected error while polling the queue");
             }
+            catch (Exception e)
+            {
+                this._log.LogError(e, "Unexpected error while populating queue {QueueName}", this._queueName);
+            }
             finally
             {
                 this._busy = false;

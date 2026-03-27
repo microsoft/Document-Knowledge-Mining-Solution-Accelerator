@@ -2,8 +2,6 @@ import React, { MouseEventHandler, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import { useMsal } from "@azure/msal-react";
-import { Auth } from "../../utils/auth/auth";
-import { RedirectRequest } from "@azure/msal-browser";
 import {
     Avatar,
     makeStyles,
@@ -16,7 +14,6 @@ import {
 } from "@fluentui/react-components";
 import resolveConfig from "tailwindcss/resolveConfig";
 import TailwindConfig from "../../../tailwind.config";
-import { isPlatformAdmin } from "../../utils/auth/roles";
 
 const fullConfig = resolveConfig(TailwindConfig);
 const useStylesAvatar = makeStyles({

@@ -490,9 +490,13 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
 
     #region private ================================================================================
 
-    // Note: "_" is allowed in SQL Server, but we normalize it to "-" for consistency with other DBs
-    private static readonly Regex s_replaceIndexNameCharsRegex = new(@"[\s|\\|/|.|_|:]");
-    private const string ValidSeparator = "-";
+    // Note: "_" is allowed in SQL Server and used as the safe separator
+    private static readonly Regex s_replaceIndexNameCharsRegex = new(@"[\s|\\|/|.|:]");
+    private const string ValidSeparator = "_";
+    
+    // Validation regex to ensure normalized index names contain only safe SQL identifier characters
+    private static readonly Regex s_validIndexNameRegex = new(@"^[a-z0-9_]+$");
+    private const int MaxIndexNameLength = 128;
 
     /// <summary>
     /// Prepare instance, ensuring tables exist and reusable info is cached.
@@ -586,6 +590,7 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
     /// <returns></returns>
     private string GetFullTableName(string tableName)
     {
+        ValidateTableName(tableName);
         return $"[{this._config.Schema}].[{tableName}]";
     }
 
@@ -601,6 +606,9 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
         SqlParameterCollection parameters,
         ICollection<MemoryFilter>? filters = null)
     {
+        // Validate index before using it in SQL construction (defense in depth)
+        ValidateIndexName(index);
+
         var filterBuilder = new StringBuilder();
 
         if (filters is null || filters.Count <= 0 || filters.All(f => f.Count <= 0))
@@ -684,7 +692,60 @@ public sealed class SqlServerMemory : IMemoryDb, IMemoryDbUpsertBatch, IDisposab
 
         index = s_replaceIndexNameCharsRegex.Replace(index.Trim().ToLowerInvariant(), ValidSeparator);
 
+        // Validate the normalized index name
+        ValidateIndexName(index);
+
         return index;
+    }
+
+    /// <summary>
+    /// Validates that an index name contains only safe SQL identifier characters.
+    /// This prevents SQL injection when index names are used in dynamic SQL.
+    /// </summary>
+    /// <param name="index">The index name to validate.</param>
+    /// <exception cref="ConfigurationException">Thrown if the index name is invalid.</exception>
+    private static void ValidateIndexName(string index)
+    {
+        if (string.IsNullOrEmpty(index))
+        {
+            throw new ConfigurationException("The index name is empty after normalization");
+        }
+
+        if (index.Length > MaxIndexNameLength)
+        {
+            throw new ConfigurationException($"The index name '{index}' exceeds the maximum allowed length of {MaxIndexNameLength} characters");
+        }
+
+        if (!s_validIndexNameRegex.IsMatch(index))
+        {
+            throw new ConfigurationException($"The index name '{index}' contains invalid characters. Only lowercase letters, numbers, and underscores are allowed");
+        }
+    }
+
+    /// <summary>
+    /// Validates that a table name contains only safe SQL identifier characters.
+    /// This prevents SQL injection when table names are used in dynamic SQL.
+    /// </summary>
+    /// <param name="tableName">The table name to validate.</param>
+    /// <exception cref="ConfigurationException">Thrown if the table name is invalid.</exception>
+    private static void ValidateTableName(string tableName)
+    {
+        if (string.IsNullOrWhiteSpace(tableName))
+        {
+            throw new ConfigurationException("The table name is empty");
+        }
+
+        if (tableName.Length > MaxIndexNameLength)
+        {
+            throw new ConfigurationException($"The table name '{tableName}' exceeds the maximum allowed length of {MaxIndexNameLength} characters");
+        }
+
+        // Table names can contain letters, digits, underscores, and hyphens
+        // This covers both base table names and index-suffixed table names like "TableName_indexname"
+        if (!s_validIndexNameRegex.IsMatch(tableName))
+        {
+            throw new ConfigurationException($"The table name '{tableName}' contains invalid characters. Only lowercase letters, numbers, and underscores are allowed");
+        }
     }
 
     #endregion

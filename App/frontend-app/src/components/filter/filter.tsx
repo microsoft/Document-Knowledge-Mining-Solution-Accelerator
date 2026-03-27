@@ -1,6 +1,5 @@
 import React, { useEffect, useState, memo, useRef } from "react"; 
 import { Checkbox } from "@fluentui/react-checkbox";
-import { useTranslation } from "react-i18next";
 import { Accordion, AccordionHeader, AccordionItem, AccordionPanel, makeStyles } from "@fluentui/react-components";
 
 const useStyles = makeStyles({

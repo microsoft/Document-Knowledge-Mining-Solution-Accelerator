@@ -17,7 +17,6 @@ import { PagesTab } from "./PagesTab";
 import { PageNumberTab } from "./pageNumberTab";
 import { DialogTitleBar } from "./dialogTitleBar";
 import { AIKnowledgeTab } from "./aIKnowledgeTab";
-import { useTranslation } from "react-i18next";
 
 const useStyles = makeStyles({
     dialog: {
