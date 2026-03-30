@@ -193,9 +193,10 @@ param resourceSuffix string
 // VM Size Notes:
 // 1 B-series VMs (like Standard_B2ms) do not support accelerated networking.
 // 2 Pick a VM size that does support accelerated networking (the usual jump-box candidates):
-//     Standard_DS2_v2 (2 vCPU, 7 GiB RAM, Premium SSD) // The most broadly available (it’s a legacy SKU supported in virtually every region).
-//     Standard_D2s_v3 (2 vCPU, 8 GiB RAM, Premium SSD) //  next most common
-//     Standard_D2s_v4 (2 vCPU, 8 GiB RAM, Premium SSD)  // Newest, so fewer regions availabl
+//     Standard_D2s_v5 (2 vCPU, 8 GiB RAM, Premium SSD) // Recommended - current gen, widely available, better network bandwidth (12,500 Mbps)
+//     Standard_DS2_v2 (2 vCPU, 7 GiB RAM, Premium SSD) // Previous gen - still available but being phased out
+//     Standard_D2s_v3 (2 vCPU, 8 GiB RAM, Premium SSD) // Previous gen
+//     Standard_D2s_v4 (2 vCPU, 8 GiB RAM, Premium SSD) // Previous gen
 
 
 // Subnet Classless Inter-Doman Routing (CIDR)  Sizing Reference Table (Best Practices)

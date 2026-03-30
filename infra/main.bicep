@@ -71,7 +71,7 @@ param vmAdminUsername string?
 param vmAdminPassword string?
 
 @description('Optional. Size of the Jumpbox Virtual Machine when created. Set to custom value if enablePrivateNetworking is true.')
-param vmSize string = 'Standard_DS2_v2'
+param vmSize string = 'Standard_D2s_v5'
 
 @description('Optional. The tags to apply to all deployed Azure resources.')
 param tags resourceInput<'Microsoft.Resources/resourceGroups@2025-04-01'>.tags = {}
@@ -351,7 +351,7 @@ module jumpboxVM 'br/public:avm/res/compute/virtual-machine:0.15.0' = if (enable
   name: take('avm.res.compute.virtual-machine.${jumpboxVmName}', 64)
   params: {
     name: take(jumpboxVmName, 15) // Shorten VM name to 15 characters to avoid Azure limits
-    vmSize: vmSize ?? 'Standard_DS2_v2'
+    vmSize: vmSize ?? 'Standard_D2s_v5'
     location: solutionLocation
     adminUsername: vmAdminUsername ?? 'JumpboxAdminUser'
     adminPassword: vmAdminPassword ?? 'JumpboxAdminP@ssw0rd1234!'
@@ -827,23 +827,7 @@ module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
       bypass: 'AzureServices'
     }
 
-    privateEndpoints: enablePrivateNetworking
-      ? [
-          {
-            name: 'pep-openai-${solutionSuffix}'
-            subnetResourceId: virtualNetwork!.outputs.pepsSubnetResourceId
-            service: 'account'
-            privateDnsZoneGroup: {
-              privateDnsZoneGroupConfigs: [
-                {
-                  name: 'openai-dns-zone-group'
-                  privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.openAI]!.outputs.resourceId
-                }
-              ]
-            }
-          }
-        ]
-      : []
+    privateEndpoints: []
 
     // Role assignments
     roleAssignments: [
@@ -861,6 +845,38 @@ module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
 
     // OpenAI deployments (pass array from main)
     deployments: openAiDeployments
+  }
+}
+
+module openaiPrivateEndpoint 'br/public:avm/res/network/private-endpoint:0.8.1' = if (enablePrivateNetworking) {
+  name: take('pep-${openAiAccountName}-deployment', 64)
+  params: {
+    name: 'pep-${openAiAccountName}'
+    customNetworkInterfaceName: 'nic-${openAiAccountName}'
+    location: solutionLocation
+    tags: tags
+    privateLinkServiceConnections: [
+      {
+        name: 'pep-${openAiAccountName}-connection'
+        properties: {
+          privateLinkServiceId: avmOpenAi.outputs.resourceId
+          groupIds: ['account']
+        }
+      }
+    ]
+    privateDnsZoneGroup: {
+      privateDnsZoneGroupConfigs: [
+        {
+          name: 'ai-services-dns-zone-cognitiveservices'
+          privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.cognitiveServices]!.outputs.resourceId
+        }
+        {
+          name: 'ai-services-dns-zone-openai'
+          privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.openAI]!.outputs.resourceId
+        }
+      ]
+    }
+    subnetResourceId: virtualNetwork!.outputs.pepsSubnetResourceId
   }
 }
 
@@ -886,24 +902,8 @@ module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.13.2
       defaultAction: enablePrivateNetworking ? 'Deny' : 'Allow'
     }
 
-    // Private Endpoint for Form Recognizer
-    privateEndpoints: enablePrivateNetworking
-      ? [
-          {
-            name: 'pep-docintel-${solutionSuffix}'
-            subnetResourceId: virtualNetwork!.outputs.pepsSubnetResourceId
-            service: 'account'
-            privateDnsZoneGroup: {
-              privateDnsZoneGroupConfigs: [
-                {
-                  name: 'docintel-dns-zone-group'
-                  privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.cognitiveServices]!.outputs.resourceId
-                }
-              ]
-            }
-          }
-        ]
-      : []
+    // Private Endpoint separated to dedicated module below
+    privateEndpoints: []
 
     // Role Assignments
     roleAssignments: [
@@ -913,6 +913,34 @@ module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.13.2
         principalType: 'ServicePrincipal'
       }
     ]
+  }
+}
+
+module docIntelPrivateEndpoint 'br/public:avm/res/network/private-endpoint:0.8.1' = if (enablePrivateNetworking) {
+  name: take('pep-${docIntelAccountName}-deployment', 64)
+  params: {
+    name: 'pep-${docIntelAccountName}'
+    customNetworkInterfaceName: 'nic-${docIntelAccountName}'
+    location: solutionLocation
+    tags: tags
+    privateLinkServiceConnections: [
+      {
+        name: 'pep-${docIntelAccountName}-connection'
+        properties: {
+          privateLinkServiceId: documentIntelligence.outputs.resourceId
+          groupIds: ['account']
+        }
+      }
+    ]
+    privateDnsZoneGroup: {
+      privateDnsZoneGroupConfigs: [
+        {
+          name: 'docintel-dns-zone-cognitiveservices'
+          privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.cognitiveServices]!.outputs.resourceId
+        }
+      ]
+    }
+    subnetResourceId: virtualNetwork!.outputs.pepsSubnetResourceId
   }
 }
 
