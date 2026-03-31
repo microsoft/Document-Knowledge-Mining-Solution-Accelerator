@@ -192,14 +192,12 @@ namespace Microsoft.GS.DPS.Storage.Document
             //Just in case StartDate and EndDate is not null, define filter between StartDate and EndDate
             //endDate should be converted from datetime to DateTime of end of day Day:23:59:59
 
-            FilterDefinition<Entities.Document> filter = Builders<Entities.Document>.Filter.Empty;
-
             if (endDate.HasValue)
             {
                 endDate = endDate?.Date.AddHours(23).AddMinutes(59).AddSeconds(59);
-                filter = Builders<Entities.Document>.Filter.Gte(x => x.ImportedTime, startDate ?? DateTime.Now) &
-                              Builders<Entities.Document>.Filter.Lte(x => x.ImportedTime, endDate ?? endDate);
-
+                var timeFilter = Builders<Entities.Document>.Filter.Gte(x => x.ImportedTime, startDate ?? DateTime.Now) &
+                              Builders<Entities.Document>.Filter.Lte(x => x.ImportedTime, endDate.Value);
+                filterDefinition &= timeFilter;
             }
 
 

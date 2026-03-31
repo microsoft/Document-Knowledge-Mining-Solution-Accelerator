@@ -33,8 +33,8 @@ export function SidecarCopilot({
     const [model, setModel] = useState<string>("chat_35");
     const [source, setSource] = useState<string>("rag");
     const [button, setButton] = useState<string>("");
-    const [temperature, setTemperature] = useState<number>(0.8);
-    const [maxTokens, setMaxTokens] = useState<number>(750);
+    const [temperature] = useState<number>(0.8);
+    const [maxTokens] = useState<number>(750);
     const [disableSources, setDisableSources] = useState<boolean>(false);
     const [selectedDocument, setSelectedDocument] = useState<Document[]>([]);
 
@@ -42,12 +42,6 @@ export function SidecarCopilot({
         setSelectedDocument(chatWithDocument);
     }, [chatWithDocument]);
 
-    const [options, setOptions] = useState<ChatOptions>({
-        model: model,
-        source: source,
-        temperature: temperature,
-        maxTokens: maxTokens,
-    });
 
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const [textAreaValue, setTextAreaValue] = useState("");

@@ -1,4 +1,4 @@
-import { Label } from "@fluentui/react-components";
+import { } from "@fluentui/react-components";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import './OptionsPanel.css'; // CSS file for slider

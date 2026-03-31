@@ -9,18 +9,15 @@ import {
     DialogSurface,
     DialogTitle,
     Tag,
-    Tooltip,
     makeStyles,
 } from "@fluentui/react-components";
 import { DocDialog } from "../documentViewer/documentViewer";
 import { Textarea } from "@fluentai/textarea";
 import type { TextareaSubmitEvents, TextareaValueData } from "@fluentai/textarea";
 import { CopilotChat, UserMessage, CopilotMessage } from "@fluentai/react-copilot-chat";
-import { ChatAdd24Regular, DocumentOnePageLink20Regular } from "@fluentui/react-icons";
-import { AttachmentTag } from "@fluentai/attachments";
+import { ChatAdd24Regular } from "@fluentui/react-icons";
 import styles from "./chatRoom.module.scss";
-import { CopilotProvider, FeedbackButtons, Suggestion } from "@fluentai/react-copilot";
-import { Result, SingleDocument, Tokens } from "../../api/apiTypes/singleDocument";
+import { CopilotProvider, Suggestion } from "@fluentai/react-copilot";
 //import { getDocument } from "../../api/documentsService";
 import { Completion, PostFeedback } from "../../api/chatService";
 import { FeedbackForm } from "./FeedbackForm";
@@ -48,21 +45,19 @@ interface ChatRoomProps {
 }
 
 export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDocument, disableOptionsPanel, clearChatFlag }: ChatRoomProps) {
-    const customStyles = useStyles();
+
     const { t } = useTranslation();
     const [chatSessionId, setChatSessionId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [disableSources, setDisableSources] = useState<boolean>(false);
-    const [error, setError] = useState<unknown>();
     const [model, setModel] = useState<string>("chat_35");
     const [source, setSource] = useState<string>("rag");
     const [temperature, setTemperature] = useState<number>(0.8);
-    const [maxTokens, setMaxTokens] = useState<number>(750);
+    const [maxTokens] = useState<number>(750);
     const [selectedDocument, setSelectedDocument] = useState<Document[]>(chatWithDocument);
     const [button, setButton] = useState<string>("");
-    const [dialogMetadata, setDialogMetadata] = useState<Document | null>(null);
+    const [dialogMetadata] = useState<Document | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [tokens, setTokens] = useState<Tokens | null>(null);
     const [open, setOpen] = useState(false);
     const [isFeedbackFormOpen, setIsFeedbackFormOpen] = useState<boolean>(false);
     const [options, setOptions] = useState<ChatOptions>({
@@ -75,7 +70,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
     const [textAreaValue, setTextAreaValue] = useState("");
     const [textareaKey, setTextareaKey] = useState(0);
     const inputRef = useRef<HTMLTextAreaElement>(null);
-    const [allChunkTexts, setAllChunkTexts] = useState<string[]>([]);
+    const [allChunkTexts] = useState<string[]>([]);
 
     const { conversationAnswers, setConversationAnswers } = useContext(AppContext);
     const [isSticky, setIsSticky] = useState(false);
@@ -129,11 +124,6 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
         setDisableSources(true);
         setIsLoading(true);
 
-        // A simple function to check if the text contains Markdown
-        const isMarkdown = (text: string) => {
-            const markdownPattern = /(^|\s)(#{1,6}|\*\*|__|[-*]|\d+\.\s|\[.*\]\(.*\)|```|`[^`]*`)/;
-            return markdownPattern.test(text);
-        };
 
         const userTimestamp = new Date();
         // Ensure we have a chatSessionId or create one if null/undefined
@@ -171,8 +161,6 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
 | Average delinquency of NPLs sold | 2.8 years | FHFA Non-Performing Loan Sales Report | Page 2 |
 | Average current mark-to-market LTV ratio of NPLs | 83% | FHFA Non-Performing Loan Sales Report | Page 2 |`;
 
-        const htmlString = await marked.parse(markdown);
-        const htmlString2 = markdownToHtmlString(markdown);
 
         setConversationAnswers((prevAnswers) => [
             ...prevAnswers,
@@ -233,8 +221,8 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
             try {
                 if (response && response.answer) {
 
-                    const formattedAnswer = removeNewlines(response.answer)
-                    const chatResp = await marked.parse(formattedAnswer) // Convert to HTML if Markdown detected
+                    const formattedAnswer = removeNewlines(response.answer);
+                    const chatResp = await marked.parse(formattedAnswer); // Convert to HTML if Markdown detected
 
 
 
@@ -325,41 +313,41 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
         setIsFeedbackFormOpen(false);
     };
 
-    const handlePositiveFeedback = async (sources: Reference[]) => {
-        setIsLoading(true);
+    // const handlePositiveFeedback = async (sources: Reference[]) => {
+    //     setIsLoading(true);
 
-        const request = {
-            isPositive: true,
-            reason: "Correct answer",
-            comment: "",
-            history: history,
-            options: options,
-            sources: sources.map((ref) => ({ ...ref })),
-            filterByDocumentIds:
-                button === "Selected Documents"
-                    ? selectedDocuments.map((document) => document.documentId)
-                    : button === "Search Results"
-                        ? searchResultDocuments.map((document) => document.documentId)
-                        : button === "Selected Document"
-                            ? [selectedDocument[0]?.documentId || ""]
-                            : [],
-            groundTruthAnswer: "",
-            documentURLs: [],
-            chunkTexts: [],
-        };
+    //     const request = {
+    //         isPositive: true,
+    //         reason: "Correct answer",
+    //         comment: "",
+    //         history: history,
+    //         options: options,
+    //         sources: sources.map((ref) => ({ ...ref })),
+    //         filterByDocumentIds:
+    //             button === "Selected Documents"
+    //                 ? selectedDocuments.map((document) => document.documentId)
+    //                 : button === "Search Results"
+    //                     ? searchResultDocuments.map((document) => document.documentId)
+    //                     : button === "Selected Document"
+    //                         ? [selectedDocument[0]?.documentId || ""]
+    //                         : [],
+    //         groundTruthAnswer: "",
+    //         documentURLs: [],
+    //         chunkTexts: [],
+    //     };
 
-        try {
-            const response = await PostFeedback(request);
+    //     try {
+    //         const response = await PostFeedback(request);
 
-            if (response) {
-                setIsLoading(false);
-                setOpen(true);
-            }
-        } catch (error) {
-            setIsLoading(false);
-            console.error("An error occurred while submitting the feedback:", error);
-        }
-    };
+    //         if (response) {
+    //             setIsLoading(false);
+    //             setOpen(true);
+    //         }
+    //     } catch (error) {
+    //         setIsLoading(false);
+    //         console.error("An error occurred while submitting the feedback:", error);
+    //     }
+    // };
 
     const handleSubmittedFeedback = (submitted: boolean) => {
         if (submitted) {

@@ -2,7 +2,6 @@ import atexit
 import io
 import logging
 import os
-import time
 
 import pytest
 from bs4 import BeautifulSoup
