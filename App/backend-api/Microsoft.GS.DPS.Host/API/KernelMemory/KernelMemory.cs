@@ -96,7 +96,7 @@ namespace Microsoft.GS.DPSHost.API
                 #pragma warning disable CA1031 // Must catch all to log and keep the process alive
                 catch (Exception ex)
                 {
-                    app.Logger.LogError(ex, "An error occurred while deleting document {DocumentId}.", documentId);
+                    app.Logger.LogError(ex, "An error occurred while deleting a document.");
                     return Results.BadRequest(new DocumentDeletedResult() { IsDeleted = false });
                 }
                 #pragma warning restore CA1031
