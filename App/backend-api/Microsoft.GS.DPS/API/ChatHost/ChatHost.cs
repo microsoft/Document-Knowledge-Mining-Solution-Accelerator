@@ -74,14 +74,7 @@ namespace Microsoft.GS.DPS.API
 
         private async Task<ChatSession> makeNewSession(string? chatSessionId)
         {
-            if(string.IsNullOrEmpty(chatSessionId))
-            {
-                this.sessionId = Guid.NewGuid().ToString();
-            }
-            else
-            {
-                this.sessionId = chatSessionId;
-            }
+            var sessionId = string.IsNullOrEmpty(chatSessionId) ? Guid.NewGuid().ToString() : chatSessionId;
 
             //Create New Chat History
             this.chatHistory = new ChatHistory();

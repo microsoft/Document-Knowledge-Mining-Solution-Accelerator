@@ -200,6 +200,7 @@ namespace Microsoft.GS.DPSHost.API
 
                     if (status.RemainingSteps.Count == 0)
                     {
+                        completeFlag = true;
                         break;
                     }
                     var totalSteps = status.Steps.Count;

@@ -171,25 +171,10 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
             }],
         ]);
 
-
-
-
-        let filterByDocumentIds: string[] = [];
-
-
         const transformDocuments = (documents: any[]) => {
             return documents.map(doc => doc.documentId); // Extracting documentId from each document
         };
         const formattedDocuments = transformDocuments(selectedDocuments);
-
-
-        if (button === "Selected Document" && selectedDocument) {
-            filterByDocumentIds = [selectedDocument[0].documentId];
-        } else if (button === "Search Results") {
-            filterByDocumentIds = searchResultDocuments.map((document) => document.documentId);
-        } else if (button === "Selected Documents") {
-            filterByDocumentIds = selectedDocuments.map((document) => document.documentId);
-        }
 
         try {
 

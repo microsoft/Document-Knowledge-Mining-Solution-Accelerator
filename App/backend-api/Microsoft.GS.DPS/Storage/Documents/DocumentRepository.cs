@@ -146,14 +146,7 @@ namespace Microsoft.GS.DPS.Storage.Document
         public async Task<Entities.Document> UpdateAsync(Entities.Document document)
         {
             var result = await _collection.ReplaceOneAsync(Builders<Entities.Document>.Filter.Eq(x => x.id, document.id), document);
-            if (result.IsAcknowledged && result.ModifiedCount > 0)
-            {
-                return document;
-            }
-            else
-            {
-                return null;
-            }
+            return (result.IsAcknowledged && result.ModifiedCount > 0) ? document : null;
         }
 
         public async Task DeleteAsync(Guid id)

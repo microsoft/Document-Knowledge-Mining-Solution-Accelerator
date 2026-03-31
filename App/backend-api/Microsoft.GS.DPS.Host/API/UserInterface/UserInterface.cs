@@ -108,14 +108,7 @@ namespace Microsoft.GS.DPSHost.API
             {
                 DPS.Storage.Document.Entities.Document result = await documents.GetDocument(DocumentId);
 
-                if (result == null)
-                {
-                    return Results.NotFound();
-                }
-                else
-                {
-                    return Results.Ok(result);
-                }
+                return result == null ? Results.NotFound() : Results.Ok(result);
             }
             )
             .DisableAntiforgery();

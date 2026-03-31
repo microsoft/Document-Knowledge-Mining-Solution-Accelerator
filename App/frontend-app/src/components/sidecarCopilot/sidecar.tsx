@@ -72,16 +72,6 @@ export function SidecarCopilot({
             }],
         ]);
 
-        let filterByDocumentIds: string[] = [];
-
-        if (button === "Selected Document" && selectedDocument) {
-            filterByDocumentIds = [selectedDocument[0].documentId];
-        } else if (button === "Search Results") {
-            filterByDocumentIds = searchResultDocuments.map((document) => document.documentId);
-        } else if (button === "Selected Documents") {
-            filterByDocumentIds = selectedDocuments.map((document) => document.documentId);
-        }
-
         try {
             const request: ChatRequest = {
                 Question: question,
