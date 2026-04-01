@@ -1,57 +1,38 @@
-name: Broken Link Checker
-
+name: AZD Template Validation
 on:
-  pull_request:
-    paths:
-      - '**/*.md'
+  schedule:
+    - cron: '30 1 * * 4' # Every Thursday at 7:00 AM IST (1:30 AM UTC)
   workflow_dispatch:
 
 permissions:
   contents: read
+  id-token: write
+  pull-requests: write
 
 jobs:
-  markdown-link-check:
-    name: Check Markdown Broken Links
+  template_validation:
     runs-on: ubuntu-latest
-
+    name: azd template validation
+    environment: production
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
 
-      # For PR : Get only changed markdown files
-      - name: Get changed markdown files (PR only)
-        id: changed-markdown-files
-        if: github.event_name == 'pull_request'
-        uses: tj-actions/changed-files@24d32ffd492484c1d75e0c0b894501ddb9d30d62 # v46
+      - uses: microsoft/template-validation-action@v0.4.3
         with:
-          files: |
-            **/*.md
-
-
-      # For PR: Check broken links only in changed files
-      - name: Check Broken Links in Changed Markdown Files
-        id: lychee-check-pr
-        if: github.event_name == 'pull_request' && steps.changed-markdown-files.outputs.any_changed == 'true'
-        uses: lycheeverse/lychee-action@v2.6.1
-        with:
-          args: >
-            --verbose --no-progress --exclude ^https?://
-            ${{ steps.changed-markdown-files.outputs.all_changed_files }}
-          failIfEmpty: false
+          validateAzd: ${{ vars.TEMPLATE_VALIDATE_AZD }}
+          validateTests: ${{ vars.TEMPLATE_VALIDATE_TESTS }}
+          useDevContainer: ${{ vars.TEMPLATE_USE_DEV_CONTAINER }}
+        id: validation
         env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
+          AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+          AZURE_ENV_OPENAI_LOCATION: ${{ vars.AZURE_LOCATION }}
+          AZURE_ENV_MODEL_CAPACITY: 1 # keep low to avoid potential quota issues
+          AZURE_ENV_EMBEDDING_MODEL_CAPACITY: 1 # keep low to avoid potential quota issues
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # For manual trigger: Check all markdown files in repo
-      - name: Check Broken Links in All Markdown Files in Entire Repo (Manual Trigger)
-        id: lychee-check-manual
-        if: github.event_name == 'workflow_dispatch'
-        uses: lycheeverse/lychee-action@v2.6.1
-        with:
-          args: >
-            --verbose --no-progress --exclude ^https?://
-            '**/*.md'
-          failIfEmpty: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: print result
+        run: cat ${{ steps.validation.outputs.resultFile }}
