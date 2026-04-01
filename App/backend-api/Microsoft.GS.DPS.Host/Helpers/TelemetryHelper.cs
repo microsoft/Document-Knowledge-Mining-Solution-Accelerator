@@ -17,11 +17,19 @@ namespace Microsoft.GS.DPSHost.Helpers
         {
             _telemetryClient = telemetryClient;
             _logger = logger;
-            _isConfigured = !string.IsNullOrEmpty(_telemetryClient?.InstrumentationKey);
+            
+            // Check if Application Insights is properly configured
+            // TelemetryConfiguration.ConnectionString is the modern way (replaces deprecated InstrumentationKey)
+            _isConfigured = _telemetryClient != null && 
+                           !string.IsNullOrEmpty(_telemetryClient.TelemetryConfiguration?.ConnectionString);
 
             if (!_isConfigured)
             {
                 _logger.LogWarning("Application Insights is not configured. Telemetry tracking will be disabled.");
+            }
+            else
+            {
+                _logger.LogInformation("Application Insights is configured successfully. Telemetry tracking is enabled.");
             }
         }
 
