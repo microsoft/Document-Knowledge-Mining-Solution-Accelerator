@@ -8,8 +8,8 @@ using Microsoft.KernelMemory.Context;
 using Microsoft.GS.DPS.Model.KernelMemory;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.GS.DPS.Storage.Document;
-
 using HeyRed.Mime;
+using Microsoft.GS.DPSHost.Helpers;
 
 namespace Microsoft.GS.DPSHost.API
 {
@@ -20,7 +20,9 @@ namespace Microsoft.GS.DPSHost.API
         {
             //Registration the files
             app.MapPost("/Documents/ImportDocument", async (IFormFile file,
-                                                            DPS.API.KernelMemory kernelMemory
+                                                            DPS.API.KernelMemory kernelMemory,
+                                                            TelemetryHelper telemetryHelper,
+                                                            ILogger<KernelMemory> logger
                                                             ) =>
             {
                 try
@@ -44,6 +46,11 @@ namespace Microsoft.GS.DPSHost.API
 
                     if (!allowedExtensions.Contains(fileExtension))
                     {
+                        telemetryHelper.TrackEvent("DocumentImportUnsupportedFileType", new Dictionary<string, string>
+                        {
+                            { "fileExtension", fileExtension },
+                            { "contentType", contentType }
+                        });
                         return Results.BadRequest(new DocumentImportedResult() { DocumentId = string.Empty, 
                                                                                  MimeType = contentType,
                                                                                  Summary = $"{fileExtension} file is Unsupported file type" });
@@ -52,6 +59,10 @@ namespace Microsoft.GS.DPSHost.API
                     // Checking File Size: O byte/kb file not allowed
                     if (file == null || file.Length == 0)
                     {
+                        telemetryHelper.TrackEvent("DocumentImportEmptyFile", new Dictionary<string, string>
+                        {
+                            { "fileName", file?.FileName ?? "unknown" }
+                        });
                         return Results.BadRequest(new DocumentImportedResult()
                         {
                             DocumentId = string.Empty,
@@ -61,6 +72,17 @@ namespace Microsoft.GS.DPSHost.API
                     }
 
                     var result = await kernelMemory.ImportDocument(fileStream, file.FileName, contentType);
+
+                    // Track successful document import
+                    telemetryHelper.TrackEvent("DocumentImportSuccess", new Dictionary<string, string>
+                    {
+                        { "documentId", result.DocumentId },
+                        { "mimeType", result.MimeType ?? "unknown" },
+                        { "fileSize", file.Length.ToString() }
+                    });
+
+                    // Set correlation ID for tracing
+                    telemetryHelper.SetActivityTag("documentId", result.DocumentId);
 
                     //Return HTTP 202 with Location Header
                     //return Results($"/Documents/CheckProcessStatus/{result.DocumentId}", result);
@@ -72,13 +94,23 @@ namespace Microsoft.GS.DPSHost.API
                 catch (IOException ex)
                 {
                     // Log the exception
-                    app.Logger.LogError(ex, "An error occurred while uploading the document.");
+                    logger.LogError(ex, "An error occurred while uploading the document");
+                    telemetryHelper.TrackException(ex, new Dictionary<string, string>
+                    {
+                        { "endpoint", "/Documents/ImportDocument" },
+                        { "errorType", "IOException" }
+                    });
                     throw;
                 }
                 catch (Exception ex)
                 {
                     // Log the exception
-                    app.Logger.LogError(ex, "An unexpected error occurred.");
+                    logger.LogError(ex, "An unexpected error occurred");
+                    telemetryHelper.TrackException(ex, new Dictionary<string, string>
+                    {
+                        { "endpoint", "/Documents/ImportDocument" },
+                        { "errorType", ex.GetType().Name }
+                    });
                     throw;
                 }
 
@@ -86,15 +118,30 @@ namespace Microsoft.GS.DPSHost.API
             .DisableAntiforgery();
 
             app.MapDelete("/Documents/{documentId}", async (string documentId,
-                                                            DPS.API.KernelMemory kernelMemory) =>
+                                                            DPS.API.KernelMemory kernelMemory,
+                                                            TelemetryHelper telemetryHelper,
+                                                            ILogger<KernelMemory> logger) =>
             {
                 try
                 {
                     await kernelMemory.DeleteDocument(documentId);
+                    
+                    telemetryHelper.TrackEvent("DocumentDeleteSuccess", new Dictionary<string, string>
+                    {
+                        { "documentId", documentId }
+                    });
+                    
                     return Results.Ok(new DocumentDeletedResult() { IsDeleted = true });
                 }
                 catch (Exception ex)
                 {
+                    logger.LogError(ex, "Error deleting document: {DocumentId}", documentId);
+                    telemetryHelper.TrackException(ex, new Dictionary<string, string>
+                    {
+                        { "endpoint", "/Documents/{documentId}" },
+                        { "documentId", documentId },
+                        { "errorType", ex.GetType().Name }
+                    });
                     return Results.BadRequest(new DocumentDeletedResult() { IsDeleted = false });
                 }
             })
