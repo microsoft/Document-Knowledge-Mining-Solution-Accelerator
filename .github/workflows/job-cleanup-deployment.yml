@@ -1,0 +1,204 @@
+name: Cleanup Deployment Job
+on:
+  workflow_call:
+    inputs:
+      trigger_type:
+        description: 'Trigger type (workflow_dispatch, pull_request, schedule)'
+        required: true
+        type: string
+      cleanup_resources:
+        description: 'Cleanup Deployed Resources'
+        required: false
+        default: false
+        type: boolean
+      existing_webapp_url:
+        description: 'Existing Container WebApp URL (Skips Deployment)'
+        required: false
+        default: ''
+        type: string
+      RESOURCE_GROUP_NAME:
+        description: 'Resource Group Name to cleanup'
+        required: true
+        type: string
+      AZURE_LOCATION:
+        description: 'Azure Location'
+        required: true
+        type: string
+      AZURE_ENV_OPENAI_LOCATION:
+        description: 'Azure OpenAI Location'
+        required: true
+        type: string
+      ENV_NAME:
+        description: 'Environment Name'
+        required: true
+        type: string
+      IMAGE_TAG:
+        description: 'Docker Image Tag'
+        required: true
+        type: string
+
+jobs:
+  cleanup-deployment:
+    runs-on: ubuntu-latest
+    environment: production
+    continue-on-error: true
+    env:
+      RESOURCE_GROUP_NAME: ${{ inputs.RESOURCE_GROUP_NAME }}
+      AZURE_LOCATION: ${{ inputs.AZURE_LOCATION }}
+      AZURE_ENV_OPENAI_LOCATION: ${{ inputs.AZURE_ENV_OPENAI_LOCATION }}
+      ENV_NAME: ${{ inputs.ENV_NAME }}
+      IMAGE_TAG: ${{ inputs.IMAGE_TAG }}
+    steps:
+      - name: Validate Workflow Input Parameters
+        shell: bash
+        env:
+          INPUT_TRIGGER_TYPE: ${{ inputs.trigger_type }}
+          INPUT_CLEANUP_RESOURCES: ${{ inputs.cleanup_resources }}
+          INPUT_EXISTING_WEBAPP_URL: ${{ inputs.existing_webapp_url }}
+          INPUT_RESOURCE_GROUP_NAME: ${{ inputs.RESOURCE_GROUP_NAME }}
+          INPUT_AZURE_LOCATION: ${{ inputs.AZURE_LOCATION }}
+          INPUT_AZURE_ENV_OPENAI_LOCATION: ${{ inputs.AZURE_ENV_OPENAI_LOCATION }}
+          INPUT_ENV_NAME: ${{ inputs.ENV_NAME }}
+          INPUT_IMAGE_TAG: ${{ inputs.IMAGE_TAG }}
+        run: |
+          echo "🔍 Validating workflow input parameters..."
+          VALIDATION_FAILED=false
+
+          # Validate trigger_type (required - alphanumeric with underscores)
+          if [[ -z "$INPUT_TRIGGER_TYPE" ]]; then
+            echo "❌ ERROR: trigger_type is required but was not provided"
+            VALIDATION_FAILED=true
+          elif [[ ! "$INPUT_TRIGGER_TYPE" =~ ^[a-zA-Z0-9_]+$ ]]; then
+            echo "❌ ERROR: trigger_type '$INPUT_TRIGGER_TYPE' is invalid. Must contain only alphanumeric characters and underscores"
+            VALIDATION_FAILED=true
+          fi
+
+          # Validate cleanup_resources (boolean)
+          if [[ "$INPUT_CLEANUP_RESOURCES" != "true" && "$INPUT_CLEANUP_RESOURCES" != "false" ]]; then
+            echo "❌ ERROR: cleanup_resources must be 'true' or 'false', got '$INPUT_CLEANUP_RESOURCES'"
+            VALIDATION_FAILED=true
+          fi
+
+          # Validate existing_webapp_url (optional - must start with https if provided)
+          if [[ -n "$INPUT_EXISTING_WEBAPP_URL" ]]; then
+            if [[ ! "$INPUT_EXISTING_WEBAPP_URL" =~ ^https:// ]]; then
+              echo "❌ ERROR: existing_webapp_url must start with 'https://', got '$INPUT_EXISTING_WEBAPP_URL'"
+              VALIDATION_FAILED=true
+            fi
+          fi
+
+          # Validate RESOURCE_GROUP_NAME (required - Azure resource group naming convention)
+          if [[ -z "$INPUT_RESOURCE_GROUP_NAME" ]]; then
+            echo "❌ ERROR: RESOURCE_GROUP_NAME is required but was not provided"
+            VALIDATION_FAILED=true
+          elif [[ ! "$INPUT_RESOURCE_GROUP_NAME" =~ ^[a-zA-Z0-9._\(\)-]+$ ]] || [[ "$INPUT_RESOURCE_GROUP_NAME" =~ \.$ ]]; then
+            echo "❌ ERROR: RESOURCE_GROUP_NAME is invalid. Must contain only alphanumerics, periods, underscores, hyphens, and parentheses. Cannot end with period."
+            VALIDATION_FAILED=true
+          elif [[ ${#INPUT_RESOURCE_GROUP_NAME} -gt 90 ]]; then
+            echo "❌ ERROR: RESOURCE_GROUP_NAME exceeds 90 characters"
+            VALIDATION_FAILED=true
+          fi
+
+          # Validate AZURE_LOCATION (required - Azure region format)
+          if [[ -z "$INPUT_AZURE_LOCATION" ]]; then
+            echo "❌ ERROR: AZURE_LOCATION is required but was not provided"
+            VALIDATION_FAILED=true
+          elif [[ ! "$INPUT_AZURE_LOCATION" =~ ^[a-z0-9]+$ ]]; then
+            echo "❌ ERROR: AZURE_LOCATION '$INPUT_AZURE_LOCATION' is invalid. Must contain only lowercase letters and numbers"
+            VALIDATION_FAILED=true
+          fi
+
+          # Validate AZURE_ENV_OPENAI_LOCATION (required - Azure region format)
+          if [[ -z "$INPUT_AZURE_ENV_OPENAI_LOCATION" ]]; then
+            echo "❌ ERROR: AZURE_ENV_OPENAI_LOCATION is required but was not provided"
+            VALIDATION_FAILED=true
+          elif [[ ! "$INPUT_AZURE_ENV_OPENAI_LOCATION" =~ ^[a-z0-9]+$ ]]; then
+            echo "❌ ERROR: AZURE_ENV_OPENAI_LOCATION '$INPUT_AZURE_ENV_OPENAI_LOCATION' is invalid. Must contain only lowercase letters and numbers"
+            VALIDATION_FAILED=true
+          fi
+
+          # Validate ENV_NAME (required - alphanumeric with underscores and hyphens)
+          if [[ -z "$INPUT_ENV_NAME" ]]; then
+            echo "❌ ERROR: ENV_NAME is required but was not provided"
+            VALIDATION_FAILED=true
+          elif [[ ! "$INPUT_ENV_NAME" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+            echo "❌ ERROR: ENV_NAME '$INPUT_ENV_NAME' is invalid. Must contain only alphanumeric characters, underscores, and hyphens"
+            VALIDATION_FAILED=true
+          fi
+
+          # Validate IMAGE_TAG (required - Docker tag pattern)
+          if [[ -z "$INPUT_IMAGE_TAG" ]]; then
+            echo "❌ ERROR: IMAGE_TAG is required but was not provided"
+            VALIDATION_FAILED=true
+          elif [[ ! "$INPUT_IMAGE_TAG" =~ ^[a-zA-Z0-9_][a-zA-Z0-9._-]{0,127}$ ]]; then
+            echo "❌ ERROR: IMAGE_TAG '$INPUT_IMAGE_TAG' is invalid. Must be a valid Docker tag (alphanumeric start, up to 128 chars)"
+            VALIDATION_FAILED=true
+          fi
+
+          if [[ "$VALIDATION_FAILED" == "true" ]]; then
+            echo "❌ Input validation failed. Please check the errors above."
+            exit 1
+          fi
+
+          echo "✅ All input parameters validated successfully"
+
+      - name: Setup Azure CLI
+        shell: bash
+        run: |
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          fi
+          az --version
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Delete Resource Group (Optimized Cleanup)
+        id: delete_rg
+        shell: bash
+        run: |
+          set -e
+          echo "🗑️ Starting optimized resource cleanup..."
+          echo "Deleting resource group: ${{ env.RESOURCE_GROUP_NAME }}"
+          
+          az group delete \
+            --name "${{ env.RESOURCE_GROUP_NAME }}" \
+            --yes \
+            --no-wait
+          
+          echo "✅ Resource group deletion initiated (running asynchronously)"
+          echo "Note: Resources will be cleaned up in the background"
+
+      - name: Logout from Azure
+        if: always()
+        shell: bash
+        run: |
+          az logout || echo "Warning: Failed to logout from Azure CLI"
+          echo "Logged out from Azure."
+      
+      - name: Generate Cleanup Job Summary
+        if: always()
+        shell: bash
+        run: |
+          echo "## 🧹 Cleanup Job Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Resource Group deletion Status** | ${{ steps.delete_rg.outcome == 'success' && '✅ Initiated' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Resource Group** | \`${{ env.RESOURCE_GROUP_NAME }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ steps.delete_rg.outcome }}" == "success" ]]; then
+            echo "### ✅ Cleanup Details" >> $GITHUB_STEP_SUMMARY
+            echo "- Successfully initiated deletion for Resource Group \`${{ env.RESOURCE_GROUP_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ❌ Cleanup Failed" >> $GITHUB_STEP_SUMMARY
+            echo "- Cleanup process encountered an error" >> $GITHUB_STEP_SUMMARY
+            echo "- Manual cleanup may be required for:" >> $GITHUB_STEP_SUMMARY
+            echo "  - Resource Group: \`${{ env.RESOURCE_GROUP_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- Check the cleanup-deployment job logs for detailed error information" >> $GITHUB_STEP_SUMMARY
+          fi

@@ -5,9 +5,20 @@ on:
       - main # Adjust this to the branch you want to trigger the deployment on
       - dev
       - demo
+    paths:
+      - 'infra/**'
+      - 'App/**'
+      - 'Deployment/**'
+      - 'azure.yaml'
+      - '.github/workflows/CI.yml'
+      - '.github/workflows/test-automation.yml'
+      - 'tests/**'
   schedule:
     - cron: "0 10,22 * * *" # Runs at 10:00 AM and 10:00 PM GMT
-
+permissions:
+  id-token: write
+  contents: read
+  actions: read
 env:
   GPT_CAPACITY: 150
   TEXT_EMBEDDING_CAPACITY: 200
@@ -15,6 +26,7 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: production
     outputs:
       RESOURCE_GROUP_NAME: ${{ steps.get_webapp_url.outputs.RESOURCE_GROUP_NAME }}
       KUBERNETES_RESOURCE_GROUP_NAME: ${{ steps.get_webapp_url.outputs.KUBERNETES_RESOURCE_GROUP_NAME }}
@@ -26,12 +38,6 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v5 # Checks out your repository
-
-      - name: Install Azure CLI
-        shell: bash
-        run: |
-          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-          az --version  # Verify installation
 
       - name: Install Kubernetes CLI (kubectl)
         shell: bash
@@ -74,6 +80,14 @@ jobs:
         with:
           driver: docker
 
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          enable-AzPSSession: true
+
       - name: Run Quota Check
         id: quota-check
         shell: pwsh
@@ -101,9 +115,6 @@ jobs:
           }
         env:
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           GPT_MIN_CAPACITY: ${{ env.GPT_CAPACITY }}
           TEXT_EMBEDDING_MIN_CAPACITY: ${{ env.TEXT_EMBEDDING_CAPACITY }}
           AZURE_REGIONS: "${{ vars.AZURE_REGIONS }}"
@@ -136,10 +147,8 @@ jobs:
       - name: Install Bicep CLI
         run: az bicep install
 
-      - name: Install Azure Developer CLI
-        run: |
-          curl -fsSL https://aka.ms/install-azd.sh | bash
-        shell: bash
+      - name: Install azd
+        uses: Azure/setup-azd@v2
         
       - name: Set Deployment Region
         run: |
@@ -155,11 +164,6 @@ jobs:
           UNIQUE_RG_NAME="arg-${ACCL_NAME}-${SHORT_UUID}"
           echo "RESOURCE_GROUP_NAME=${UNIQUE_RG_NAME}" >> $GITHUB_ENV
           echo "Generated RESOURCE_GROUP_NAME: ${UNIQUE_RG_NAME}"
-
-      - name: Login to Azure
-        run: |
-          az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
-          az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Check and Create Resource Group
         id: check_create_rg
@@ -250,11 +254,8 @@ jobs:
           Write-Host "Resource Group Name is ${{ env.RESOURCE_GROUP_NAME }}"
           Write-Host "Kubernetes resource group is ${{ env.AZURE_AKS_NAME }}"
         env:
-          # From GitHub secrets (for login)
+          # From GitHub secrets
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          AZURE_TENANT_ID:       ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_ID:       ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET:   ${{ secrets.AZURE_CLIENT_SECRET }}
 
           # From deployment outputs step (these come from $GITHUB_ENV)
           RESOURCE_GROUP_NAME:          ${{ env.RESOURCE_GROUP_NAME }}
@@ -290,10 +291,9 @@ jobs:
           if az account show &> /dev/null; then
             echo "Azure CLI is authenticated."
           else
-            echo "Azure CLI is not authenticated. Logging in..."
-            az login --service-principal --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+            echo "Azure CLI is not authenticated. Please check the OIDC login step."
+            exit 1
           fi
-          az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
           # Get the Web App URL and save it to GITHUB_OUTPUT
           echo "Retrieving Web App URL..."
@@ -348,6 +348,7 @@ jobs:
 
       - name: Run Post Deployment Script
         shell: pwsh
+        continue-on-error: true
         run: |
           Write-Host "Running post deployment script to upload files..."
           cd Deployment
@@ -390,6 +391,7 @@ jobs:
     if: always()
     needs: [deploy, e2e-test]
     runs-on: ubuntu-latest
+    environment: production
     env:
       RESOURCE_GROUP_NAME: ${{ needs.deploy.outputs.RESOURCE_GROUP_NAME }}
       KUBERNETES_RESOURCE_GROUP_NAME: ${{ needs.deploy.outputs.KUBERNETES_RESOURCE_GROUP_NAME }}
@@ -398,17 +400,12 @@ jobs:
       VALID_REGION: ${{ needs.deploy.outputs.VALID_REGION }}
 
     steps:
-      - name: Install Azure CLI
-        shell: bash
-        run: |
-          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-          az --version  # Verify installation
-          
       - name: Login to Azure
-        shell: bash
-        run: |
-          az login --service-principal --username ${{ secrets.AZURE_CLIENT_ID }} --password ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
-          az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Delete Resource Groups
         if: env.RESOURCE_GROUP_NAME != ''

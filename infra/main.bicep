@@ -71,7 +71,7 @@ param vmAdminUsername string?
 param vmAdminPassword string?
 
 @description('Optional. Size of the Jumpbox Virtual Machine when created. Set to custom value if enablePrivateNetworking is true.')
-param vmSize string = 'Standard_DS2_v2'
+param vmSize string = 'Standard_D2s_v5'
 
 @description('Optional. The tags to apply to all deployed Azure resources.')
 param tags resourceInput<'Microsoft.Resources/resourceGroups@2025-04-01'>.tags = {}
@@ -351,7 +351,7 @@ module jumpboxVM 'br/public:avm/res/compute/virtual-machine:0.15.0' = if (enable
   name: take('avm.res.compute.virtual-machine.${jumpboxVmName}', 64)
   params: {
     name: take(jumpboxVmName, 15) // Shorten VM name to 15 characters to avoid Azure limits
-    vmSize: vmSize ?? 'Standard_DS2_v2'
+    vmSize: vmSize ?? 'Standard_D2s_v5'
     location: solutionLocation
     adminUsername: vmAdminUsername ?? 'JumpboxAdminUser'
     adminPassword: vmAdminPassword ?? 'JumpboxAdminP@ssw0rd1234!'
@@ -565,7 +565,7 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
       }
       {
         name: 'Application:Services:AzureAISearch:Endpoint'
-        value: 'https://${avmSearchSearchServices.outputs.name}.search.windows.net'
+        value: 'https://${avmSearchSearchServices.name}.search.windows.net'
       }
       {
         name: 'KernelMemory:Services:AzureAIDocIntel:Auth'
@@ -581,7 +581,7 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
       }
       {
         name: 'KernelMemory:Services:AzureAISearch:Endpoint'
-        value: 'https://${avmSearchSearchServices.outputs.name}.search.windows.net'
+        value: 'https://${avmSearchSearchServices.name}.search.windows.net'
       }
       {
         name: 'KernelMemory:Services:AzureBlobs:Account'
@@ -744,8 +744,17 @@ module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = {
 
 // ========== AI Foundry: AI Search ========== //
 var aiSearchName = 'srch-${solutionSuffix}'
-module avmSearchSearchServices 'br/public:avm/res/search/search-service:0.11.1' = {
-  name: take('avm.res.cognitive-search-services.${aiSearchName}', 64)
+resource avmSearchSearchServices 'Microsoft.Search/searchServices@2024-06-01-preview' = {
+  name: aiSearchName
+  location: solutionLocation
+  sku: {
+    name: enableScalability ? 'standard' : 'basic'
+  }
+}
+
+// Separate module for Search Service to enable managed identity and update other properties, as this reduces deployment time
+module avmSearchSearchServicesUpdate 'br/public:avm/res/search/search-service:0.11.1' = {
+  name: take('avm.res.search-services-identity.${aiSearchName}', 64)
   params: {
     name: aiSearchName
     tags: tags
@@ -790,6 +799,9 @@ module avmSearchSearchServices 'br/public:avm/res/search/search-service:0.11.1' 
         ]
       : []
   }
+  dependsOn: [
+    avmSearchSearchServices
+  ]
 }
 
 // ========== Cognitive Services - OpenAI module ========== //
@@ -815,23 +827,7 @@ module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
       bypass: 'AzureServices'
     }
 
-    privateEndpoints: enablePrivateNetworking
-      ? [
-          {
-            name: 'pep-openai-${solutionSuffix}'
-            subnetResourceId: virtualNetwork!.outputs.pepsSubnetResourceId
-            service: 'account'
-            privateDnsZoneGroup: {
-              privateDnsZoneGroupConfigs: [
-                {
-                  name: 'openai-dns-zone-group'
-                  privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.openAI]!.outputs.resourceId
-                }
-              ]
-            }
-          }
-        ]
-      : []
+    privateEndpoints: []
 
     // Role assignments
     roleAssignments: [
@@ -849,6 +845,38 @@ module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
 
     // OpenAI deployments (pass array from main)
     deployments: openAiDeployments
+  }
+}
+
+module openaiPrivateEndpoint 'br/public:avm/res/network/private-endpoint:0.8.1' = if (enablePrivateNetworking) {
+  name: take('pep-${openAiAccountName}-deployment', 64)
+  params: {
+    name: 'pep-${openAiAccountName}'
+    customNetworkInterfaceName: 'nic-${openAiAccountName}'
+    location: solutionLocation
+    tags: tags
+    privateLinkServiceConnections: [
+      {
+        name: 'pep-${openAiAccountName}-connection'
+        properties: {
+          privateLinkServiceId: avmOpenAi.outputs.resourceId
+          groupIds: ['account']
+        }
+      }
+    ]
+    privateDnsZoneGroup: {
+      privateDnsZoneGroupConfigs: [
+        {
+          name: 'ai-services-dns-zone-cognitiveservices'
+          privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.cognitiveServices]!.outputs.resourceId
+        }
+        {
+          name: 'ai-services-dns-zone-openai'
+          privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.openAI]!.outputs.resourceId
+        }
+      ]
+    }
+    subnetResourceId: virtualNetwork!.outputs.pepsSubnetResourceId
   }
 }
 
@@ -874,24 +902,8 @@ module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.13.2
       defaultAction: enablePrivateNetworking ? 'Deny' : 'Allow'
     }
 
-    // Private Endpoint for Form Recognizer
-    privateEndpoints: enablePrivateNetworking
-      ? [
-          {
-            name: 'pep-docintel-${solutionSuffix}'
-            subnetResourceId: virtualNetwork!.outputs.pepsSubnetResourceId
-            service: 'account'
-            privateDnsZoneGroup: {
-              privateDnsZoneGroupConfigs: [
-                {
-                  name: 'docintel-dns-zone-group'
-                  privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.cognitiveServices]!.outputs.resourceId
-                }
-              ]
-            }
-          }
-        ]
-      : []
+    // Private Endpoint separated to dedicated module below
+    privateEndpoints: []
 
     // Role Assignments
     roleAssignments: [
@@ -904,6 +916,34 @@ module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.13.2
   }
 }
 
+module docIntelPrivateEndpoint 'br/public:avm/res/network/private-endpoint:0.8.1' = if (enablePrivateNetworking) {
+  name: take('pep-${docIntelAccountName}-deployment', 64)
+  params: {
+    name: 'pep-${docIntelAccountName}'
+    customNetworkInterfaceName: 'nic-${docIntelAccountName}'
+    location: solutionLocation
+    tags: tags
+    privateLinkServiceConnections: [
+      {
+        name: 'pep-${docIntelAccountName}-connection'
+        properties: {
+          privateLinkServiceId: documentIntelligence.outputs.resourceId
+          groupIds: ['account']
+        }
+      }
+    ]
+    privateDnsZoneGroup: {
+      privateDnsZoneGroupConfigs: [
+        {
+          name: 'docintel-dns-zone-cognitiveservices'
+          privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.cognitiveServices]!.outputs.resourceId
+        }
+      ]
+    }
+    subnetResourceId: virtualNetwork!.outputs.pepsSubnetResourceId
+  }
+}
+
 // ========== Azure Kubernetes Service (AKS) ========== //
 module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.1' = {
   name: take('avm.res.container-service.managed-cluster.aks-${solutionSuffix}', 64)
@@ -912,7 +952,7 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.
     location: solutionLocation
     tags: tags
     enableTelemetry: enableTelemetry
-    kubernetesVersion: '1.32.7'
+    kubernetesVersion: '1.34.2'
     dnsPrefix: 'aks-${solutionSuffix}'
     enableRBAC: true
     disableLocalAccounts: false
@@ -1042,7 +1082,7 @@ output AZURE_COGNITIVE_SERVICE_NAME string = documentIntelligence.outputs.name
 output AZURE_COGNITIVE_SERVICE_ENDPOINT string = documentIntelligence.outputs.endpoint
 
 @description('Contains Azure Search Service Name.')
-output AZURE_SEARCH_SERVICE_NAME string = avmSearchSearchServices.outputs.name
+output AZURE_SEARCH_SERVICE_NAME string = avmSearchSearchServices.name
 
 @description('Contains Azure AKS Name.')
 output AZURE_AKS_NAME string = managedCluster.outputs.name
@@ -1060,7 +1100,7 @@ output AZURE_OPENAI_SERVICE_NAME string = avmOpenAi.outputs.name
 output AZURE_OPENAI_SERVICE_ENDPOINT string = avmOpenAi.outputs.endpoint
 
 @description('Contains Azure Search Service Endpoint.')
-output AZ_SEARCH_SERVICE_ENDPOINT string = avmSearchSearchServices.outputs.name
+output AZ_SEARCH_SERVICE_ENDPOINT string = avmSearchSearchServices.name
 
 @description('Contains Azure GPT-4o Model Deployment Name.')
 output AZ_GPT4O_MODEL_ID string = gptModelDeployment.deploymentName

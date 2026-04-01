@@ -194,10 +194,20 @@ Check out similar solution accelerators
 | [Conversation&nbsp;knowledge&nbsp;mining](https://github.com/microsoft/Conversation-Knowledge-Mining-Solution-Accelerator) | Derive insights from volumes of conversational data using generative AI. It offers key phrase extraction, topic modeling, and interactive chat experiences through an intuitive web interface. |
 | [Content&nbsp;processing](https://github.com/microsoft/content-processing-solution-accelerator) | Programmatically extract data and apply schemas to unstructured documents across text-based and multi-modal content using Azure AI Foundry, Azure OpenAI, Azure AI Content Understanding, and Azure Cosmos DB. |
 | [Build&nbsp;your&nbsp;own&nbsp;copilot&nbsp;-&nbsp;client&nbsp;advisor](https://github.com/microsoft/build-your-own-copilot-solution-accelerator) | This copilot helps client advisors to save time and prepare relevant discussion topics for scheduled meetings. It provides an overview of daily client meetings with seamless navigation between viewing client profiles and chatting with structured data. |
-
+|[Document&nbsp;Processing&nbsp;Accelerator](https://github.com/Azure/doc-proc-solution-accelerator/) | Modular document AI pipeline that automatically extracts, analyzes, and indexes information from unstructured documents (PDFs, images, etc.) at scale. It offers plug-and-play components for OCR, classification, summarization, and integration to search or chatbots – speeding up data ingestion with enterprise security.|
+|[GPT-RAG&nbsp;Accelerator](https://github.com/Azure/gpt-rag)| Secure enterprise GPT assistant framework that uses Retrieval-Augmented Generation to ground answers on your data. It provides a ready architecture (Azure OpenAI + knowledge search) for building AI chatbots that “know” your enterprise content, with built-in security and scalability.|
 
 <br/>   
 
+
+💡 Want to get familiar with Microsoft's AI and Data Engineering best practices? Check out our playbooks to learn more
+
+| Playbook | Description |
+|:---|:---|
+| [AI&nbsp;playbook](https://learn.microsoft.com/en-us/ai/playbook/) | The Artificial Intelligence (AI) Playbook provides enterprise software engineers with solutions, capabilities, and code developed to solve real-world AI problems. |
+| [Data&nbsp;playbook](https://learn.microsoft.com/en-us/data-engineering/playbook/understanding-data-playbook) | The data playbook provides enterprise software engineers with solutions which contain code developed to solve real-world problems. Everything in the playbook is developed with, and validated by, some of Microsoft's largest and most influential customers and partners. |
+
+<br/> 
 
 ## Provide feedback
 
