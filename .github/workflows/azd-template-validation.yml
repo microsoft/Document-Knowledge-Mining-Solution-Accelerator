@@ -30,8 +30,8 @@ jobs:
           AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
           AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
           AZURE_ENV_OPENAI_LOCATION: ${{ vars.AZURE_LOCATION }}
-          AZURE_ENV_MODEL_CAPACITY: 1 # keep low to avoid potential quota issues
-          AZURE_ENV_EMBEDDING_MODEL_CAPACITY: 1 # keep low to avoid potential quota issues
+          AZURE_ENV_MODEL_CAPACITY: 10 # keep low to avoid potential quota issues
+          AZURE_ENV_EMBEDDING_MODEL_CAPACITY: 10 # keep low to avoid potential quota issues
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: print result
