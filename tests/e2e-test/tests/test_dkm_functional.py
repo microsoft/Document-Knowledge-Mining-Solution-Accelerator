@@ -5,7 +5,6 @@ import time
 
 import pytest
 from pytest_check import check
-from playwright.sync_api import expect
 from config.constants import (
     chat_question1,
     chat_question2,

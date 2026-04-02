@@ -19,16 +19,10 @@ namespace Microsoft.GS.DPSHost.Helpers
         {
             var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
 
-            if (string.Equals(env, "Development", StringComparison.OrdinalIgnoreCase))
-            {
-                return new DefaultAzureCredential(); // CodeQL [SM05139] Okay use of DefaultAzureCredential as it is only used in development
-            }
-            else
-            {
-                return clientId != null
-                    ? new ManagedIdentityCredential(clientId)
-                    : new ManagedIdentityCredential();
-            }
+            // CodeQL [SM05139] Okay use of DefaultAzureCredential as it is only used in development
+            return string.Equals(env, "Development", StringComparison.OrdinalIgnoreCase)
+                ? new DefaultAzureCredential() // CodeQL [SM05139] Okay use of DefaultAzureCredential as it is only used in development
+                : (clientId != null ? new ManagedIdentityCredential(clientId) : new ManagedIdentityCredential());
         }
     }
 }

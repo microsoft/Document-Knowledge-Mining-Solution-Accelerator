@@ -17,7 +17,7 @@ namespace Microsoft.GS.DPSHost.API
                                         ChatRequestValidator validator,
                                         ChatHost chatHost) =>
             {
-                if(validator.Validate(request).IsValid == false)
+                if (!validator.Validate(request).IsValid)
                 {
                     return Results.BadRequest();
                 }
@@ -37,7 +37,7 @@ namespace Microsoft.GS.DPSHost.API
                                              ChatRequestValidator validator,
                                              ChatHost chatHost) =>
             {
-                if (validator.Validate(request).IsValid == false)
+                if (!validator.Validate(request).IsValid)
                 {
                     return Results.BadRequest();
                 }
