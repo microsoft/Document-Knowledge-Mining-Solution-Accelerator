@@ -49,9 +49,3 @@ jobs:
           azd config set defaults.subscription "$AZURE_SUBSCRIPTION_ID"
           azd env set AZURE_ENV_OPENAI_LOCATION="$AZURE_LOCATION"
           azd up --no-prompt
-
-      - name: Cleanup
-        if: always()
-        shell: bash
-        run: |
-          azd down --no-prompt --purge --force
