@@ -19,12 +19,17 @@ namespace Microsoft.GS.DPSHost.API
         public static void AddAPIs(WebApplication app)
         {
             //Registration the files
-            app.MapPost("/Documents/ImportDocument", async (IFormFile file,
+            app.MapPost("/Documents/ImportDocument", async (HttpContext httpContext,
+                                                            IFormFile file,
                                                             DPS.API.KernelMemory kernelMemory,
                                                             TelemetryHelper telemetryHelper,
                                                             ILogger<KernelMemory> logger
                                                             ) =>
             {
+                // Generate unique request ID for tracking
+                var requestId = httpContext.TraceIdentifier;
+                telemetryHelper.SetActivityTag("requestId", requestId);
+                
                 try
                 {
                     var fileStream = file.OpenReadStream();
@@ -48,6 +53,7 @@ namespace Microsoft.GS.DPSHost.API
                     {
                         telemetryHelper.TrackEvent("DocumentImportUnsupportedFileType", new Dictionary<string, string>
                         {
+                            { "requestId", requestId },
                             { "fileExtension", fileExtension },
                             { "contentType", contentType }
                         });
@@ -61,6 +67,7 @@ namespace Microsoft.GS.DPSHost.API
                     {
                         telemetryHelper.TrackEvent("DocumentImportEmptyFile", new Dictionary<string, string>
                         {
+                            { "requestId", requestId },
                             { "fileName", file?.FileName ?? "unknown" }
                         });
                         return Results.BadRequest(new DocumentImportedResult()
@@ -76,6 +83,7 @@ namespace Microsoft.GS.DPSHost.API
                     // Track successful document import
                     telemetryHelper.TrackEvent("DocumentImportSuccess", new Dictionary<string, string>
                     {
+                        { "requestId", requestId },
                         { "documentId", result.DocumentId },
                         { "mimeType", result.MimeType ?? "unknown" },
                         { "fileSize", file.Length.ToString() }
@@ -94,9 +102,10 @@ namespace Microsoft.GS.DPSHost.API
                 catch (IOException ex)
                 {
                     // Log the exception
-                    logger.LogError(ex, "An error occurred while uploading the document");
+                    logger.LogError(ex, "An error occurred while uploading the document. RequestId: {RequestId}", requestId);
                     telemetryHelper.TrackException(ex, new Dictionary<string, string>
                     {
+                        { "requestId", requestId },
                         { "endpoint", "/Documents/ImportDocument" },
                         { "errorType", "IOException" }
                     });
@@ -105,9 +114,10 @@ namespace Microsoft.GS.DPSHost.API
                 catch (Exception ex)
                 {
                     // Log the exception
-                    logger.LogError(ex, "An unexpected error occurred");
+                    logger.LogError(ex, "An unexpected error occurred. RequestId: {RequestId}", requestId);
                     telemetryHelper.TrackException(ex, new Dictionary<string, string>
                     {
+                        { "requestId", requestId },
                         { "endpoint", "/Documents/ImportDocument" },
                         { "errorType", ex.GetType().Name }
                     });
@@ -117,17 +127,23 @@ namespace Microsoft.GS.DPSHost.API
             })
             .DisableAntiforgery();
 
-            app.MapDelete("/Documents/{documentId}", async (string documentId,
+            app.MapDelete("/Documents/{documentId}", async (HttpContext httpContext,
+                                                            string documentId,
                                                             DPS.API.KernelMemory kernelMemory,
                                                             TelemetryHelper telemetryHelper,
                                                             ILogger<KernelMemory> logger) =>
             {
+                // Generate unique request ID for tracking
+                var requestId = httpContext.TraceIdentifier;
+                telemetryHelper.SetActivityTag("requestId", requestId);
+                
                 try
                 {
                     await kernelMemory.DeleteDocument(documentId);
                     
                     telemetryHelper.TrackEvent("DocumentDeleteSuccess", new Dictionary<string, string>
                     {
+                        { "requestId", requestId },
                         { "documentId", documentId }
                     });
                     
@@ -135,9 +151,10 @@ namespace Microsoft.GS.DPSHost.API
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Error deleting document: {DocumentId}", documentId);
+                    logger.LogError(ex, "Error deleting document: {DocumentId}. RequestId: {RequestId}", documentId, requestId);
                     telemetryHelper.TrackException(ex, new Dictionary<string, string>
                     {
+                        { "requestId", requestId },
                         { "endpoint", "/Documents/{documentId}" },
                         { "documentId", documentId },
                         { "errorType", ex.GetType().Name }

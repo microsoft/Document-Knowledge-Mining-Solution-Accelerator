@@ -13,19 +13,25 @@ namespace Microsoft.GS.DPSHost.API
         public static void AddAPIs(WebApplication app)
         {
             //RegisterAsync the chat API
-            app.MapPost("/chat", async (ChatRequest request,
+            app.MapPost("/chat", async (HttpContext httpContext,
+                                        ChatRequest request,
                                         ChatRequestValidator validator,
                                         ChatHost chatHost,
                                         TelemetryHelper telemetryHelper,
                                         ILogger<Chat> logger) =>
             {
+                // Generate unique request ID for tracking
+                var requestId = httpContext.TraceIdentifier;
+                telemetryHelper.SetActivityTag("requestId", requestId);
+                
                 try
                 {
                     if (validator.Validate(request).IsValid == false)
                     {
                         telemetryHelper.TrackEvent("ChatRequestValidationFailed", new Dictionary<string, string>
                         {
-                            { "endpoint", "/chat" }
+                            { "endpoint", "/chat" },
+                            { "requestId", requestId }
                         });
                         return Results.BadRequest();
                     }
@@ -35,6 +41,7 @@ namespace Microsoft.GS.DPSHost.API
                     // Track successful chat request
                     telemetryHelper.TrackEvent("ChatRequestSuccess", new Dictionary<string, string>
                     {
+                        { "requestId", requestId },
                         { "chatSessionId", result.ChatSessionId ?? "unknown" },
                         { "documentCount", result.DocumentIds?.Length.ToString() ?? "0" }
                     });
@@ -49,9 +56,10 @@ namespace Microsoft.GS.DPSHost.API
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Error processing chat request");
+                    logger.LogError(ex, "Error processing chat request. RequestId: {RequestId}", requestId);
                     telemetryHelper.TrackException(ex, new Dictionary<string, string>
                     {
+                        { "requestId", requestId },
                         { "endpoint", "/chat" },
                         { "errorType", ex.GetType().Name }
                     });
@@ -71,13 +79,18 @@ namespace Microsoft.GS.DPSHost.API
                                              TelemetryHelper telemetryHelper,
                                              ILogger<Chat> logger) =>
             {
+                // Generate unique request ID for tracking
+                var requestId = ctx.TraceIdentifier;
+                telemetryHelper.SetActivityTag("requestId", requestId);
+                
                 try
                 {
                     if (validator.Validate(request).IsValid == false)
                     {
                         telemetryHelper.TrackEvent("ChatAsyncRequestValidationFailed", new Dictionary<string, string>
                         {
-                            { "endpoint", "/chatAsync" }
+                            { "endpoint", "/chatAsync" },
+                            { "requestId", requestId }
                         });
                         return Results.BadRequest();
                     }
@@ -101,6 +114,7 @@ namespace Microsoft.GS.DPSHost.API
                     // Track successful chat async request
                     telemetryHelper.TrackEvent("ChatAsyncRequestSuccess", new Dictionary<string, string>
                     {
+                        { "requestId", requestId },
                         { "chatSessionId", result.ChatSessionId ?? "unknown" },
                         { "documentCount", result.DocumentIds?.Length.ToString() ?? "0" }
                     });
@@ -121,9 +135,10 @@ namespace Microsoft.GS.DPSHost.API
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Error processing chat async request");
+                    logger.LogError(ex, "Error processing chat async request. RequestId: {RequestId}", requestId);
                     telemetryHelper.TrackException(ex, new Dictionary<string, string>
                     {
+                        { "requestId", requestId },
                         { "endpoint", "/chatAsync" },
                         { "errorType", ex.GetType().Name }
                     });
