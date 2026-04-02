@@ -26,7 +26,7 @@ namespace Microsoft.GS.DPSHost.API
                 
                 try
                 {
-                    if (validator.Validate(request).IsValid == false)
+                    if (!validator.Validate(request).IsValid)
                     {
                         telemetryHelper.TrackEvent("ChatRequestValidationFailed", new Dictionary<string, string>
                         {
@@ -85,7 +85,7 @@ namespace Microsoft.GS.DPSHost.API
                 
                 try
                 {
-                    if (validator.Validate(request).IsValid == false)
+                    if (!validator.Validate(request).IsValid)
                     {
                         telemetryHelper.TrackEvent("ChatAsyncRequestValidationFailed", new Dictionary<string, string>
                         {

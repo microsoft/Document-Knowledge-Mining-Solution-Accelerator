@@ -49,7 +49,7 @@ namespace Microsoft.GS.DPS.API
             var assemblyLocation = Assembly.GetExecutingAssembly().Location;
             var assemblyDirectory = System.IO.Path.GetDirectoryName(assemblyLocation);
             // binding assembly directory with file path (Prompts/Chat_SystemPrompt.txt)
-            var systemPromptFilePath = System.IO.Path.Combine(assemblyDirectory, "Prompts/Chat_SystemPrompt.txt");
+            var systemPromptFilePath = System.IO.Path.Combine(assemblyDirectory, "Prompts", "Chat_SystemPrompt.txt");
             ChatHost.s_systemPrompt = System.IO.File.ReadAllText(systemPromptFilePath);
             ChatHost.s_assistancePrompt =
                     @"
@@ -74,15 +74,7 @@ namespace Microsoft.GS.DPS.API
 
         private async Task<ChatSession> makeNewSession(string? chatSessionId)
         {
-            var sessionId = string.Empty;
-            if(string.IsNullOrEmpty(chatSessionId))
-            {
-                sessionId = Guid.NewGuid().ToString();
-            }
-            else
-            {
-                sessionId = chatSessionId;
-            }
+            var sessionId = string.IsNullOrEmpty(chatSessionId) ? Guid.NewGuid().ToString() : chatSessionId;
 
             //Create New Chat History
             this.chatHistory = new ChatHistory();
@@ -92,7 +84,7 @@ namespace Microsoft.GS.DPS.API
             //Create a new ChatSession Entity for Saving into Azure Cosmos
             return new ChatSession()
             {
-                SessionId = sessionId, // New Session ID
+                SessionId = this.sessionId, // New Session ID
                 StartTime = DateTime.UtcNow // Session Created Time
             };
 

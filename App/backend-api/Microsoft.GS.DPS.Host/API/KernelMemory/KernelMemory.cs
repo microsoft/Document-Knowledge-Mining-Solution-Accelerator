@@ -149,6 +149,7 @@ namespace Microsoft.GS.DPSHost.API
                     
                     return Results.Ok(new DocumentDeletedResult() { IsDeleted = true });
                 }
+                #pragma warning disable CA1031 // Must catch all to log and keep the process alive
                 catch (Exception ex)
                 {
                     logger.LogError(ex, "Error deleting document: {DocumentId}. RequestId: {RequestId}", documentId, requestId);
@@ -161,6 +162,7 @@ namespace Microsoft.GS.DPSHost.API
                     });
                     return Results.BadRequest(new DocumentDeletedResult() { IsDeleted = false });
                 }
+                #pragma warning restore CA1031
             })
             .DisableAntiforgery();
 

@@ -29,7 +29,6 @@ namespace Microsoft.GS.DPSHost.ServiceConfiguration
                 .AddSingleton<Microsoft.GS.DPS.API.UserInterface.DataCacheManager>()
                 .AddSingleton<Microsoft.SemanticKernel.Kernel>(x =>
                 {
-                    var aiService = x.GetRequiredService<IOptions<AIServices>>().Value;
                     return Kernel.CreateBuilder()
                                  .AddAzureOpenAIChatCompletion(deploymentName: builder.Configuration.GetSection("Application:AIServices:GPT-4o-mini")["ModelName"] ?? "",
                                                               endpoint: builder.Configuration.GetSection("Application:AIServices:GPT-4o-mini")["Endpoint"] ?? "",
