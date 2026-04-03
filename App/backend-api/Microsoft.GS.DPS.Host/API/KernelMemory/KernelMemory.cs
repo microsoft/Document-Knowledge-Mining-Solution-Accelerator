@@ -152,12 +152,17 @@ namespace Microsoft.GS.DPSHost.API
                 #pragma warning disable CA1031 // Must catch all to log and keep the process alive
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Error deleting document: {DocumentId}. RequestId: {RequestId}", documentId, requestId);
+                    var sanitizedDocumentId = (documentId ?? string.Empty)
+                        .Replace(Environment.NewLine, string.Empty)
+                        .Replace("\n", string.Empty)
+                        .Replace("\r", string.Empty);
+
+                    logger.LogError(ex, "Error deleting document: {DocumentId}. RequestId: {RequestId}", sanitizedDocumentId, requestId);
                     telemetryHelper.TrackException(ex, new Dictionary<string, string>
                     {
                         { "requestId", requestId },
                         { "endpoint", "/Documents/{documentId}" },
-                        { "documentId", documentId },
+                        { "documentId", sanitizedDocumentId },
                         { "errorType", ex.GetType().Name }
                     });
                     return Results.BadRequest(new DocumentDeletedResult() { IsDeleted = false });
