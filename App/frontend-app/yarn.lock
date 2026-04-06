@@ -5502,9 +5502,9 @@ ignore@^7.0.0:
   integrity sha512-Hs59xBNfUIunMFgWAbGX5cq6893IbWg4KnrjbYwX3tx0ztorVgTDA6B2sxf8ejHJ4wz8BqGUMYlnzNBer5NvGg==
 
 immutable@^5.0.2:
-  version "5.1.4"
-  resolved "https://registry.yarnpkg.com/immutable/-/immutable-5.1.4.tgz#e3f8c1fe7b567d56cf26698f31918c241dae8c1f"
-  integrity sha512-p6u1bG3YSnINT5RQmx/yRZBpenIl30kVxkTLDyHLIMk0gict704Q9n+thfDI7lTRm9vXdDYutVzXhzcThxTnXA==
+  version "5.1.5"
+  resolved "https://registry.yarnpkg.com/immutable/-/immutable-5.1.5.tgz#93ee4db5c2a9ab42a4a783069f3c5d8847d40165"
+  integrity sha512-t7xcm2siw+hlUM68I+UEOK+z84RzmN59as9DZ7P1l0994DKUWV7UXBMQZVxaoMSRQ+PBZbHCOoBt7a2wxOMt+A==
 
 import-fresh@^3.2.1:
   version "3.3.1"
@@ -6399,7 +6399,7 @@ keyv@^4.5.4:
     i18next "^25.5.3"
     i18next-browser-languagedetector "^8.2.0"
     i18next-http-backend "^3.0.2"
-    km-app "file:../../../../../../../AppData/Local/Yarn/Cache/v6/npm-km-app-1.0.0-3364c375-9406-4ea7-a926-82d2ee61d0ba-1760537549847/node_modules/km-app"
+    km-app "file:."
     marked "^16.3.0"
     notistack "^3.0.2"
     pdfjs-dist "^5.4.149"
