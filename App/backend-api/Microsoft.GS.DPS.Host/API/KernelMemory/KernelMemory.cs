@@ -295,24 +295,25 @@ namespace Microsoft.GS.DPSHost.API
                 var requestId = httpContext.TraceIdentifier;
                 telemetryHelper.SetActivityTag("requestId", requestId);
                 var startTime = DateTimeOffset.UtcNow;
+                var safeDocumentId = (documentId ?? "null").Replace("\r", string.Empty).Replace("\n", string.Empty);
                 
                 // Trace: Delete request received
                 logger.LogInformation("[{RequestId}] Document delete request received. Endpoint: /Documents/{documentId}, DocumentId: {DocumentId}",
-                    requestId, documentId ?? "null");
+                    requestId, safeDocumentId);
                 
                 // Track delete started
                 telemetryHelper.TrackEvent("DocumentDeleteStarted", new Dictionary<string, string>
                 {
                     { "requestId", requestId },
                     { "endpoint", "/Documents/{documentId}" },
-                    { "documentId", documentId }
+                    { "documentId", safeDocumentId }
                 });
                 
                 try
                 {
                     // Trace: Beginning delete operation
                     logger.LogDebug("[{RequestId}] Calling kernel memory to delete document: {DocumentId}",
-                        requestId, documentId);
+                        requestId, safeDocumentId);
                     
                     await kernelMemory.DeleteDocument(documentId);
                     var duration = (DateTimeOffset.UtcNow - startTime).TotalSeconds;
@@ -321,13 +322,13 @@ namespace Microsoft.GS.DPSHost.API
                     logger.LogInformation("[{RequestId}] Document deleted successfully. Duration: {Duration}s, DocumentId: {DocumentId}",
                         requestId,
                         duration.ToString("F2"),
-                        documentId);
+                        safeDocumentId);
                     
                     telemetryHelper.TrackEvent("DocumentDeleteSuccess", new Dictionary<string, string>
                     {
                         { "requestId", requestId },
                         { "endpoint", "/Documents/{documentId}" },
-                        { "documentId", documentId },
+                        { "documentId", safeDocumentId },
                         { "duration", duration.ToString("F2") }
                     }, new Dictionary<string, double>
                     {
