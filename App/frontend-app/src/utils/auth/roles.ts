@@ -13,10 +13,6 @@ function checkRole(accounts: AccountInfo[], role: string): boolean {
     );
 }
 
-function isLoggedIn(accounts: AccountInfo[]): boolean {
-    return accounts.length > 0 && accounts[0].idTokenClaims != undefined;
-}
-
 export function getActiveUser(accounts: AccountInfo[]): AccountInfo | undefined {
     if (accounts.length > 0) {
         return accounts[0];

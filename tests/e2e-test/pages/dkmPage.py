@@ -35,6 +35,7 @@ class DkmPage(BasePage):
     TIME_FILTER = "//button[contains(text(), 'Anytime')]"
 
     def __init__(self, page):
+        super().__init__(page)
         self.page = page
 
     def validate_home_page(self):
@@ -111,12 +112,6 @@ class DkmPage(BasePage):
         raise PlaywrightTimeoutError(
             "Response is not generated and it has been timed out."
         )
-        # try:
-        #  # Wait for it to appear in the DOM and be visible
-        #     locator = self.page.locator(self.ASK_QUESTION)
-        #     locator.wait_for(state="enabled", timeout=200000)  # adjust timeout as needed
-        # except PlaywrightTimeoutError:
-        #     raise Exception("Response is not generated and it has been timed out.")
 
     def wait_until_chat_details_response_loaded(self, timeout=200000):
 
@@ -200,7 +195,7 @@ class DkmPage(BasePage):
                     # Try pressing Escape key
                     self.page.keyboard.press("Escape")
                     self.page.wait_for_timeout(1000)
-        except:
+        except Exception:
             # No dialog open, continue
             pass
 
@@ -223,7 +218,7 @@ class DkmPage(BasePage):
                 return True
             # If neither, the button is enabled in UI - return False
             return False
-        except:
+        except Exception:
             return False
 
     def verify_send_button_enabled(self):
