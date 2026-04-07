@@ -18,7 +18,7 @@ By default this template will use the environment name as the prefix to prevent 
 | `AZURE_ENV_EMBEDDING_MODEL_NAME`          | string | text-embedding-3-large          | Sets the name of the embedding model to use.                                                |                        
 | `AZURE_ENV_EMBEDDING_MODEL_VERSION`            | string | `200`          | *(empty)*                                                   |
 | `AZURE_ENV_EMBEDDING_DEPLOYMENT_CAPACITY`            | string | Configure capacity for embedding models (in thousands).         | Set the capacity for embedding models (in thousands).                                                   |
-| `AZURE_ENV_LOG_ANALYTICS_WORKSPACE_RID` | string  | Guide to get your [Existing Workspace ID](/docs/re-use-log-analytics.md) | Set this if you want to reuse an existing Log Analytics Workspace instead of creating a new one.     |
+| `AZURE_ENV_EXISTING_LOG_ANALYTICS_WORKSPACE_RID` | string  | Guide to get your [Existing Workspace ID](/docs/re-use-log-analytics.md) | Set this if you want to reuse an existing Log Analytics Workspace instead of creating a new one.     |
 | `AZURE_ENV_VM_ADMIN_USERNAME`  | string | `take(newGuid(), 20)`               | The administrator username for the virtual machine.         |
 | `AZURE_ENV_VM_ADMIN_PASSWORD`  | string | `newGuid()`               | The administrator password for the virtual machine.         |
 | `AZURE_ENV_VM_SIZE`            | string | `Standard_D2s_v5`         | The size of the Jumpbox Virtual Machine. Only applicable when `enablePrivateNetworking` is true.  |
@@ -35,7 +35,7 @@ azd env set <PARAMETER_NAME> <VALUE>
 
 Set the Log Analytics Workspace Id if you need to reuse the existing workspace which is already existing
 ```shell
-azd env set AZURE_ENV_LOG_ANALYTICS_WORKSPACE_RID '/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.OperationalInsights/workspaces/<workspace-name>'
+azd env set AZURE_ENV_EXISTING_LOG_ANALYTICS_WORKSPACE_RID '/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.OperationalInsights/workspaces/<workspace-name>'
 ```
 
 **Example:**

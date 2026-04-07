@@ -33,7 +33,7 @@ on:
         required: false
         default: 'GoldenPath-Testing'
         type: string
-      AZURE_ENV_LOG_ANALYTICS_WORKSPACE_RID:
+      AZURE_ENV_EXISTING_LOG_ANALYTICS_WORKSPACE_RID:
         description: 'Log Analytics Workspace ID (Optional)'
         required: false
         default: ''
@@ -62,7 +62,7 @@ jobs:
       waf_enabled: ${{ inputs.waf_enabled }}
       EXP: ${{ inputs.EXP }}
       existing_webapp_url: ${{ inputs.existing_webapp_url }}
-      AZURE_ENV_LOG_ANALYTICS_WORKSPACE_RID: ${{ inputs.AZURE_ENV_LOG_ANALYTICS_WORKSPACE_RID }}
+      AZURE_ENV_EXISTING_LOG_ANALYTICS_WORKSPACE_RID: ${{ inputs.AZURE_ENV_EXISTING_LOG_ANALYTICS_WORKSPACE_RID }}
       run_e2e_tests: ${{ inputs.run_e2e_tests }}
       cleanup_resources: ${{ inputs.cleanup_resources }}
     secrets: inherit
