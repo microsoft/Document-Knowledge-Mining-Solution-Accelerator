@@ -532,6 +532,10 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
 
     keyValues: [
       {
+        name: 'ApplicationInsights:ConnectionString'
+        value: enableMonitoring ? applicationInsights!.outputs.connectionString : ''
+      }
+      {
         name: 'Application:AIServices:GPT-4o-mini:Endpoint'
         value: avmOpenAi.outputs.endpoint
       }
@@ -1113,3 +1117,12 @@ output AZ_GPT_EMBEDDING_MODEL_NAME string = embeddingModelDeployment.modelName
 
 @description('Contains Azure OpenAI Embedding Model Deployment Name.')
 output AZ_GPT_EMBEDDING_MODEL_ID string = embeddingModelDeployment.deploymentName
+
+@description('Contains Application Insights Connection String.')
+output APPLICATIONINSIGHTS_CONNECTION_STRING string = enableMonitoring ? applicationInsights!.outputs.connectionString : ''
+
+@description('Contains Application Insights Instrumentation Key.')
+output APPLICATIONINSIGHTS_INSTRUMENTATION_KEY string = enableMonitoring ? applicationInsights!.outputs.instrumentationKey : ''
+
+@description('Contains Application Insights Name.')
+output APPLICATIONINSIGHTS_NAME string = enableMonitoring ? applicationInsights!.outputs.name : ''
