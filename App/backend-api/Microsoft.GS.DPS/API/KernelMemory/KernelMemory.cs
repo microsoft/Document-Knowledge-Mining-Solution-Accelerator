@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using DnsClient.Internal;
+﻿using DnsClient.Internal;
 using Microsoft.GS.DPS.Images;
 using Microsoft.GS.DPS.Model.KernelMemory;
 using Microsoft.GS.DPS.Storage.Document;
