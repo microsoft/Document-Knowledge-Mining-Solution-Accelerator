@@ -6,6 +6,7 @@ using System.Reflection;
 using Microsoft.GS.DPS.Storage.Document;
 using NSwag.AspNetCore;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.ApplicationInsights.AspNetCore.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,27 @@ builder.Services.AddSwaggerGen();
 
 //Load Inject Settings and Load AppConfiguration Objects
 AppConfiguration.Config(builder);
+
+// Configure Application Insights - Always register to ensure TelemetryClient is available for DI
+var connectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
+builder.Services.AddApplicationInsightsTelemetry(options =>
+{
+    if (!string.IsNullOrEmpty(connectionString))
+    {
+        options.ConnectionString = connectionString;
+        options.EnableAdaptiveSampling = builder.Configuration.GetValue<bool>("ApplicationInsights:EnableAdaptiveSampling", true);
+        options.EnablePerformanceCounterCollectionModule = builder.Configuration.GetValue<bool>("ApplicationInsights:EnablePerformanceCounterCollectionModule", true);
+        options.EnableQuickPulseMetricStream = builder.Configuration.GetValue<bool>("ApplicationInsights:EnableQuickPulseMetricStream", true);
+    }
+});
+
+// Configure logging
+if (!string.IsNullOrEmpty(connectionString))
+{
+    builder.Logging.AddApplicationInsights();
+}
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
 
 //Bson Register Class Maps
 //MongoDbConfig.RegisterClassMaps();

@@ -22,6 +22,7 @@ namespace Microsoft.GS.DPSHost.ServiceConfiguration
         {
             builder.Services
                 .AddValidatorsFromAssemblyContaining<PagingRequestValidator>()
+                .AddSingleton<TelemetryHelper>()
                 .AddSingleton<Microsoft.GS.DPS.API.KernelMemory>()
                 .AddSingleton<Microsoft.GS.DPS.API.ChatHost>()
                 .AddSingleton<Microsoft.GS.DPS.API.UserInterface.Documents>()
