@@ -22,13 +22,13 @@ namespace Microsoft.GS.DPSHost.ServiceConfiguration
         {
             builder.Services
                 .AddValidatorsFromAssemblyContaining<PagingRequestValidator>()
+                .AddSingleton<TelemetryHelper>()
                 .AddSingleton<Microsoft.GS.DPS.API.KernelMemory>()
                 .AddSingleton<Microsoft.GS.DPS.API.ChatHost>()
                 .AddSingleton<Microsoft.GS.DPS.API.UserInterface.Documents>()
                 .AddSingleton<Microsoft.GS.DPS.API.UserInterface.DataCacheManager>()
                 .AddSingleton<Microsoft.SemanticKernel.Kernel>(x =>
                 {
-                    var aiService = x.GetRequiredService<IOptions<AIServices>>().Value;
                     return Kernel.CreateBuilder()
                                  .AddAzureOpenAIChatCompletion(deploymentName: builder.Configuration.GetSection("Application:AIServices:GPT-4o-mini")["ModelName"] ?? "",
                                                               endpoint: builder.Configuration.GetSection("Application:AIServices:GPT-4o-mini")["Endpoint"] ?? "",

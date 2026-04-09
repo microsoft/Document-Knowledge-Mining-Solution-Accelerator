@@ -76,10 +76,24 @@ jobs:
       TEST_SUITE: ${{ inputs.trigger_type == 'workflow_dispatch' && inputs.run_e2e_tests || 'GoldenPath-Testing' }}
     secrets: inherit
 
-  send-notification:
-    # if: "!cancelled()"
-    if: false # Temporarily disable notification job
+  cleanup-deployment:
+    if: "!cancelled() && needs.deploy.outputs.RESOURCE_GROUP_NAME != '' && inputs.existing_webapp_url == '' && (inputs.trigger_type != 'workflow_dispatch' || inputs.cleanup_resources)"
     needs: [deploy, e2e-test]
+    uses: ./.github/workflows/job-cleanup-deployment.yml
+    with:
+      trigger_type: ${{ inputs.trigger_type }}
+      cleanup_resources: ${{ inputs.cleanup_resources }}
+      existing_webapp_url: ${{ inputs.existing_webapp_url }}
+      RESOURCE_GROUP_NAME: ${{ needs.deploy.outputs.RESOURCE_GROUP_NAME }}
+      AZURE_LOCATION: ${{ needs.deploy.outputs.AZURE_LOCATION }}
+      AZURE_ENV_AI_SERVICE_LOCATION: ${{ needs.deploy.outputs.AZURE_ENV_AI_SERVICE_LOCATION }}
+      ENV_NAME: ${{ needs.deploy.outputs.ENV_NAME }}
+      IMAGE_TAG: ${{ needs.deploy.outputs.IMAGE_TAG }}
+    secrets: inherit
+
+  send-notification:
+    if: "!cancelled()"
+    needs: [deploy, e2e-test, cleanup-deployment]
     uses: ./.github/workflows/job-send-notification.yml
     with:
       trigger_type: ${{ inputs.trigger_type }}
@@ -94,19 +108,5 @@ jobs:
       QUOTA_FAILED: ${{ needs.deploy.outputs.QUOTA_FAILED }}
       TEST_SUCCESS: ${{ needs.e2e-test.outputs.TEST_SUCCESS }}
       TEST_REPORT_URL: ${{ needs.e2e-test.outputs.TEST_REPORT_URL }}
-    secrets: inherit
-
-  cleanup-deployment:
-    if: "!cancelled() && needs.deploy.outputs.RESOURCE_GROUP_NAME != '' && inputs.existing_webapp_url == '' && (inputs.trigger_type != 'workflow_dispatch' || inputs.cleanup_resources)"
-    needs: [deploy, e2e-test]
-    uses: ./.github/workflows/job-cleanup-deployment.yml
-    with:
-      trigger_type: ${{ inputs.trigger_type }}
-      cleanup_resources: ${{ inputs.cleanup_resources }}
-      existing_webapp_url: ${{ inputs.existing_webapp_url }}
-      RESOURCE_GROUP_NAME: ${{ needs.deploy.outputs.RESOURCE_GROUP_NAME }}
-      AZURE_LOCATION: ${{ needs.deploy.outputs.AZURE_LOCATION }}
-      AZURE_ENV_AI_SERVICE_LOCATION: ${{ needs.deploy.outputs.AZURE_ENV_AI_SERVICE_LOCATION }}
-      ENV_NAME: ${{ needs.deploy.outputs.ENV_NAME }}
-      IMAGE_TAG: ${{ needs.deploy.outputs.IMAGE_TAG }}
+      cleanup_result: ${{ needs.cleanup-deployment.result }}
     secrets: inherit

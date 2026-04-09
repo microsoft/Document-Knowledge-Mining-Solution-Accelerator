@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Dropdown, Option, makeStyles } from "@fluentui/react-components";
-import { CustomDatePicker } from "./customDatePicker";
 
 const useStyles = makeStyles({
     root: {

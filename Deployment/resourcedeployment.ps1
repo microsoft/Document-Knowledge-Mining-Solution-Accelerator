@@ -279,6 +279,9 @@ class DeploymentResult {
     [string]$AzCosmosDBConnectionString
     [string]$AzAppConfigEndpoint
     [string]$AzAppConfigName
+    [string]$ApplicationInsightsConnectionString
+    [string]$ApplicationInsightsInstrumentationKey
+    [string]$ApplicationInsightsName
 
     DeploymentResult() {
         # Resource Group
@@ -315,6 +318,10 @@ class DeploymentResult {
         $this.AzAppConfigEndpoint = ""
         # App Config Name
         $this.AzAppConfigName = ""
+        # Application Insights
+        $this.ApplicationInsightsConnectionString = ""
+        $this.ApplicationInsightsInstrumentationKey = ""
+        $this.ApplicationInsightsName = ""
 
     }
 
@@ -362,6 +369,11 @@ class DeploymentResult {
         # Azure App Configuration
         $this.AzAppConfigEndpoint     = Get-AzdEnvValueOrDefault -KeyName "AZURE_APP_CONFIG_ENDPOINT"
         $this.AzAppConfigName         = Get-AzdEnvValueOrDefault -KeyName "AZURE_APP_CONFIG_NAME"
+
+        # Application Insights
+        $this.ApplicationInsightsConnectionString = Get-AzdEnvValueOrDefault -KeyName "APPLICATIONINSIGHTS_CONNECTION_STRING"
+        $this.ApplicationInsightsInstrumentationKey = Get-AzdEnvValueOrDefault -KeyName "APPLICATIONINSIGHTS_INSTRUMENTATION_KEY"
+        $this.ApplicationInsightsName = Get-AzdEnvValueOrDefault -KeyName "APPLICATIONINSIGHTS_NAME"
     }
 
     [void]MapResultAz([string]$resourceGroupName) {
@@ -450,6 +462,11 @@ class DeploymentResult {
         # App Configuration
         $this.AzAppConfigEndpoint = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_APP_CONFIG_ENDPOINT" -fallbackKey "azureAppConfigEndpoint"
         $this.AzAppConfigName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_APP_CONFIG_NAME" -fallbackKey "azureAppConfigName"
+
+        # Application Insights
+        $this.ApplicationInsightsConnectionString = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "applicationinsightS_CONNECTION_STRING" -fallbackKey "applicationInsightsConnectionString"
+        $this.ApplicationInsightsInstrumentationKey = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "applicationinsightS_INSTRUMENTATION_KEY" -fallbackKey "applicationInsightsInstrumentationKey"
+        $this.ApplicationInsightsName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "applicationinsightS_NAME" -fallbackKey "applicationInsightsName"
     }
 }
 
@@ -559,7 +576,8 @@ try {
         '{azurequeues-account}' = $deploymentResult.StorageAccountName
         '{gpt-4o-modelname}' = $deploymentResult.AzGPT4oModelName 
         '{azureopenaiembedding-deployment}' = $deploymentResult.AzGPTEmbeddingModelName 
-        '{kernelmemory-endpoint}' = "http://kernelmemory-service" 
+        '{kernelmemory-endpoint}' = "http://kernelmemory-service"
+        '{applicationinsights-connectionstring}' = $deploymentResult.ApplicationInsightsConnectionString
     }
 
     ## Load and update the AI service configuration template

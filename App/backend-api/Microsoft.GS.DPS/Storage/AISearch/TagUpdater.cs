@@ -47,7 +47,7 @@ namespace Microsoft.GS.DPS.Storage.AISearch
                     try
                     {
                         var response = await _searchClient.MergeOrUploadDocumentsAsync(new[] { updateDocument });
-                        Console.WriteLine($"Document with ID {document["id"]} updated successfully. - {response.GetRawResponse().ToString()}");
+                        Console.WriteLine($"Document with ID {document["id"]} updated successfully. - {response.GetRawResponse()}");
                     }
                     catch (Exception ex)
                     {

@@ -12,10 +12,9 @@ import {
 } from "@fluentui/react-components";
 import {
   ArrowUpload24Regular,
-  Document24Regular,
   DismissRegular,
   CheckmarkCircle24Regular,
-  DismissCircle24Regular, CloudArrowUp24Regular, DocumentPdf32Regular
+  DismissCircle24Regular, CloudArrowUp24Regular
 } from "@fluentui/react-icons";
 import { Icon } from "@fluentui/react";
 import { importDocuments } from "../../api/documentsService";

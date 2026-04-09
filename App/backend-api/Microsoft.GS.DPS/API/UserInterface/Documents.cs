@@ -171,31 +171,28 @@ namespace Microsoft.GS.DPS.API.UserInterface
             //var documents = await this.EntityCollection.GetAllAsync();
             var consolidatedKeywords = new Dictionary<string, List<string>>();
 
-            foreach (var document in documents)
+            foreach (var document in documents.Where(d => d.Keywords != null))
             {
-                if (document.Keywords != null)
+                foreach (var keywordDict in document.Keywords)
                 {
-                    foreach (var keywordDict in document.Keywords)
+                    if (!consolidatedKeywords.ContainsKey(keywordDict.Key))
                     {
-                        if (!consolidatedKeywords.ContainsKey(keywordDict.Key))
+                        consolidatedKeywords[keywordDict.Key] = new List<string>();
+                    }
+
+                    //Before adding Value, check the value is already existing
+                    //Split comma separated values and add to the list
+                    var values = keywordDict.Value.Split(',').Select(v => v.Trim()).ToArray();
+
+                    foreach (var value in values)
+                    {
+                        if (!consolidatedKeywords[keywordDict.Key].Contains(value))
                         {
-                            consolidatedKeywords[keywordDict.Key] = new List<string>();
+                            consolidatedKeywords[keywordDict.Key].Add(value);
                         }
 
-                        //Before adding Value, check the value is already existing
-                        //Split comma separated values and add to the list
-                        var values = keywordDict.Value.Split(',').Select(v => v.Trim()).ToArray();
-
-                        foreach (var value in values)
-                        {
-                            if (!consolidatedKeywords[keywordDict.Key].Contains(value))
-                            {
-                                consolidatedKeywords[keywordDict.Key].Add(value);
-                            }
-
-                            //set order values under same Key by asc.
-                            consolidatedKeywords[keywordDict.Key] = consolidatedKeywords[keywordDict.Key].OrderBy(v => v).ToList();
-                        }
+                        //set order values under same Key by asc.
+                        consolidatedKeywords[keywordDict.Key] = consolidatedKeywords[keywordDict.Key].OrderBy(v => v).ToList();
                     }
                 }
             }
@@ -215,32 +212,29 @@ namespace Microsoft.GS.DPS.API.UserInterface
             //Get All Records only Keywords field.
             var documents = await _documentRepository.GetAllDocuments();
 
-            foreach (var document in documents)
+            foreach (var document in documents.Where(d => d.Keywords != null))
             {
-                if (document.Keywords != null)
+                foreach (var keywordDict in document.Keywords)
                 {
-                    foreach (var keywordDict in document.Keywords)
+                    if (!consolidatedKeywords.ContainsKey(keywordDict.Key))
                     {
-                        if (!consolidatedKeywords.ContainsKey(keywordDict.Key))
+                        consolidatedKeywords[keywordDict.Key] = new List<string>();
+                    }
+
+                    //Before adding Value, check the value is already existing
+                    //Split comma separated values and add to the list
+                    var values = keywordDict.Value.Split(',').Select(v => v.Trim()).ToArray();
+
+                    foreach (var value in values)
+                    {
+                        if (!consolidatedKeywords[keywordDict.Key].Contains(value))
                         {
-                            consolidatedKeywords[keywordDict.Key] = new List<string>();
+                            consolidatedKeywords[keywordDict.Key].Add(value);
                         }
 
-                        //Before adding Value, check the value is already existing
-                        //Split comma separated values and add to the list
-                        var values = keywordDict.Value.Split(',').Select(v => v.Trim()).ToArray();
+                        //set order values under same Key by asc.
+                        consolidatedKeywords[keywordDict.Key] = consolidatedKeywords[keywordDict.Key].OrderBy(v => v).ToList();
 
-                        foreach (var value in values)
-                        {
-                            if (!consolidatedKeywords[keywordDict.Key].Contains(value))
-                            {
-                                consolidatedKeywords[keywordDict.Key].Add(value);
-                            }
-
-                            //set order values under same Key by asc.
-                            consolidatedKeywords[keywordDict.Key] = consolidatedKeywords[keywordDict.Key].OrderBy(v => v).ToList();
-
-                        }
                     }
                 }
             }

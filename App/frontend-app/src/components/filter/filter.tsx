@@ -1,7 +1,6 @@
 import React, { useEffect, useState, memo, useRef } from "react"; 
 import { Checkbox } from "@fluentui/react-checkbox";
-import { useTranslation } from "react-i18next";
-import { Button, Accordion, AccordionHeader, AccordionItem, AccordionPanel, makeStyles } from "@fluentui/react-components";
+import { Accordion, AccordionHeader, AccordionItem, AccordionPanel, makeStyles } from "@fluentui/react-components";
 
 const useStyles = makeStyles({
     clearAll: { 
@@ -49,7 +48,6 @@ export function Filter({
     clearFilters, 
     onFilterCleared 
 }: FilterProps) {
-    const { t } = useTranslation();
     const classes = useStyles();
 
     const localStorageKey = "selectedKeywords";
