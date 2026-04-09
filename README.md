@@ -66,7 +66,7 @@ Follow the quick deploy steps on the deployment guide to deploy this solution 
 
 [Click here to launch the deployment guide](./docs/DeploymentGuide.md)
 <br/><br/>
-
+> **Note**: Some tenants may have additional security restrictions that run periodically and could impact the application (e.g., blocking public network access). If you experience issues or the application stops working, check if these restrictions are the cause. In such cases, consider deploying the WAF-supported version to ensure compliance. To configure, [Click here](./docs/DeploymentGuide.md#31-choose-deployment-type-optional).
 
 
 > ⚠️ **Important: Check Azure OpenAI Quota Availability**
