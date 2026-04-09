@@ -205,7 +205,7 @@ jobs:
             --parameters \
                 solutionName="${{ env.SOLUTION_PREFIX }}" \
                 location=${{ env.AZURE_LOCATION }} \
-                azureAiServiceLocation=${{ env.AZURE_LOCATION }} \
+                aiDeploymentsLocation=${{ env.AZURE_LOCATION }} \
                 gptModelDeploymentType="GlobalStandard" \
                 gptModelName="gpt-4.1-mini" \
                 gptModelCapacity=${{ env.GPT_CAPACITY }} \
