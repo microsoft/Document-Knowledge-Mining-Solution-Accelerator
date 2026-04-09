@@ -5,6 +5,19 @@ on:
       - main # Adjust this to the branch you want to trigger the deployment on
       - dev
       - demo
+    paths:
+      - 'infra/**'
+      - 'App/**'
+      - 'Deployment/**'
+      - 'azure.yaml'
+      - '.github/workflows/deploy-v2.yml'
+      - '.github/workflows/deploy-orchestrator.yml'
+      - '.github/workflows/job-deploy.yml'
+      - '.github/workflows/job-deploy-linux.yml'
+      - '.github/workflows/job-cleanup-deployment.yml'
+      - '.github/workflows/job-send-notification.yml'
+      - '.github/workflows/test-automation-v2.yml'
+      - 'tests/**'
   schedule:
     - cron: "0 10,22 * * *" # Runs at 10:00 AM and 10:00 PM UTC
   
