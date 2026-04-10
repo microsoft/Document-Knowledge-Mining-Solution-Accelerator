@@ -119,6 +119,8 @@ Review the configuration options below. You can customize any settings that meet
 | **Use Case** | POCs, development, testing | Production workloads |
 | **Framework** | Basic configuration | [Well-Architected Framework](https://learn.microsoft.com/en-us/azure/well-architected/) |
 | **Features** | Core functionality | Reliability, security, operational excellence |
+| **Backend API Access** | Public (accessible via ingress) | Private (internal-only, not exposed to public internet) |
+| **Network Policies** | None | Kubernetes NetworkPolicy isolates backend from external traffic |
 
 **To use production configuration:**
 
@@ -142,7 +144,28 @@ azd env set AZURE_ENV_VM_ADMIN_USERNAME <your-username>
 azd env set AZURE_ENV_VM_ADMIN_PASSWORD <your-password>
 ```
 
-### 3.3 Advanced Configuration (Optional)
+### 3.3 WAF Deployment: Network Architecture (Production Only)
+
+> **Note:** This section describes the networking architecture automatically configured when using the **Production** deployment type (WAF mode).
+
+When deploying with WAF configuration (`enablePrivateNetworking: true`), the following security measures are applied:
+
+- **AKS Private Cluster**: The AKS API server is configured as a private cluster, not accessible from the public internet.
+- **Frontend-Only Public Ingress**: Only the frontend web application is exposed publicly through the WAF/Application Gateway ingress. The `/backend` API route is removed from the public ingress.
+- **Internal Backend Ingress**: Backend API services (`aiservice`, `kernelmemory`) are accessible only through an internal ingress that is not exposed to the public internet.
+- **Kubernetes Network Policies**: NetworkPolicy resources enforce traffic isolation — backend pods only accept traffic from frontend pods and the internal ingress controller within the cluster.
+- **Private Endpoints**: All Azure PaaS services (Cosmos DB, Storage, Search, OpenAI, etc.) use private endpoints and are not accessible from the public internet.
+
+**Traffic Flow (WAF mode):**
+```
+Internet → WAF/Application Gateway → Public Ingress → Frontend (frontapp)
+                                                         ↓ (internal)
+                                                   Backend (aiservice) → Azure PaaS (via Private Endpoints)
+                                                         ↓ (internal)
+                                                   Kernel Memory Service → Azure PaaS (via Private Endpoints)
+```
+
+### 3.4 Advanced Configuration (Optional)
 
 <details>
 <summary><b>Configurable Parameters</b></summary>

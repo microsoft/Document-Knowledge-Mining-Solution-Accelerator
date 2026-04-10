@@ -551,6 +551,16 @@ try {
 
     Write-Host "Validation Completed" -ForegroundColor Green
 
+    # Detect WAF deployment mode from resource group tag (set by Bicep: Type = 'WAF' | 'Non-WAF')
+    $isWafDeployment = $false
+    $rgDeploymentType = az group show --name $deploymentResult.ResourceGroupName --query "tags.Type" -o tsv 2>$null
+    if ($rgDeploymentType -eq "WAF") {
+        $isWafDeployment = $true
+        Write-Host "WAF deployment mode detected. Backend APIs will be restricted to private access." -ForegroundColor Cyan
+    } else {
+        Write-Host "Non-WAF deployment mode detected. Standard deployment will be used." -ForegroundColor Yellow
+    }
+
     # Step 1-3 Loading aiservice's configution file template then replace the placeholder with the actual values
     # Define the placeholders and their corresponding values for AI service configuration
     
@@ -834,12 +844,19 @@ try {
     $certManagerTemplate | Set-Content -Path $certManagerPath -Force
 
     # 3.2 Update deploy.ingress.yaml.template file and save as deploy.ingress.yaml
-    # webfront / apibackend
+    # In WAF mode, use the WAF-specific template that only exposes the frontend publicly
+    # In non-WAF mode, use the standard template that exposes both frontend and backend
     $ingressPlaceholders = @{
         '{{ fqdn }}' = $fqdn
     }
 
-    $ingressTemplate = Get-Content -Path .\kubernetes\deploy.ingress.yaml.template -Raw
+    if ($isWafDeployment) {
+        $ingressTemplatePath = ".\kubernetes\deploy.ingress.waf.yaml.template"
+        Write-Host "Using WAF ingress template (frontend-only public access)." -ForegroundColor Cyan
+    } else {
+        $ingressTemplatePath = ".\kubernetes\deploy.ingress.yaml.template"
+    }
+    $ingressTemplate = Get-Content -Path $ingressTemplatePath -Raw
     $ingress = Invoke-PlaceholdersReplacement $ingressTemplate $ingressPlaceholders
     $ingressPath = ".\kubernetes\deploy.ingress.yaml"
     $ingress | Set-Content -Path $ingressPath -Force
@@ -1002,6 +1019,19 @@ try {
 
     # 5.5. Deploy Ingress Controller in Kubernetes for external access
     kubectl apply -f "./kubernetes/deploy.ingress.yaml" -n $kubenamespace
+
+    # 5.6. WAF Mode: Deploy internal backend ingress and network policies
+    if ($isWafDeployment) {
+        Write-Host "Applying WAF-specific configurations: internal backend ingress and network policies..." -ForegroundColor Cyan
+
+        # Deploy internal ingress for backend services (no public exposure)
+        kubectl apply -f "./kubernetes/deploy.ingress.internal.yaml.template" -n $kubenamespace
+
+        # Deploy network policies to restrict backend traffic to internal only
+        kubectl apply -f "./kubernetes/deploy.networkpolicy.yaml" -n $kubenamespace
+
+        Write-Host "WAF network policies and internal backend ingress applied successfully." -ForegroundColor Green
+    }
 
     # #####################################################################
     # # Data file uploading
