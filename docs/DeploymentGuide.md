@@ -279,6 +279,8 @@ Let's check the message and configure your model's TPM rate higher to get better
 You can check the Application URL from the final console message.  
 Don't miss this URL information. This is the application's endpoint URL and should be used for your data importing process.
 
+> **📦 Data Migration:** If you need to migrate documents and data from an existing deployment to this new one, follow the [Data Migration Guide](../Deployment/data_migration/README.md).
+
 <img src="./images/deployment/Deployment_Screen02.png" alt="Success Deployment" width="900">
 
 ### 5.2 Manual Deployment Steps:

@@ -1,0 +1,6 @@
+azure-search-documents>=11.4.0
+azure-identity>=1.15.0
+azure-storage-blob>=12.19.0
+pymongo>=4.6.0
+dnspython>=2.4.0
+
