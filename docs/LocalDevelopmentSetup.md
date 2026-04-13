@@ -15,14 +15,14 @@ This application consists of **three separate services** that run independently:
 > **⚠️ Critical: Each service must run in its own terminal/console window**
 >
 > - **Do NOT close terminals/windows** while services are running
-> - Open **Kernel Memory** and **Backend API** in Visual Studio.
+> - You can use **Visual Studio** or **dotnet CLI** (from VS Code terminal / PowerShell) for the backend services.
 > - Open **Frontend** in Visual Studio Code.
 > - Each service will occupy its terminal and show live logs
 >
 > **Terminal/Window Organization:**
-> - **Visual Studio window 1**: Kernel Memory - Service runs on port 9001 
-> - **Visual Studio window 2**: Backend API - HTTP server runs on port 52190
-> - **Visual Studio Code Terminal**: Frontend - Development server on port 5900
+> - **Terminal 1**: Kernel Memory - Service runs on port 9001 
+> - **Terminal 2**: Backend API - HTTP server runs on port 5000
+> - **Terminal 3 (VS Code)**: Frontend - Development server on port 5900
 
 ### Path Conventions
 
@@ -285,7 +285,11 @@ If you prefer or need to use the Azure Portal instead of CLI commands:
 
 ## Step 3: Backend Setup & Run Instructions
 
-### 3.1. Open Solutions in Visual Studio
+You can run the backend services using either **Visual Studio** (Option A) or the **dotnet CLI** from a terminal (Option B).
+
+### 3.1. Open Solutions
+
+#### Option A: Visual Studio
 
 Navigate to the cloned repository and open the following solution files from Visual Studio:
 
@@ -294,6 +298,14 @@ Navigate to the cloned repository and open the following solution files from Vis
 - **Microsoft.GS.DPS** path: `Document-Knowledge-Mining-Solution-Accelerator/App/backend-api/Microsoft.GS.DPS.sln`
 
 **Sign in to Visual Studio** using your tenant account with the required permissions.
+
+> **⚠️ Important: KernelMemory.sln build issue**  
+> The `KernelMemory.sln` solution file references example and evaluation projects (`examples/`, `applications/`) that are **not included** in this repository. Building the full solution will produce errors.  
+> **Workaround:** In Visual Studio, right-click the **Service** project (inside the `service` folder) → **Set as Startup Project**. Visual Studio will only build the Service project and its dependencies when you press F5.
+
+#### Option B: dotnet CLI (VS Code / PowerShell)
+
+No solution file is needed. You will run individual projects directly using `dotnet run`. See Step 4.3 for the CLI commands.
 
 ---
 
@@ -352,13 +364,13 @@ Copy-Item Deployment\appconfig\aiservice\appsettings.Development.json.template A
 
 ## Step 4: Run Backend Services
 
-### 4.1. Set Startup Projects
+### 4.1. Set Startup Projects (Visual Studio only)
 
 - **KernelMemory Solution:**  
-    Set **Service** (located inside the `service` folder) as the startup project to run the Kernel Memory service.
+    Right-click **Service** (located inside the `service` folder) → **Set as Startup Project**. This ensures only the Service project and its dependencies are built, avoiding errors from missing example projects in the solution.
 
 - **Microsoft.GS.DPS Solution:**  
-    Set **Microsoft.GS.DPS.Host** as the startup project to run the API.
+    Right-click **Microsoft.GS.DPS.Host** → **Set as Startup Project**.
 
 ### 4.2. Update Kernel Memory Endpoint in Azure App Configuration
 
@@ -386,12 +398,40 @@ Copy-Item Deployment\appconfig\aiservice\appsettings.Development.json.template A
 
 ### 4.3. Run the Backend Services
 
+#### Option A: Visual Studio
+
 1. In Visual Studio, run both solutions (KernelMemory and Microsoft.GS.DPS) by pressing **F5** or clicking the **Start** button.
 2. Two terminal windows will appear showing the service logs.
-3. Once both services start successfully:
+
+#### Option B: dotnet CLI (VS Code / PowerShell)
+
+> **⚠️ Critical:** You must set the `ASPNETCORE_ENVIRONMENT` environment variable to `Development` before running.
+> Without this, the `appsettings.Development.json` file will **not** be loaded, and the application will fail with a `NullReferenceException` because the App Configuration URL is not found.
+
+Open **two separate terminals** and run one service in each:
+
+**Terminal 1 – Kernel Memory Service:**
+```powershell
+# From repository root
+$env:ASPNETCORE_ENVIRONMENT = "Development"
+dotnet run --project App\kernel-memory\service\Service\Service.csproj --configuration Debug
+```
+
+**Terminal 2 – Backend API:**
+```powershell
+# From repository root
+$env:ASPNETCORE_ENVIRONMENT = "Development"
+dotnet run --project App\backend-api\Microsoft.GS.DPS.Host\Microsoft.GS.DPS.Host.csproj --configuration Debug
+```
+
+> **Note:** Do **not** build the full `KernelMemory.sln` from CLI (`dotnet build KernelMemory.sln`). It will fail because the solution references example projects that are not in this repository. Always use `--project` to target the Service project directly.
+
+#### Verify Services
+
+Once both services start successfully:
    - **Kernel Memory Service** will be available at: http://localhost:9001
-   - **Backend API** will be available at: https://localhost:52190
-   - **Swagger UI** will open automatically at http://localhost:52190 for API validation
+   - **Backend API** will be available at: http://localhost:5000
+   - **Swagger UI** will be available at: http://localhost:5000 for API validation
 
 > **⚠️ Important:** Keep both terminal windows open while the services are running. Do not close them until you're done with development.
 
@@ -415,13 +455,15 @@ Copy-Item Deployment\appconfig\frontapp\.env.template App\frontend-app\.env
 
 ### 5.3. Configure the `.env` file
 
-Update the `VITE_API_ENDPOINT` value with your local Backend API URL, e.g.:
+Update the `VITE_API_ENDPOINT` value with your local Backend API URL:
 
 ```env
-VITE_API_ENDPOINT=https://localhost:52190
+VITE_API_ENDPOINT=http://localhost:5000
 DISABLE_AUTH=true
 VITE_ENABLE_UPLOAD_BUTTON=true
 ```
+
+> **Note:** The Backend API runs on **`http://localhost:5000`** by default (HTTP, not HTTPS).
 ### 5.4. Verify Node.js and Yarn Installation
 
 Before installing dependencies, verify that Node.js (LTS) and Yarn are already installed from Step 1:
@@ -457,7 +499,7 @@ yarn start
 
 **Services will be available at:**
 - **Kernel Memory Service**: http://localhost:9001 
-- **Backend API**: https://localhost:52190 
+- **Backend API**: http://localhost:5000 
 - **Frontend Application**: http://localhost:5900
 
 You're now ready to run and debug the application locally!
@@ -467,6 +509,19 @@ You're now ready to run and debug the application locally!
 ## Troubleshooting
 
 ### Common Issues
+
+#### `NullReferenceException` or `ArgumentNullException: Value cannot be null (Parameter 'uriString')` on startup
+
+This means `appsettings.Development.json` is not being loaded. Ensure:
+1. The `ASPNETCORE_ENVIRONMENT` environment variable is set to `Development` (see Step 4.3).
+2. The `appsettings.Development.json` file exists in the correct project directory (see Step 3.2).
+3. The `ConnectionStrings:AppConfig` value contains your actual Azure App Configuration URL, not the placeholder.
+
+#### `KernelMemory.sln` build fails with "project file was not found" errors
+
+The solution references example projects not included in this repository. **Do not build the full solution.** Instead:
+- In Visual Studio: Set **Service** as the startup project and press F5.
+- In CLI: Use `dotnet run --project App\kernel-memory\service\Service\Service.csproj`.
 
 #### Connection Issues
 
