@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.42.1.51946",
-      "templateHash": "14044897368623114174"
+      "templateHash": "6929838218794441010"
     }
   },
   "parameters": {
@@ -64,7 +64,7 @@
         "description": "Optional. Version of the GPT model to deploy."
       }
     },
-    "gptModelCapacity": {
+    "gptDeploymentCapacity": {
       "type": "int",
       "defaultValue": 100,
       "minValue": 10,
@@ -90,7 +90,7 @@
         "description": "Optional. Version of the Text Embedding model to deploy."
       }
     },
-    "embeddingModelCapacity": {
+    "embeddingDeploymentCapacity": {
       "type": "int",
       "defaultValue": 100,
       "minValue": 10,
@@ -226,13 +226,13 @@
       "modelName": "[parameters('gptModelName')]",
       "deploymentName": "[parameters('gptModelName')]",
       "deploymentVersion": "[parameters('gptModelVersion')]",
-      "deploymentCapacity": "[parameters('gptModelCapacity')]"
+      "deploymentCapacity": "[parameters('gptDeploymentCapacity')]"
     },
     "embeddingModelDeployment": {
       "modelName": "[parameters('embeddingModelName')]",
       "deploymentName": "[parameters('embeddingModelName')]",
       "deploymentVersion": "[parameters('embeddingModelVersion')]",
-      "deploymentCapacity": "[parameters('embeddingModelCapacity')]"
+      "deploymentCapacity": "[parameters('embeddingDeploymentCapacity')]"
     },
     "openAiDeployments": [
       {
@@ -26703,6 +26703,10 @@
           "keyValues": {
             "value": [
               {
+                "name": "ApplicationInsights:ConnectionString",
+                "value": "[if(parameters('enableMonitoring'), reference('applicationInsights').outputs.connectionString.value, '')]"
+              },
+              {
                 "name": "Application:AIServices:GPT-4o-mini:Endpoint",
                 "value": "[reference('avmOpenAi').outputs.endpoint.value]"
               },
@@ -28778,6 +28782,7 @@
         }
       },
       "dependsOn": [
+        "applicationInsights",
         "avmCosmosDB",
         "avmOpenAi",
         "avmSearchSearchServices",
@@ -36561,8 +36566,8 @@
         }
       },
       "dependsOn": [
-        "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').storageQueue)]",
         "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').storageBlob)]",
+        "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').storageQueue)]",
         "userAssignedIdentity",
         "virtualNetwork"
       ]
@@ -42285,8 +42290,8 @@
       },
       "dependsOn": [
         "avmOpenAi",
-        "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').openAI)]",
         "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').cognitiveServices)]",
+        "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').openAI)]",
         "virtualNetwork"
       ]
     },
@@ -49866,6 +49871,27 @@
         "description": "Contains Azure OpenAI Embedding Model Deployment Name."
       },
       "value": "[variables('embeddingModelDeployment').deploymentName]"
+    },
+    "APPLICATIONINSIGHTS_CONNECTION_STRING": {
+      "type": "string",
+      "metadata": {
+        "description": "Contains Application Insights Connection String."
+      },
+      "value": "[if(parameters('enableMonitoring'), reference('applicationInsights').outputs.connectionString.value, '')]"
+    },
+    "APPLICATIONINSIGHTS_INSTRUMENTATION_KEY": {
+      "type": "string",
+      "metadata": {
+        "description": "Contains Application Insights Instrumentation Key."
+      },
+      "value": "[if(parameters('enableMonitoring'), reference('applicationInsights').outputs.instrumentationKey.value, '')]"
+    },
+    "APPLICATIONINSIGHTS_NAME": {
+      "type": "string",
+      "metadata": {
+        "description": "Contains Application Insights Name."
+      },
+      "value": "[if(parameters('enableMonitoring'), reference('applicationInsights').outputs.name.value, '')]"
     }
   }
 }
