@@ -1,0 +1,34 @@
+# NetworkPolicy to restrict backend services (aiservice, kernelmemory) to only
+# accept traffic from within the cluster — frontend pods and internal ingress.
+# This ensures backend APIs are not directly accessible from the public internet
+# when WAF deployment mode is enabled.
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-external-to-backend
+  namespace: ns-km
+spec:
+  podSelector:
+    matchExpressions:
+    - key: app
+      operator: In
+      values:
+      - aiservice
+      - kernelmemory
+  policyTypes:
+  - Ingress
+  ingress:
+  # Allow traffic from frontend pods in the same namespace
+  - from:
+    - podSelector:
+        matchLabels:
+          app: frontapp
+  # Allow traffic from ingress controller namespace (app-routing-system)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: app-routing-system
+  # Allow traffic from within the ns-km namespace (inter-service communication)
+  - from:
+    - podSelector: {}

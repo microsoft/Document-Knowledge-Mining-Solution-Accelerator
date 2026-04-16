@@ -967,7 +967,7 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.
     }
     serviceCidr: '10.20.0.0/16'
     dnsServiceIP: '10.20.0.10'
-    enablePrivateCluster: enablePrivateNetworking
+    enablePrivateCluster: false
     primaryAgentPoolProfiles: [
       {
         name: 'agentpool'

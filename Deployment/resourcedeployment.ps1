@@ -739,13 +739,20 @@ try {
     #  6-1. Get Az Network resource Name with the public IP address
     Write-Host "Assign DNS Name to the public IP address" -ForegroundColor Green
     $publicIpName=$(az network public-ip list --resource-group $aksResourceGroupName --query "[?ipAddress=='$externalIP'].name" --output tsv)
-    #  6-2. Generate Unique backend API fqdn Name - esgdocanalysis-3 digit random number with padding 0
-    $dnsName = "kmgs$($(Get-Random -Minimum 0 -Maximum 9999).ToString("D4"))"
-    
-    # Validate if the AKS Resource Group Name, Public IP name and DNS Name are provided
+    #  6-2. Reuse existing DNS name if already assigned, otherwise generate a new one
+    # Validate if the AKS Resource Group Name and Public IP name are provided
     ValidateVariableIsNullOrEmpty -variableValue $aksResourceGroupName -variableName "AKS Resource Group name"  
     
     ValidateVariableIsNullOrEmpty -variableValue $publicIpName -variableName "Public IP name" 
+
+    $existingDnsName = az network public-ip show --resource-group $aksResourceGroupName --name $publicIpName --query "dnsSettings.domainNameLabel" --output tsv 2>$null
+    if ($existingDnsName) {
+        Write-Host "Reusing existing DNS name: $existingDnsName" -ForegroundColor Yellow
+        $dnsName = $existingDnsName
+    } else {
+        $dnsName = "kmgs$($(Get-Random -Minimum 0 -Maximum 9999).ToString("D4"))"
+        Write-Host "Generated new DNS name: $dnsName" -ForegroundColor Green
+    }
 
     ValidateVariableIsNullOrEmpty -variableValue $dnsName -variableName "DNS Name" 
     
@@ -1028,7 +1035,7 @@ try {
         kubectl apply -f "./kubernetes/deploy.ingress.internal.yaml.template" -n $kubenamespace
 
         # Deploy network policies to restrict backend traffic to internal only
-        kubectl apply -f "./kubernetes/deploy.networkpolicy.yaml" -n $kubenamespace
+        kubectl apply -f "./kubernetes/deploy.networkpolicy.yaml.template" -n $kubenamespace
 
         Write-Host "WAF network policies and internal backend ingress applied successfully." -ForegroundColor Green
     }
