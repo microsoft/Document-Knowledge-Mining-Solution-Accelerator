@@ -29,7 +29,7 @@ var solutionSuffix= toLower(trim(replace(
   'Standard'
   'GlobalStandard'
 ])
-param gptModelDeploymentType string = 'GlobalStandard'
+param deploymentType string = 'GlobalStandard'
 
 @minLength(1)
 @description('Optional. Name of the GPT model to deploy:')
@@ -183,7 +183,7 @@ var openAiDeployments = [
       version: gptModelDeployment.deploymentVersion
     }
     sku: {
-      name: gptModelDeploymentType
+      name: deploymentType
       capacity: gptModelDeployment.deploymentCapacity
     }
   }
@@ -195,7 +195,7 @@ var openAiDeployments = [
       version: embeddingModelDeployment.deploymentVersion
     }
     sku: {
-      name: gptModelDeploymentType
+      name: deploymentType
       capacity: embeddingModelDeployment.deploymentCapacity
     }
   }

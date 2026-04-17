@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.42.1.51946",
-      "templateHash": "6929838218794441010"
+      "templateHash": "6853019070928904100"
     }
   },
   "parameters": {
@@ -34,7 +34,7 @@
         "description": "Optional. A unique token for the solution. This is used to ensure resource names are unique for global resources. Defaults to a 5-character substring of the unique string generated from the subscription ID, resource group name, and solution name."
       }
     },
-    "gptModelDeploymentType": {
+    "deploymentType": {
       "type": "string",
       "defaultValue": "GlobalStandard",
       "allowedValues": [
@@ -243,7 +243,7 @@
           "version": "[variables('gptModelDeployment').deploymentVersion]"
         },
         "sku": {
-          "name": "[parameters('gptModelDeploymentType')]",
+          "name": "[parameters('deploymentType')]",
           "capacity": "[variables('gptModelDeployment').deploymentCapacity]"
         }
       },
@@ -255,7 +255,7 @@
           "version": "[variables('embeddingModelDeployment').deploymentVersion]"
         },
         "sku": {
-          "name": "[parameters('gptModelDeploymentType')]",
+          "name": "[parameters('deploymentType')]",
           "capacity": "[variables('embeddingModelDeployment').deploymentCapacity]"
         }
       }
