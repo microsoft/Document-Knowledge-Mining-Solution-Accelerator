@@ -960,8 +960,7 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.
     dnsPrefix: 'aks-${solutionSuffix}'
     enableRBAC: true
     disableLocalAccounts: false
-    // WAF aligned configuration for Private Networking
-    publicNetworkAccess: enablePrivateNetworking ? 'SecuredByPerimeter' : 'Enabled'
+    publicNetworkAccess: 'Enabled'
     managedIdentities: {
       systemAssigned: true
     }
