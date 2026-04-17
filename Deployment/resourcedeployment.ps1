@@ -964,8 +964,16 @@ try {
     # Front App
     ###############################
     
-    $frontAppConfigServicePlaceholders = @{
-        '{{ backend-fqdn }}' = "https://${fqdn}/backend"
+    # WAF mode: use relative path so browser calls go through frontend Vite proxy (backend stays private)
+    # Standard mode: use absolute URL (backend is on public ingress)
+    if ($isWafDeployment) {
+        $frontAppConfigServicePlaceholders = @{
+            '{{ backend-fqdn }}' = "/backend"
+        }
+    } else {
+        $frontAppConfigServicePlaceholders = @{
+            '{{ backend-fqdn }}' = "https://${fqdn}/backend"
+        }
     }
     
     ## Load and update the front app configuration template
@@ -1025,19 +1033,17 @@ try {
     kubectl apply -f "./kubernetes/deploy.service.yaml" -n $kubenamespace
 
     # 5.5. Deploy Ingress Controller in Kubernetes for external access
-    kubectl apply -f "./kubernetes/deploy.ingress.yaml" -n $kubenamespace
-
-    # 5.6. WAF Mode: Deploy internal backend ingress and network policies
     if ($isWafDeployment) {
-        Write-Host "Applying WAF-specific configurations: internal backend ingress and network policies..." -ForegroundColor Cyan
+        # WAF mode: use WAF ingress (no public backend route — backend traffic proxied through frontend)
+        Write-Host "Applying WAF-specific ingress (backend is private, proxied through frontend)..." -ForegroundColor Cyan
+        kubectl apply -f "./kubernetes/deploy.ingress.yaml" -n $kubenamespace
 
-        # Deploy internal ingress for backend services (no public exposure)
-        kubectl apply -f "./kubernetes/deploy.ingress.internal.yaml.template" -n $kubenamespace
-
-        # Deploy network policies to restrict backend traffic to internal only
+        # Deploy network policies to restrict direct backend pod access
         kubectl apply -f "./kubernetes/deploy.networkpolicy.yaml.template" -n $kubenamespace
-
-        Write-Host "WAF network policies and internal backend ingress applied successfully." -ForegroundColor Green
+        Write-Host "WAF ingress and network policies applied successfully." -ForegroundColor Green
+    } else {
+        # Standard mode: public ingress with backend route
+        kubectl apply -f "./kubernetes/deploy.ingress.yaml" -n $kubenamespace
     }
 
     # #####################################################################

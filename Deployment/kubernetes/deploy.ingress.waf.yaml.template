@@ -24,13 +24,6 @@ spec:
   - host: {{ fqdn }}
     http:
       paths:
-      - path: /backend(/|$)(.*)
-        pathType: Prefix
-        backend:
-          service:
-            name: aiservice-service
-            port:
-              number: 9001
       - path: /()(.*)
         pathType: Prefix
         backend:

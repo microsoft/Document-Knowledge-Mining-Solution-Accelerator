@@ -150,19 +150,24 @@ azd env set AZURE_ENV_VM_ADMIN_PASSWORD <your-password>
 
 When deploying with WAF configuration (`enablePrivateNetworking: true`), the following security measures are applied:
 
-- **AKS Private Cluster**: The AKS API server is configured as a private cluster, not accessible from the public internet.
-- **Frontend-Only Public Ingress**: Only the frontend web application is exposed publicly through the WAF/Application Gateway ingress. The `/backend` API route is removed from the public ingress.
-- **Internal Backend Ingress**: Backend API services (`aiservice`, `kernelmemory`) are accessible only through an internal ingress that is not exposed to the public internet.
-- **Kubernetes Network Policies**: NetworkPolicy resources enforce traffic isolation — backend pods only accept traffic from frontend pods and the internal ingress controller within the cluster.
+- **Public Ingress (Frontend Only)**: Only the frontend web application is exposed through the public nginx ingress. **No backend API routes are on the public ingress** — backend services are completely private.
+- **Server-Side Proxy**: The frontend container (Vite) acts as a reverse proxy. Browser API calls to `/backend` are intercepted by the frontend server and forwarded internally to the backend service via ClusterIP DNS — the request never leaves the cluster.
+- **ClusterIP Services**: Backend services (`aiservice`, `kernelmemory`) use ClusterIP services for internal communication only. They have no public IP or external load balancer.
+- **Kubernetes Network Policies**: NetworkPolicy resources enforce traffic isolation — backend pods only accept traffic from frontend pods and the ingress controller within the cluster.
 - **Private Endpoints**: All Azure PaaS services (Cosmos DB, Storage, Search, OpenAI, etc.) use private endpoints and are not accessible from the public internet.
 
 **Traffic Flow (WAF mode):**
 ```
-Internet → WAF/Application Gateway → Public Ingress → Frontend (frontapp)
-                                                         ↓ (internal)
-                                                   Backend (aiservice) → Azure PaaS (via Private Endpoints)
-                                                         ↓ (internal)
-                                                   Kernel Memory Service → Azure PaaS (via Private Endpoints)
+Internet → Public Ingress (nginx) → / → Frontend (frontapp:5900)
+                                              ↓
+                                    Vite Proxy (server-side)
+                                    /backend → aiservice (ClusterIP, internal only)
+                                    /api     → aiservice (ClusterIP, internal only)
+                                                   ↓
+                                             Azure PaaS (via Private Endpoints)
+
+Backend API from internet → NOT ROUTABLE (no public ingress route exists)
+Direct access to backend pods → BLOCKED by NetworkPolicy
 ```
 
 ### 3.4 Advanced Configuration (Optional)
