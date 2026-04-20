@@ -997,6 +997,11 @@ try {
     # 5.3. Deploy Deployment in Kubernetes
     kubectl apply -f "./kubernetes/deploy.deployment.yaml" -n $kubenamespace
 
+    # 5.3.1. Restart deployments to pick up new container images
+    kubectl rollout restart deployment/aiservice-deployment -n $kubenamespace
+    kubectl rollout restart deployment/kernelmemory-deployment -n $kubenamespace
+    kubectl rollout restart deployment/frontapp-deployment -n $kubenamespace
+
     # 5.4. Deploy Services in Kubernetes
     kubectl apply -f "./kubernetes/deploy.service.yaml" -n $kubenamespace
 

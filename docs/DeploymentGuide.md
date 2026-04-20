@@ -463,3 +463,42 @@ Now that your deployment is complete and tested, explore these resources to enha
 - 🐛 **Issues:** Check [Troubleshooting Guide](./TroubleShootingSteps.md)
 - 💬 **Support:** Review [Support Guidelines](../SUPPORT.md)
 - 🔧 **Development:** See [Contributing Guide](../CONTRIBUTING.md)
+
+## Advanced: Deploy Local Changes
+
+If you have made local code changes (e.g., UI updates, backend modifications) and want to deploy them to your existing Azure environment, follow these steps. This process rebuilds the container images from your local source code and redeploys them to the Kubernetes cluster.
+
+### Prerequisites
+
+- An existing deployment completed via [Step 4](#step-4-deploy-the-solution) and [Step 5](#step-5-post-deployment-configuration)
+- **Docker Desktop** must be running on your machine
+- **PowerShell 7.0+** installed
+
+### Steps
+
+1. **Ensure Docker Desktop is running** — The script builds container images locally, so Docker must be active before proceeding.
+
+2. **Open PowerShell and navigate to the Deployment folder:**
+   ```shell
+   cd .\Deployment\
+   ```
+
+3. **Run the deployment script:**
+
+   ```shell
+   .\resourcedeployment.ps1
+   ```
+
+   **If you deployed using custom templates or `az deployment group` commands:**
+   ```shell
+   .\resourcedeployment.ps1 -ResourceGroupName "<your-resource-group-name>"
+   ```
+
+4. **Wait for the script to complete** — The script will:
+   - Build new Docker images from your local code
+   - Push the updated images to Azure Container Registry
+   - Restart the Kubernetes deployments to pull the latest images
+
+5. **Verify your changes** — Access the application URL and confirm your local changes are reflected.
+
+> **⚠️ Note:** The script rebuilds and redeploys **all** container images (frontend, backend, and kernel memory). Expect the process to take approximately 20-30 minutes depending on your network speed.
