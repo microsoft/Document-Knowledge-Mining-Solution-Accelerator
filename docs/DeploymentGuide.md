@@ -122,6 +122,8 @@ Review the configuration options below. You can customize any settings that meet
 | **Use Case** | POCs, development, testing | Production workloads |
 | **Framework** | Basic configuration | [Well-Architected Framework](https://learn.microsoft.com/en-us/azure/well-architected/) |
 | **Features** | Core functionality | Reliability, security, operational excellence |
+| **Backend API Access** | Public (accessible via ingress) | Private (internal-only, not exposed to public internet) |
+| **Network Policies** | None | Kubernetes NetworkPolicy isolates backend from external traffic |
 
 **To use production configuration:**
 
@@ -145,7 +147,33 @@ azd env set AZURE_ENV_VM_ADMIN_USERNAME <your-username>
 azd env set AZURE_ENV_VM_ADMIN_PASSWORD <your-password>
 ```
 
-### 3.3 Advanced Configuration (Optional)
+### 3.3 WAF Deployment: Network Architecture (Production Only)
+
+> **Note:** This section describes the networking architecture automatically configured when using the **Production** deployment type (WAF mode).
+
+When deploying with WAF configuration (`enablePrivateNetworking: true`), the following security measures are applied:
+
+- **Public Ingress (Frontend Only)**: Only the frontend web application is exposed through the public nginx ingress. **No backend API routes are on the public ingress** — backend services are completely private.
+- **Server-Side Proxy**: The frontend container (Vite) acts as a reverse proxy. Browser API calls to `/backend` are intercepted by the frontend server and forwarded internally to the backend service via ClusterIP DNS — the request never leaves the cluster.
+- **ClusterIP Services**: Backend services (`aiservice`, `kernelmemory`) use ClusterIP services for internal communication only. They have no public IP or external load balancer.
+- **Kubernetes Network Policies**: NetworkPolicy resources enforce traffic isolation — backend pods only accept traffic from frontend pods and the ingress controller within the cluster.
+- **Private Endpoints**: All Azure PaaS services (Cosmos DB, Storage, Search, OpenAI, etc.) use private endpoints and are not accessible from the public internet.
+
+**Traffic Flow (WAF mode):**
+```
+Internet → Public Ingress (nginx) → / → Frontend (frontapp:5900)
+                                              ↓
+                                    Vite Proxy (server-side)
+                                    /backend → aiservice (ClusterIP, internal only)
+                                    /api     → aiservice (ClusterIP, internal only)
+                                                   ↓
+                                             Azure PaaS (via Private Endpoints)
+
+Backend API from internet → NOT ROUTABLE (no public ingress route exists)
+Direct access to backend pods → BLOCKED by NetworkPolicy
+```
+
+### 3.4 Advanced Configuration (Optional)
 
 <details>
 <summary><b>Configurable Parameters</b></summary>

@@ -551,6 +551,16 @@ try {
 
     Write-Host "Validation Completed" -ForegroundColor Green
 
+    # Detect WAF deployment mode from resource group tag (set by Bicep: Type = 'WAF' | 'Non-WAF')
+    $isWafDeployment = $false
+    $rgDeploymentType = az group show --name $deploymentResult.ResourceGroupName --query "tags.Type" -o tsv 2>$null
+    if ($rgDeploymentType -eq "WAF") {
+        $isWafDeployment = $true
+        Write-Host "WAF deployment mode detected. Backend APIs will be restricted to private access." -ForegroundColor Cyan
+    } else {
+        Write-Host "Non-WAF deployment mode detected. Standard deployment will be used." -ForegroundColor Yellow
+    }
+
     # Step 1-3 Loading aiservice's configution file template then replace the placeholder with the actual values
     # Define the placeholders and their corresponding values for AI service configuration
     
@@ -729,13 +739,20 @@ try {
     #  6-1. Get Az Network resource Name with the public IP address
     Write-Host "Assign DNS Name to the public IP address" -ForegroundColor Green
     $publicIpName=$(az network public-ip list --resource-group $aksResourceGroupName --query "[?ipAddress=='$externalIP'].name" --output tsv)
-    #  6-2. Generate Unique backend API fqdn Name - esgdocanalysis-3 digit random number with padding 0
-    $dnsName = "kmgs$($(Get-Random -Minimum 0 -Maximum 9999).ToString("D4"))"
-    
-    # Validate if the AKS Resource Group Name, Public IP name and DNS Name are provided
+    #  6-2. Reuse existing DNS name if already assigned, otherwise generate a new one
+    # Validate if the AKS Resource Group Name and Public IP name are provided
     ValidateVariableIsNullOrEmpty -variableValue $aksResourceGroupName -variableName "AKS Resource Group name"  
     
     ValidateVariableIsNullOrEmpty -variableValue $publicIpName -variableName "Public IP name" 
+
+    $existingDnsName = az network public-ip show --resource-group $aksResourceGroupName --name $publicIpName --query "dnsSettings.domainNameLabel" --output tsv 2>$null
+    if ($existingDnsName) {
+        Write-Host "Reusing existing DNS name: $existingDnsName" -ForegroundColor Yellow
+        $dnsName = $existingDnsName
+    } else {
+        $dnsName = "kmgs$($(Get-Random -Minimum 0 -Maximum 9999).ToString("D4"))"
+        Write-Host "Generated new DNS name: $dnsName" -ForegroundColor Green
+    }
 
     ValidateVariableIsNullOrEmpty -variableValue $dnsName -variableName "DNS Name" 
     
@@ -834,12 +851,19 @@ try {
     $certManagerTemplate | Set-Content -Path $certManagerPath -Force
 
     # 3.2 Update deploy.ingress.yaml.template file and save as deploy.ingress.yaml
-    # webfront / apibackend
+    # In WAF mode, use the WAF-specific template that only exposes the frontend publicly
+    # In non-WAF mode, use the standard template that exposes both frontend and backend
     $ingressPlaceholders = @{
         '{{ fqdn }}' = $fqdn
     }
 
-    $ingressTemplate = Get-Content -Path .\kubernetes\deploy.ingress.yaml.template -Raw
+    if ($isWafDeployment) {
+        $ingressTemplatePath = ".\kubernetes\deploy.ingress.waf.yaml.template"
+        Write-Host "Using WAF ingress template (frontend-only public access)." -ForegroundColor Cyan
+    } else {
+        $ingressTemplatePath = ".\kubernetes\deploy.ingress.yaml.template"
+    }
+    $ingressTemplate = Get-Content -Path $ingressTemplatePath -Raw
     $ingress = Invoke-PlaceholdersReplacement $ingressTemplate $ingressPlaceholders
     $ingressPath = ".\kubernetes\deploy.ingress.yaml"
     $ingress | Set-Content -Path $ingressPath -Force
@@ -940,8 +964,16 @@ try {
     # Front App
     ###############################
     
-    $frontAppConfigServicePlaceholders = @{
-        '{{ backend-fqdn }}' = "https://${fqdn}/backend"
+    # WAF mode: use relative path so browser calls go through frontend Vite proxy (backend stays private)
+    # Standard mode: use absolute URL (backend is on public ingress)
+    if ($isWafDeployment) {
+        $frontAppConfigServicePlaceholders = @{
+            '{{ backend-fqdn }}' = "/backend"
+        }
+    } else {
+        $frontAppConfigServicePlaceholders = @{
+            '{{ backend-fqdn }}' = "https://${fqdn}/backend"
+        }
     }
     
     ## Load and update the front app configuration template
@@ -1006,7 +1038,18 @@ try {
     kubectl apply -f "./kubernetes/deploy.service.yaml" -n $kubenamespace
 
     # 5.5. Deploy Ingress Controller in Kubernetes for external access
-    kubectl apply -f "./kubernetes/deploy.ingress.yaml" -n $kubenamespace
+    if ($isWafDeployment) {
+        # WAF mode: use WAF ingress (no public backend route — backend traffic proxied through frontend)
+        Write-Host "Applying WAF-specific ingress (backend is private, proxied through frontend)..." -ForegroundColor Cyan
+        kubectl apply -f "./kubernetes/deploy.ingress.yaml" -n $kubenamespace
+
+        # Deploy network policies to restrict direct backend pod access
+        kubectl apply -f "./kubernetes/deploy.networkpolicy.yaml.template" -n $kubenamespace
+        Write-Host "WAF ingress and network policies applied successfully." -ForegroundColor Green
+    } else {
+        # Standard mode: public ingress with backend route
+        kubectl apply -f "./kubernetes/deploy.ingress.yaml" -n $kubenamespace
+    }
 
     # #####################################################################
     # # Data file uploading
