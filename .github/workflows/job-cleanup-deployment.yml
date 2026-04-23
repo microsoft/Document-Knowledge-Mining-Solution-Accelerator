@@ -24,7 +24,7 @@ on:
         description: 'Azure Location'
         required: true
         type: string
-      AZURE_ENV_OPENAI_LOCATION:
+      AZURE_ENV_AI_SERVICE_LOCATION:
         description: 'Azure OpenAI Location'
         required: true
         type: string
@@ -45,7 +45,7 @@ jobs:
     env:
       RESOURCE_GROUP_NAME: ${{ inputs.RESOURCE_GROUP_NAME }}
       AZURE_LOCATION: ${{ inputs.AZURE_LOCATION }}
-      AZURE_ENV_OPENAI_LOCATION: ${{ inputs.AZURE_ENV_OPENAI_LOCATION }}
+      AZURE_ENV_AI_SERVICE_LOCATION: ${{ inputs.AZURE_ENV_AI_SERVICE_LOCATION }}
       ENV_NAME: ${{ inputs.ENV_NAME }}
       IMAGE_TAG: ${{ inputs.IMAGE_TAG }}
     steps:
@@ -57,7 +57,7 @@ jobs:
           INPUT_EXISTING_WEBAPP_URL: ${{ inputs.existing_webapp_url }}
           INPUT_RESOURCE_GROUP_NAME: ${{ inputs.RESOURCE_GROUP_NAME }}
           INPUT_AZURE_LOCATION: ${{ inputs.AZURE_LOCATION }}
-          INPUT_AZURE_ENV_OPENAI_LOCATION: ${{ inputs.AZURE_ENV_OPENAI_LOCATION }}
+          INPUT_AZURE_ENV_AI_SERVICE_LOCATION: ${{ inputs.AZURE_ENV_AI_SERVICE_LOCATION }}
           INPUT_ENV_NAME: ${{ inputs.ENV_NAME }}
           INPUT_IMAGE_TAG: ${{ inputs.IMAGE_TAG }}
         run: |
@@ -108,12 +108,12 @@ jobs:
             VALIDATION_FAILED=true
           fi
 
-          # Validate AZURE_ENV_OPENAI_LOCATION (required - Azure region format)
-          if [[ -z "$INPUT_AZURE_ENV_OPENAI_LOCATION" ]]; then
-            echo "❌ ERROR: AZURE_ENV_OPENAI_LOCATION is required but was not provided"
+          # Validate AZURE_ENV_AI_SERVICE_LOCATION (required - Azure region format)
+          if [[ -z "$INPUT_AZURE_ENV_AI_SERVICE_LOCATION" ]]; then
+            echo "❌ ERROR: AZURE_ENV_AI_SERVICE_LOCATION is required but was not provided"
             VALIDATION_FAILED=true
-          elif [[ ! "$INPUT_AZURE_ENV_OPENAI_LOCATION" =~ ^[a-z0-9]+$ ]]; then
-            echo "❌ ERROR: AZURE_ENV_OPENAI_LOCATION '$INPUT_AZURE_ENV_OPENAI_LOCATION' is invalid. Must contain only lowercase letters and numbers"
+          elif [[ ! "$INPUT_AZURE_ENV_AI_SERVICE_LOCATION" =~ ^[a-z0-9]+$ ]]; then
+            echo "❌ ERROR: AZURE_ENV_AI_SERVICE_LOCATION '$INPUT_AZURE_ENV_AI_SERVICE_LOCATION' is invalid. Must contain only lowercase letters and numbers"
             VALIDATION_FAILED=true
           fi
 

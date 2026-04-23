@@ -29,7 +29,7 @@ var solutionSuffix= toLower(trim(replace(
   'Standard'
   'GlobalStandard'
 ])
-param gptModelDeploymentType string = 'GlobalStandard'
+param deploymentType string = 'GlobalStandard'
 
 @minLength(1)
 @description('Optional. Name of the GPT model to deploy:')
@@ -43,7 +43,7 @@ param gptModelVersion string = '2025-04-14'
 
 @description('Optional. Capacity of the GPT model deployment:')
 @minValue(10)
-param gptModelCapacity int = 100
+param gptDeploymentCapacity int = 100
 
 @minLength(1)
 @description('Optional. Name of the Text Embedding model to deploy:')
@@ -57,7 +57,7 @@ param embeddingModelVersion string = '1'
 
 @description('Optional. Capacity of the Text Embedding model deployment:')
 @minValue(10)
-param embeddingModelCapacity int = 100
+param embeddingDeploymentCapacity int = 100
 
 @description('Optional: Existing Log Analytics Workspace Resource ID')
 param existingLogAnalyticsWorkspaceId string = ''
@@ -101,7 +101,7 @@ param enableScalability bool = false
   }
 })
 @description('Required. Location for AI Foundry deployment. This is the location where the AI Foundry resources will be deployed.')
-param aiDeploymentsLocation string
+param azureAiServiceLocation string
 
 @description('Optional created by user name')
 param createdBy string = contains(deployer(), 'userPrincipalName')? split(deployer().userPrincipalName, '@')[0]: deployer().objectId
@@ -164,14 +164,14 @@ var gptModelDeployment = {
   modelName: gptModelName
   deploymentName: gptModelName
   deploymentVersion: gptModelVersion
-  deploymentCapacity: gptModelCapacity
+  deploymentCapacity: gptDeploymentCapacity
 }
 
 var embeddingModelDeployment = {
   modelName: embeddingModelName
   deploymentName: embeddingModelName
   deploymentVersion: embeddingModelVersion
-  deploymentCapacity: embeddingModelCapacity
+  deploymentCapacity: embeddingDeploymentCapacity
 }
 
 var openAiDeployments = [
@@ -183,7 +183,7 @@ var openAiDeployments = [
       version: gptModelDeployment.deploymentVersion
     }
     sku: {
-      name: gptModelDeploymentType
+      name: deploymentType
       capacity: gptModelDeployment.deploymentCapacity
     }
   }
@@ -195,7 +195,7 @@ var openAiDeployments = [
       version: embeddingModelDeployment.deploymentVersion
     }
     sku: {
-      name: gptModelDeploymentType
+      name: deploymentType
       capacity: embeddingModelDeployment.deploymentCapacity
     }
   }
@@ -814,7 +814,7 @@ module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
   name: take('avm.res.cognitiveservices.account.${openAiAccountName}', 64)
   params: {
     name: openAiAccountName
-    location: aiDeploymentsLocation
+    location: azureAiServiceLocation
     kind: 'OpenAI'
     sku: 'S0'
     tags: tags
