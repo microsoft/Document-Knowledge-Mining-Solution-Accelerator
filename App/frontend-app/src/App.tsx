@@ -1,9 +1,7 @@
 import React, { Suspense } from "react";
 import { BrowserRouter } from "react-router-dom";
 import { Layout } from "./components/layout/layout";
-import { Telemetry } from "./utils/telemetry/telemetry";
-import { AppInsightsContext, ReactPlugin } from "@microsoft/applicationinsights-react-js";
-import { FluentProvider, makeStyles, webLightTheme } from "@fluentui/react-components";
+import { FluentProvider, webLightTheme } from "@fluentui/react-components";
 import resolveConfig from "tailwindcss/resolveConfig";
 import TailwindConfig from "../tailwind.config";
 import AppRoutes from "./AppRoutes";

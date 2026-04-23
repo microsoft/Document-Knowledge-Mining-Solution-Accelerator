@@ -1,9 +1,7 @@
 import { Button, Checkbox, Text } from "@fluentui/react-components";
 import { Tag, TagGroup } from "@fluentui/react-tags-preview";
-import { Document48Regular } from "@fluentui/react-icons";
 import { Icon } from "@fluentui/react";
 import { getFileTypeIconProps } from "@fluentui/react-file-type-icons";
-import { KMBrandRamp } from "../../styles";
 import { DocDialog } from "../documentViewer/documentViewer";
 import { useEffect, useState } from "react";
 import { Document, Tokens } from "../../api/apiTypes/documentResults";
@@ -30,8 +28,6 @@ export function SearchResultCard({
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [checked, setChecked] = useState(false);
 
-    const documentToken: string | undefined = tokens?.["documents"];
-
     let fileType = "";
     switch (document.mimeType) {
         case "application/pdf":
@@ -50,13 +46,9 @@ export function SearchResultCard({
             fileType = "default";
     }
 
-    const chatWithSearchResult = (document: Document) => {
-        chatWithDocument(document);
-    };
-
-    const handleDownload = async (documentUrl: string, fileName: string) => {
-        await downloadFile(documentUrl, fileName);
-    };
+    // const handleDownload = async (documentUrl: string, fileName: string) => {
+    //     await downloadFile(documentUrl, fileName);
+    // };
 
     const handleDialogClose = () => {
         setIsDialogOpen(false);

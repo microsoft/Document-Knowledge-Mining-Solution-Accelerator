@@ -1,10 +1,4 @@
 import React, { useCallback, useContext, useEffect, useRef, useState } from "react";
-import {
-    Dropdown,
-    makeStyles,
-    Option,
-    shorthands,
-  } from "@fluentui/react-components";
 
 import { Text } from "@fluentui/react-components";
 import { DateFilterDropdownMenu } from '../../components/datePicker/dateFilterDropdownMenu'; // Adjust the path accordingly
@@ -18,30 +12,19 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { SearchBox, SearchBoxHandle } from "../../components/searchBox/searchBox";
 import { SearchResultCard } from "../../components/searchResult/searchResultCard";
 import { SearchFacet, SearchRequest } from "../../types/searchRequest";
-import { HeaderMenuTabs } from "../../components/headerMenu/HeaderMenuTabs";
 import { DocumentResults } from "../../api/apiTypes/documentResults";
 import { searchDocuments } from "../../api/documentsService";
 import { FilterButton } from "../../components/filter/showHideFilterButton";
 import { Filter } from "../../components/filter/filter";
 import { Pagination } from "../../components/pagination/pagination";
-import { OrderBy } from "../../components/orderBy/orderBy";
 import { Document } from "../../api/apiTypes/documentResults";
 import { AppContext } from "../../AppContext";
-import { SidecarCopilot } from "../../components/sidecarCopilot/sidecar";
 //import styles from "../../components/sidecarCopilot/sidecar.module.scss";
 import homeStyles from "./home.module.scss";
 import { ChatRoom } from "../../components/chat/chatRoom";
 import UploadFilesButton from "../../components/uploadButton/uploadButton";
 import { PanelResizer } from "../../components/resizer/panelResizer";
 import { ChevronLeft24Regular, ChevronRight24Regular } from "@fluentui/react-icons";
-
-const useStyles = makeStyles({
-    dropdown: {
-      width: '10%',  // Full width by default
-      maxWidth: '200px',  // Set a maximum width if needed
-    },
-  });
-
 
 interface HomeProps {
     isSearchResultsPage?: boolean;
@@ -74,22 +57,21 @@ export function Home({ isSearchResultsPage }: HomeProps) {
         "(document/embedded eq false and document/translated eq false)"
     );
     const [selectedKeywords, setSelectedKeywords] = useState<{ [key: string]: string[] }>({});
-    const [scoringProfile, setScoringProfile] = useState("");
+    const [scoringProfile] = useState("");
     const [data, setData] = useState<DocumentResults>();
     const [coverImages, setCoverImages] = useState<(string | undefined)[]>([]);
     const [selectedDocuments, setSelectedDocuments] = useState<Document[]>(
         location.state ? location.state.selectedDocuments : []
     );
-    const [rowCount, setRowCount] = useState(20);
+    const [rowCount] = useState(20);
     const [currentPage, setCurrentPage] = useState(1);
     const [inOrderBy, setInOrderBy] = useState<string>("");
     const [searchResultDocuments, setSearchResultDocuments] = useState<Document[]>([]);
 
     const [selectedDocument, setSelectedDocument] = useState<Document[]>([]);
     const { query, setQuery, filters: persistedFilters, setFilters: setPersistedFilters } = useContext(AppContext);
-    const [selectedDateFilter, setSelectedDateFilter] = useState(null);
+    const [selectedDateFilter] = useState(null);
     // const tempFilter = new SearchFacet
-    const inheritedTokens = location.state ? location.state.tokens : null;
     const chatWithSingleSelectedDocument: Document[] = location.state ? location.state.chatWithSingleSelectedDocument : [];
     
     //Search box behaviour
@@ -185,7 +167,7 @@ export function Home({ isSearchResultsPage }: HomeProps) {
         if(!q){
             setClearSearchBox(false)
         }
-    },[searchParams])
+    },[searchParams]);
     
     function onSearchChanged(searchValue: string): void {
        if (searchValue) {
@@ -210,7 +192,6 @@ export function Home({ isSearchResultsPage }: HomeProps) {
     }
 
     //Pagination
-    const totalPages = data?.totalPages
     const siblingCount = 2;
 
     const handlePageChange = (page: number) => {
@@ -269,11 +250,6 @@ export function Home({ isSearchResultsPage }: HomeProps) {
     const handleSortSelected = (sort: string) => {
         setInOrderBy(sort);
     };
-
-    //Sidecar Copilot
-    function toggleCopilot(): void {
-        setShowCopilot(!showCopilot);
-    }
 
     const headerMenuTabsRef = useRef<HTMLDivElement>(null);
 
@@ -427,7 +403,6 @@ export function Home({ isSearchResultsPage }: HomeProps) {
 
         if (data && data.documents) {
             const fetchCoverImages = async () => {
-                const docIds: string[] = data.documents.map((x) => x.documentId);
 
                 // const coverImages: (string | undefined)[] = await Promise.all(
                 //     docIds.map(async (docId) => {
@@ -446,18 +421,18 @@ export function Home({ isSearchResultsPage }: HomeProps) {
         }
     }, [data]);
 
-    const formatDateTime = (dateTimeString: string) => {
-        const date = new Date(dateTimeString);
-        return new Intl.DateTimeFormat("en-US", {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-            hour12: true,
-        }).format(date);
-    };
+    // const formatDateTime = (dateTimeString: string) => {
+    //     const date = new Date(dateTimeString);
+    //     return new Intl.DateTimeFormat("en-US", {
+    //         year: "numeric",
+    //         month: "2-digit",
+    //         day: "2-digit",
+    //         hour: "2-digit",
+    //         minute: "2-digit",
+    //         second: "2-digit",
+    //         hour12: true,
+    //     }).format(date);
+    // };
     const chatContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -512,7 +487,6 @@ export function Home({ isSearchResultsPage }: HomeProps) {
             const isAlreadySelected = prevDocuments.some(
                 (prevDocument) => prevDocument.documentId === document.documentId
             );
-            
 
             if (isAlreadySelected) {
                 return prevDocuments.filter((prevDocument) => prevDocument.documentId !== document.documentId);
@@ -521,7 +495,7 @@ export function Home({ isSearchResultsPage }: HomeProps) {
             }
         });
     };
-    const styles = useStyles();
+
     return (
         <>
             <Header className="flex flex-col justify-between bg-contain bg-right-bottom bg-no-repeat" size="small">

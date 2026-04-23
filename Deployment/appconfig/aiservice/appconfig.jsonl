@@ -18,6 +18,7 @@
 	"Application:Services:PersistentStorage:CosmosMongo:ConnectionString": "{cosmosmongo-connection-string}",
 	"Application:Services:AzureAISearch:APIKey" : "{azureaisearch-apikey}",
 	"Application:Services:AzureAISearch:Endpoint" : "{azureaisearch-endpoint}",
+	"ApplicationInsights:ConnectionString": "{applicationinsights-connectionstring}",
 	"KernelMemory:Services:AzureAIDocIntel:APIKey": "{azureaidocintel-apikey}",
 	"KernelMemory:Services:AzureAIDocIntel:Endpoint": "{azureaidocintel-endpoint}",
 	"KernelMemory:Services:AzureAISearch:APIKey": "{azureaisearch-apikey}",
