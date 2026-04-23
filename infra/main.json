@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.41.2.15936",
-      "templateHash": "6583267612258850267"
+      "templateHash": "16553610843537523675"
     }
   },
   "parameters": {
@@ -43834,8 +43834,8 @@
         }
       },
       "dependsOn": [
-        "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').storageBlob)]",
         "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').storageQueue)]",
+        "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').storageBlob)]",
         "userAssignedIdentity",
         "virtualNetwork"
       ]
@@ -52387,8 +52387,9 @@
           "securityProfile": {
             "value": {
               "defender": {
+                "logAnalyticsWorkspaceResourceId": "[if(parameters('enableMonitoring'), if(variables('useExistingLogAnalytics'), parameters('existingLogAnalyticsWorkspaceId'), reference('logAnalyticsWorkspace').outputs.resourceId.value), null())]",
                 "securityMonitoring": {
-                  "enabled": "[parameters('enablePrivateNetworking')]"
+                  "enabled": "[and(parameters('enablePrivateNetworking'), parameters('enableMonitoring'))]"
                 }
               }
             }
