@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.41.2.15936",
-      "templateHash": "8497325920363941480"
+      "templateHash": "6583267612258850267"
     }
   },
   "parameters": {
@@ -34,7 +34,7 @@
         "description": "Optional. A unique token for the solution. This is used to ensure resource names are unique for global resources. Defaults to a 5-character substring of the unique string generated from the subscription ID, resource group name, and solution name."
       }
     },
-    "gptModelDeploymentType": {
+    "deploymentType": {
       "type": "string",
       "defaultValue": "GlobalStandard",
       "allowedValues": [
@@ -64,7 +64,7 @@
         "description": "Optional. Version of the GPT model to deploy."
       }
     },
-    "gptModelCapacity": {
+    "gptDeploymentCapacity": {
       "type": "int",
       "defaultValue": 100,
       "minValue": 10,
@@ -90,7 +90,7 @@
         "description": "Optional. Version of the Text Embedding model to deploy."
       }
     },
-    "embeddingModelCapacity": {
+    "embeddingDeploymentCapacity": {
       "type": "int",
       "defaultValue": 100,
       "minValue": 10,
@@ -171,7 +171,7 @@
         "description": "Optional. Enable scalability for applicable resources, aligned with the Well Architected Framework recommendations. Defaults to false."
       }
     },
-    "aiDeploymentsLocation": {
+    "azureAiServiceLocation": {
       "type": "string",
       "metadata": {
         "azd": {
@@ -226,13 +226,13 @@
       "modelName": "[parameters('gptModelName')]",
       "deploymentName": "[parameters('gptModelName')]",
       "deploymentVersion": "[parameters('gptModelVersion')]",
-      "deploymentCapacity": "[parameters('gptModelCapacity')]"
+      "deploymentCapacity": "[parameters('gptDeploymentCapacity')]"
     },
     "embeddingModelDeployment": {
       "modelName": "[parameters('embeddingModelName')]",
       "deploymentName": "[parameters('embeddingModelName')]",
       "deploymentVersion": "[parameters('embeddingModelVersion')]",
-      "deploymentCapacity": "[parameters('embeddingModelCapacity')]"
+      "deploymentCapacity": "[parameters('embeddingDeploymentCapacity')]"
     },
     "openAiDeployments": [
       {
@@ -243,7 +243,7 @@
           "version": "[variables('gptModelDeployment').deploymentVersion]"
         },
         "sku": {
-          "name": "[parameters('gptModelDeploymentType')]",
+          "name": "[parameters('deploymentType')]",
           "capacity": "[variables('gptModelDeployment').deploymentCapacity]"
         }
       },
@@ -255,7 +255,7 @@
           "version": "[variables('embeddingModelDeployment').deploymentVersion]"
         },
         "sku": {
-          "name": "[parameters('gptModelDeploymentType')]",
+          "name": "[parameters('deploymentType')]",
           "capacity": "[variables('embeddingModelDeployment').deploymentCapacity]"
         }
       }
@@ -45951,7 +45951,7 @@
             "value": "[variables('openAiAccountName')]"
           },
           "location": {
-            "value": "[parameters('aiDeploymentsLocation')]"
+            "value": "[parameters('azureAiServiceLocation')]"
           },
           "kind": {
             "value": "OpenAI"

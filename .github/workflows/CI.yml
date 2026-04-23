@@ -205,13 +205,13 @@ jobs:
             --parameters \
                 solutionName="${{ env.SOLUTION_PREFIX }}" \
                 location=${{ env.AZURE_LOCATION }} \
-                aiDeploymentsLocation=${{ env.AZURE_LOCATION }} \
-                gptModelDeploymentType="GlobalStandard" \
+                azureAiServiceLocation=${{ env.AZURE_LOCATION }} \
+                deploymentType="GlobalStandard" \
                 gptModelName="gpt-4.1-mini" \
-                gptModelCapacity=${{ env.GPT_CAPACITY }} \
+                gptDeploymentCapacity=${{ env.GPT_CAPACITY }} \
                 gptModelVersion="2025-04-14" \
                 embeddingModelName="text-embedding-3-large" \
-                embeddingModelCapacity=${{ env.TEXT_EMBEDDING_CAPACITY }} \
+                embeddingDeploymentCapacity=${{ env.TEXT_EMBEDDING_CAPACITY }} \
                 embeddingModelVersion="1" \
                 enablePrivateNetworking=false \
                 enableMonitoring=false \
