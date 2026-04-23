@@ -8,6 +8,8 @@ using System.Security.Authentication;
 using System.Text;
 using System.Threading.Tasks;
 using MongoDB.Driver;
+using MongoDB.Driver.Core.Configuration;
+using MongoDB.Driver.Linq;
 
 namespace Microsoft.GS.DPS.Storage.Components
 {
@@ -46,6 +48,7 @@ namespace Microsoft.GS.DPS.Storage.Components
 
                 settings.SslSettings =
                       new SslSettings() { EnabledSslProtocols = SslProtocols.Tls12 };
+                settings.LinqProvider = LinqProvider.V2;
 
                 return new MongoClient(settings);
 
