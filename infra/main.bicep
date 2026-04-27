@@ -994,7 +994,7 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.13.
     }
     securityProfile: {
       defender: {
-        logAnalyticsWorkspaceResourceId: enableMonitoring ? logAnalyticsWorkspaceResourceId : null
+        logAnalyticsWorkspaceResourceId: (enablePrivateNetworking && enableMonitoring) ? logAnalyticsWorkspaceResourceId : null
         securityMonitoring: {
           enabled: enablePrivateNetworking && enableMonitoring
         }
