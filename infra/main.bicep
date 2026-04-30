@@ -899,11 +899,11 @@ module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.14.2
       systemAssigned: true
     }
 
-    // Networking aligned to WAF
-    publicNetworkAccess: enablePrivateNetworking ? 'Disabled' : 'Enabled'
+    // Networking - public access always enabled for Document Intelligence
+    publicNetworkAccess: 'Enabled'
     networkAcls: {
       bypass: 'AzureServices'
-      defaultAction: enablePrivateNetworking ? 'Deny' : 'Allow'
+      defaultAction: 'Allow'
     }
 
     // Private Endpoint separated to dedicated module below
@@ -917,34 +917,6 @@ module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.14.2
         principalType: 'ServicePrincipal'
       }
     ]
-  }
-}
-
-module docIntelPrivateEndpoint 'br/public:avm/res/network/private-endpoint:0.12.0' = if (enablePrivateNetworking) {
-  name: take('pep-${docIntelAccountName}-deployment', 64)
-  params: {
-    name: 'pep-${docIntelAccountName}'
-    customNetworkInterfaceName: 'nic-${docIntelAccountName}'
-    location: solutionLocation
-    tags: tags
-    privateLinkServiceConnections: [
-      {
-        name: 'pep-${docIntelAccountName}-connection'
-        properties: {
-          privateLinkServiceId: documentIntelligence.outputs.resourceId
-          groupIds: ['account']
-        }
-      }
-    ]
-    privateDnsZoneGroup: {
-      privateDnsZoneGroupConfigs: [
-        {
-          name: 'docintel-dns-zone-cognitiveservices'
-          privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.cognitiveServices]!.outputs.resourceId
-        }
-      ]
-    }
-    subnetResourceId: virtualNetwork!.outputs.pepsSubnetResourceId
   }
 }
 
