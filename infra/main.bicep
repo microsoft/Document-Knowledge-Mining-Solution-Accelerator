@@ -920,34 +920,6 @@ module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.14.2
   }
 }
 
-module docIntelPrivateEndpoint 'br/public:avm/res/network/private-endpoint:0.12.0' = if (enablePrivateNetworking) {
-  name: take('pep-${docIntelAccountName}-deployment', 64)
-  params: {
-    name: 'pep-${docIntelAccountName}'
-    customNetworkInterfaceName: 'nic-${docIntelAccountName}'
-    location: solutionLocation
-    tags: tags
-    privateLinkServiceConnections: [
-      {
-        name: 'pep-${docIntelAccountName}-connection'
-        properties: {
-          privateLinkServiceId: documentIntelligence.outputs.resourceId
-          groupIds: ['account']
-        }
-      }
-    ]
-    privateDnsZoneGroup: {
-      privateDnsZoneGroupConfigs: [
-        {
-          name: 'docintel-dns-zone-cognitiveservices'
-          privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.cognitiveServices]!.outputs.resourceId
-        }
-      ]
-    }
-    subnetResourceId: virtualNetwork!.outputs.pepsSubnetResourceId
-  }
-}
-
 // ========== Azure Kubernetes Service (AKS) ========== //
 module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.13.0' = {
   name: take('avm.res.container-service.managed-cluster.aks-${solutionSuffix}', 64)
