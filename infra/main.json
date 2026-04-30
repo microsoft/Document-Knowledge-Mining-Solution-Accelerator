@@ -5,8 +5,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.41.2.15936",
-      "templateHash": "9394084247445195271"
+      "version": "0.42.1.51946",
+      "templateHash": "3490206552617292915"
     }
   },
   "parameters": {
@@ -268,8 +268,7 @@
       "[format('privatelink.blob.{0}', environment().suffixes.storage)]",
       "[format('privatelink.queue.{0}', environment().suffixes.storage)]",
       "privatelink.api.azureml.ms",
-      "privatelink.azconfig.io",
-      "privatelink.azurecr.io"
+      "privatelink.azconfig.io"
     ],
     "dnsZoneIndex": {
       "cosmosDB": 0,
@@ -279,8 +278,7 @@
       "storageBlob": 4,
       "storageQueue": 5,
       "aiFoundry": 6,
-      "appConfig": 7,
-      "containerRegistry": 8
+      "appConfig": 7
     },
     "logAnalyticsWorkspaceResourceName": "[format('log-{0}', variables('solutionSuffix'))]",
     "bastionHostName": "[format('bas-{0}', variables('solutionSuffix'))]",
@@ -3764,7 +3762,9 @@
           "replication": "[if(parameters('enableRedundancy'), createObject('value', createObject('enabled', true(), 'location', variables('replicaLocation'))), createObject('value', null()))]",
           "publicNetworkAccessForIngestion": "[if(parameters('enablePrivateNetworking'), createObject('value', 'Disabled'), createObject('value', 'Enabled'))]",
           "publicNetworkAccessForQuery": "[if(parameters('enablePrivateNetworking'), createObject('value', 'Disabled'), createObject('value', 'Enabled'))]",
-          "dataSources": "[if(parameters('enablePrivateNetworking'), createObject('value', createArray(createObject('tags', parameters('tags'), 'eventLogName', 'Application', 'eventTypes', createArray(createObject('eventType', 'Error'), createObject('eventType', 'Warning'), createObject('eventType', 'Information')), 'kind', 'WindowsEvent', 'name', 'applicationEvent'), createObject('counterName', '% Processor Time', 'instanceName', '*', 'intervalSeconds', 60, 'kind', 'WindowsPerformanceCounter', 'name', 'windowsPerfCounter1', 'objectName', 'Processor'), createObject('kind', 'IISLogs', 'name', 'sampleIISLog1', 'state', 'OnPremiseEnabled'))), createObject('value', null()))]"
+          "dataSources": {
+            "value": null
+          }
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -6885,8 +6885,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.41.2.15936",
-              "templateHash": "5508350408852137780"
+              "version": "0.42.1.51946",
+              "templateHash": "8313786962324208054"
             }
           },
           "definitions": {
@@ -7154,20 +7154,6 @@
                     "name": "nsg-peps",
                     "securityRules": []
                   }
-                },
-                {
-                  "name": "deployment-scripts",
-                  "addressPrefixes": [
-                    "10.0.4.0/24"
-                  ],
-                  "networkSecurityGroup": {
-                    "name": "nsg-deployment-scripts",
-                    "securityRules": []
-                  },
-                  "delegation": "Microsoft.ContainerInstance/containerGroups",
-                  "serviceEndpoints": [
-                    "Microsoft.Storage"
-                  ]
                 },
                 {
                   "name": "jumpbox",
@@ -9704,10 +9690,6 @@
             "bastionSubnetResourceId": {
               "type": "string",
               "value": "[if(contains(map(parameters('subnets'), lambda('subnet', lambdaVariables('subnet').name)), 'AzureBastionSubnet'), reference('virtualNetwork').outputs.subnetResourceIds.value[indexOf(map(parameters('subnets'), lambda('subnet', lambdaVariables('subnet').name)), 'AzureBastionSubnet')], '')]"
-            },
-            "deploymentScriptsSubnetResourceId": {
-              "type": "string",
-              "value": "[if(contains(map(parameters('subnets'), lambda('subnet', lambdaVariables('subnet').name)), 'deployment-scripts'), reference('virtualNetwork').outputs.subnetResourceIds.value[indexOf(map(parameters('subnets'), lambda('subnet', lambdaVariables('subnet').name)), 'deployment-scripts')], '')]"
             },
             "jumpboxSubnetResourceId": {
               "type": "string",
@@ -21098,8 +21080,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.41.2.15936",
-              "templateHash": "16957454238390913514"
+              "version": "0.42.1.51946",
+              "templateHash": "6741936050304509173"
             },
             "name": "Container Registry Module"
           },
@@ -35719,7 +35701,7 @@
               "deleteRetentionPolicyEnabled": false,
               "containers": [
                 {
-                  "name": "data",
+                  "name": "smemory",
                   "publicAccess": "None"
                 }
               ]
@@ -49125,8 +49107,8 @@
       },
       "dependsOn": [
         "avmOpenAi",
-        "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').cognitiveServices)]",
         "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').openAI)]",
+        "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').cognitiveServices)]",
         "virtualNetwork"
       ]
     },
