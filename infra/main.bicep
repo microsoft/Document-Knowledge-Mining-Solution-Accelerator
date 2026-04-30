@@ -899,11 +899,11 @@ module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.14.2
       systemAssigned: true
     }
 
-    // Networking aligned to WAF
-    publicNetworkAccess: enablePrivateNetworking ? 'Disabled' : 'Enabled'
+    // Networking - public access always enabled for Document Intelligence
+    publicNetworkAccess: 'Enabled'
     networkAcls: {
       bypass: 'AzureServices'
-      defaultAction: enablePrivateNetworking ? 'Deny' : 'Allow'
+      defaultAction: 'Allow'
     }
 
     // Private Endpoint separated to dedicated module below
