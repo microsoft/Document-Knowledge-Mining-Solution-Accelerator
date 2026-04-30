@@ -18,7 +18,7 @@ By default this template will use the environment name as the prefix to prevent 
 | `AZURE_ENV_EMBEDDING_MODEL_NAME`          | string | `text-embedding-3-large`          | Sets the name of the embedding model to use.                                                |
 | `AZURE_ENV_EMBEDDING_MODEL_VERSION`            | string | `1`          | Version of the embedding model to be used for deployment.                                                   |
 | `AZURE_ENV_EMBEDDING_DEPLOYMENT_CAPACITY`            | int | `100`         | Capacity for embedding model deployment (in thousands of tokens per minute).                                                   |
-| `AZURE_ENV_EXISTING_LOG_ANALYTICS_WORKSPACE_RID` | string  | `''` (empty) | Set this if you want to reuse an existing Log Analytics Workspace instead of creating a new one. [Guide to get your Existing Workspace ID](/docs/re-use-log-analytics.md)     |
+| `AZURE_ENV_EXISTING_LOG_ANALYTICS_WORKSPACE_RID` | string  | `''` (empty) | Set this if you want to reuse an existing Log Analytics Workspace instead of creating a new one. [Guide to get your Existing Workspace ID](./re-use-log-analytics.md)     |
 | `AZURE_ENV_VM_ADMIN_USERNAME`  | string | `take(newGuid(), 20)`               | The administrator username for the virtual machine.         |
 | `AZURE_ENV_VM_ADMIN_PASSWORD`  | string | `newGuid()`               | The administrator password for the virtual machine.         |
 | `AZURE_ENV_VM_SIZE`            | string | `Standard_D2s_v5`         | The size of the Jumpbox Virtual Machine. Only applicable when `enablePrivateNetworking` is true.  |
