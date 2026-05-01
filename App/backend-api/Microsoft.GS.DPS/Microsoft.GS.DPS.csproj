@@ -8,23 +8,23 @@
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="16.1.1" />
-    <PackageReference Include="Azure.Identity" Version="1.20.0" />
+    <PackageReference Include="Azure.Identity" Version="1.21.0" />
     <PackageReference Include="Azure.Search.Documents" Version="11.7.0" />
     <PackageReference Include="FluentValidation" Version="12.1.1" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageReference Include="Microsoft.KernelMemory.WebClient" Version="0.98.250508.3" />
-    <PackageReference Include="Microsoft.Maui.Graphics" Version="10.0.51" />
-    <PackageReference Include="Microsoft.Maui.Graphics.Skia" Version="10.0.51" />
-    <PackageReference Include="MongoDB.Driver" Version="3.7.1" />
+    <PackageReference Include="Microsoft.Maui.Graphics" Version="10.0.60" />
+    <PackageReference Include="Microsoft.Maui.Graphics.Skia" Version="10.0.60" />
+    <PackageReference Include="MongoDB.Driver" Version="3.8.0" />
     <PackageReference Include="MongoDB.Driver.Core" Version="2.30.0" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.119.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.5" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.5" />
-  <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.5" />
-  <PackageReference Include="MongoDB.Bson" Version="3.7.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.7" />
+  <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.7" />
+  <PackageReference Include="MongoDB.Bson" Version="3.8.0" />
     <None Update="Prompts\Chat_SystemPrompt - Copy %282%29.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
