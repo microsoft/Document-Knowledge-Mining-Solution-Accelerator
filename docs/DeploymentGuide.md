@@ -82,6 +82,7 @@ Ensure you have access to an [Azure subscription](https://azure.microsoft.com/fr
 - [PowerShell 7.0+](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell) 
 - [Azure CLI (az) 1.18.0+](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-windows?tabs=azure-cli)
 - [Azure Developer CLI (azd) 1.18.0+](https://aka.ms/install-azd)
+- [Bicep CLI 0.33.0+](https://learn.microsoft.com/azure/azure-resource-manager/bicep/install)
 - [Helm](https://helm.sh/docs/intro/install/)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 - [Git](https://git-scm.com/downloads)
