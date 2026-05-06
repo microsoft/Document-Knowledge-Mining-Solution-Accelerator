@@ -29,7 +29,7 @@ var solutionSuffix= toLower(trim(replace(
   'Standard'
   'GlobalStandard'
 ])
-param gptModelDeploymentType string = 'GlobalStandard'
+param deploymentType string = 'GlobalStandard'
 
 @minLength(1)
 @description('Optional. Name of the GPT model to deploy:')
@@ -43,7 +43,7 @@ param gptModelVersion string = '2025-04-14'
 
 @description('Optional. Capacity of the GPT model deployment:')
 @minValue(10)
-param gptModelCapacity int = 100
+param gptDeploymentCapacity int = 100
 
 @minLength(1)
 @description('Optional. Name of the Text Embedding model to deploy:')
@@ -57,7 +57,7 @@ param embeddingModelVersion string = '1'
 
 @description('Optional. Capacity of the Text Embedding model deployment:')
 @minValue(10)
-param embeddingModelCapacity int = 100
+param embeddingDeploymentCapacity int = 100
 
 @description('Optional: Existing Log Analytics Workspace Resource ID')
 param existingLogAnalyticsWorkspaceId string = ''
@@ -101,13 +101,13 @@ param enableScalability bool = false
   }
 })
 @description('Required. Location for AI Foundry deployment. This is the location where the AI Foundry resources will be deployed.')
-param aiDeploymentsLocation string
+param azureAiServiceLocation string
 
 @description('Optional created by user name')
 param createdBy string = contains(deployer(), 'userPrincipalName')? split(deployer().userPrincipalName, '@')[0]: deployer().objectId
 
 // ========== Resource Group Tag ========== //
-resource resourceGroupTags 'Microsoft.Resources/tags@2021-04-01' = {
+resource resourceGroupTags 'Microsoft.Resources/tags@2023-07-01' = {
   name: 'default'
   properties: {
     tags: {
@@ -164,14 +164,14 @@ var gptModelDeployment = {
   modelName: gptModelName
   deploymentName: gptModelName
   deploymentVersion: gptModelVersion
-  deploymentCapacity: gptModelCapacity
+  deploymentCapacity: gptDeploymentCapacity
 }
 
 var embeddingModelDeployment = {
   modelName: embeddingModelName
   deploymentName: embeddingModelName
   deploymentVersion: embeddingModelVersion
-  deploymentCapacity: embeddingModelCapacity
+  deploymentCapacity: embeddingDeploymentCapacity
 }
 
 var openAiDeployments = [
@@ -183,7 +183,7 @@ var openAiDeployments = [
       version: gptModelDeployment.deploymentVersion
     }
     sku: {
-      name: gptModelDeploymentType
+      name: deploymentType
       capacity: gptModelDeployment.deploymentCapacity
     }
   }
@@ -195,7 +195,7 @@ var openAiDeployments = [
       version: embeddingModelDeployment.deploymentVersion
     }
     sku: {
-      name: gptModelDeploymentType
+      name: deploymentType
       capacity: embeddingModelDeployment.deploymentCapacity
     }
   }
@@ -226,7 +226,7 @@ var dnsZoneIndex = {
   containerRegistry: 8
 }
 @batchSize(5)
-module avmPrivateDnsZones 'br/public:avm/res/network/private-dns-zone:0.7.1' = [
+module avmPrivateDnsZones 'br/public:avm/res/network/private-dns-zone:0.8.1' = [
   for (zone, i) in privateDnsZones: if (enablePrivateNetworking) {
     name: 'dns-zone-${i}'
     params: {
@@ -242,7 +242,7 @@ module avmPrivateDnsZones 'br/public:avm/res/network/private-dns-zone:0.7.1' = [
 // WAF best practices for Log Analytics: https://learn.microsoft.com/en-us/azure/well-architected/service-guides/azure-log-analytics
 // WAF PSRules for Log Analytics: https://azure.github.io/PSRule.Rules.Azure/en/rules/resource/#azure-monitor-logs
 var logAnalyticsWorkspaceResourceName = 'log-${solutionSuffix}'
-module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0.12.0' = if (enableMonitoring && !useExistingLogAnalytics) {
+module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0.15.0' = if (enableMonitoring && !useExistingLogAnalytics) {
   name: take('avm.res.operational-insights.workspace.${logAnalyticsWorkspaceResourceName}', 64)
   params: {
     name: logAnalyticsWorkspaceResourceName
@@ -254,7 +254,7 @@ module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0
     features: { enableLogAccessUsingOnlyResourcePermissions: true }
     diagnosticSettings: [{ useThisWorkspace: true }]
     // WAF aligned configuration for Redundancy
-    dailyQuotaGb: enableRedundancy ? 10 : null //WAF recommendation: 10 GB per day is a good starting point for most workloads
+    dailyQuotaGb: enableRedundancy ? '10' : null //WAF recommendation: 10 GB per day is a good starting point for most workloads
     replication: enableRedundancy
       ? {
           enabled: true
@@ -317,7 +317,7 @@ module virtualNetwork 'modules/virtualNetwork.bicep' = if (enablePrivateNetworki
 }
 // Azure Bastion Host
 var bastionHostName = 'bas-${solutionSuffix}'
-module bastionHost 'br/public:avm/res/network/bastion-host:0.6.1' = if (enablePrivateNetworking) {
+module bastionHost 'br/public:avm/res/network/bastion-host:0.8.2' = if (enablePrivateNetworking) {
   name: take('avm.res.network.bastion-host.${bastionHostName}', 64)
   params: {
     name: bastionHostName
@@ -340,14 +340,14 @@ module bastionHost 'br/public:avm/res/network/bastion-host:0.6.1' = if (enablePr
     enableTelemetry: enableTelemetry
     publicIPAddressObject: {
       name: 'pip-${bastionHostName}'
-      zones: []
+      availabilityZones: []
     }
   }
 }
 
 // Jumpbox Virtual Machine
 var jumpboxVmName = take('vm-jumpbox-${solutionSuffix}', 15)
-module jumpboxVM 'br/public:avm/res/compute/virtual-machine:0.15.0' = if (enablePrivateNetworking) {
+module jumpboxVM 'br/public:avm/res/compute/virtual-machine:0.22.0' = if (enablePrivateNetworking) {
   name: take('avm.res.compute.virtual-machine.${jumpboxVmName}', 64)
   params: {
     name: take(jumpboxVmName, 15) // Shorten VM name to 15 characters to avoid Azure limits
@@ -356,7 +356,7 @@ module jumpboxVM 'br/public:avm/res/compute/virtual-machine:0.15.0' = if (enable
     adminUsername: vmAdminUsername ?? 'JumpboxAdminUser'
     adminPassword: vmAdminPassword ?? 'JumpboxAdminP@ssw0rd1234!'
     tags: tags
-    zone: 0
+    availabilityZone: -1
     imageReference: {
       offer: 'WindowsServer'
       publisher: 'MicrosoftWindowsServer'
@@ -406,7 +406,7 @@ module jumpboxVM 'br/public:avm/res/compute/virtual-machine:0.15.0' = if (enable
 // ========== User Assigned Identity ========== //
 // WAF best practices for identity and access management: https://learn.microsoft.com/en-us/azure/well-architected/security/identity-access
 var userAssignedIdentityResourceName = 'id-${solutionSuffix}'
-module userAssignedIdentity 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.1' = {
+module userAssignedIdentity 'br/public:avm/res/managed-identity/user-assigned-identity:0.5.0' = {
   name: take('avm.res.managed-identity.user-assigned-identity.${userAssignedIdentityResourceName}', 64)
   params: {
     name: userAssignedIdentityResourceName
@@ -437,7 +437,7 @@ module avmContainerRegistry './modules/container-registry.bicep' = {
 }
 
 // ========== Cosmos Database for Mongo DB ========== //
-module avmCosmosDB 'br/public:avm/res/document-db/database-account:0.15.0' = {
+module avmCosmosDB 'br/public:avm/res/document-db/database-account:0.19.0' = {
   name: take('avm.res.cosmos-${solutionSuffix}', 64)
   params: {
     name: 'cosmos-${solutionSuffix}'
@@ -486,7 +486,7 @@ module avmCosmosDB 'br/public:avm/res/document-db/database-account:0.15.0' = {
         'EnableMongo'
       ]
       //capabilitiesToAdd: enableRedundancy ? null : ['EnableServerless']
-      automaticFailover: enableRedundancy ? true : false
+      enableAutomaticFailover: enableRedundancy ? true : false
       failoverLocations: enableRedundancy
       ? [
           {
@@ -512,7 +512,7 @@ module avmCosmosDB 'br/public:avm/res/document-db/database-account:0.15.0' = {
 
 // ========== App Configuration store ========== //
 var appConfigName = 'appcs-${solutionSuffix}'
-module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6.3' = {
+module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.9.2' = {
   name: take('avm.res.app-configuration.configuration-store.${appConfigName}', 64)
   params: {
     name: appConfigName
@@ -637,7 +637,7 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
   }
 }
 
-module avmAppConfigUpdated 'br/public:avm/res/app-configuration/configuration-store:0.6.3' = if(enablePrivateNetworking) {
+module avmAppConfigUpdated 'br/public:avm/res/app-configuration/configuration-store:0.9.2' = if(enablePrivateNetworking) {
   name: take('avm.res.app-configuration.configuration-store-update.${appConfigName}', 64)
   params: {
     name: appConfigName
@@ -674,7 +674,7 @@ module avmAppConfigUpdated 'br/public:avm/res/app-configuration/configuration-st
 
 // ========== Storage account module ========== //
 var storageAccountName = 'st${solutionSuffix}'
-module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = {
+module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.32.0' = {
   name: take('avm.res.storage.storage-account.${storageAccountName}', 64)
   params : {
     name: storageAccountName
@@ -748,7 +748,7 @@ module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = {
 
 // ========== AI Foundry: AI Search ========== //
 var aiSearchName = 'srch-${solutionSuffix}'
-resource avmSearchSearchServices 'Microsoft.Search/searchServices@2024-06-01-preview' = {
+resource avmSearchSearchServices 'Microsoft.Search/searchServices@2025-05-01' = {
   name: aiSearchName
   location: solutionLocation
   sku: {
@@ -757,7 +757,7 @@ resource avmSearchSearchServices 'Microsoft.Search/searchServices@2024-06-01-pre
 }
 
 // Separate module for Search Service to enable managed identity and update other properties, as this reduces deployment time
-module avmSearchSearchServicesUpdate 'br/public:avm/res/search/search-service:0.11.1' = {
+module avmSearchSearchServicesUpdate 'br/public:avm/res/search/search-service:0.12.0' = {
   name: take('avm.res.search-services-identity.${aiSearchName}', 64)
   params: {
     name: aiSearchName
@@ -810,11 +810,11 @@ module avmSearchSearchServicesUpdate 'br/public:avm/res/search/search-service:0.
 
 // ========== Cognitive Services - OpenAI module ========== //
 var openAiAccountName = 'oai-${solutionSuffix}'
-module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
+module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.14.2' = {
   name: take('avm.res.cognitiveservices.account.${openAiAccountName}', 64)
   params: {
     name: openAiAccountName
-    location: aiDeploymentsLocation
+    location: azureAiServiceLocation
     kind: 'OpenAI'
     sku: 'S0'
     tags: tags
@@ -852,7 +852,7 @@ module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
   }
 }
 
-module openaiPrivateEndpoint 'br/public:avm/res/network/private-endpoint:0.8.1' = if (enablePrivateNetworking) {
+module openaiPrivateEndpoint 'br/public:avm/res/network/private-endpoint:0.12.0' = if (enablePrivateNetworking) {
   name: take('pep-${openAiAccountName}-deployment', 64)
   params: {
     name: 'pep-${openAiAccountName}'
@@ -886,7 +886,7 @@ module openaiPrivateEndpoint 'br/public:avm/res/network/private-endpoint:0.8.1' 
 
 // ========== Cognitive Services - Document Intellignece module ========== //
 var docIntelAccountName = 'di-${solutionSuffix}'
-module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.13.2' = {
+module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.14.2' = {
   name: take('avm.res.cognitiveservices.account.${docIntelAccountName}', 64)
   params: {
     name: docIntelAccountName
@@ -899,11 +899,11 @@ module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.13.2
       systemAssigned: true
     }
 
-    // Networking aligned to WAF
-    publicNetworkAccess: enablePrivateNetworking ? 'Disabled' : 'Enabled'
+    // Networking - public access always enabled for Document Intelligence
+    publicNetworkAccess: 'Enabled'
     networkAcls: {
       bypass: 'AzureServices'
-      defaultAction: enablePrivateNetworking ? 'Deny' : 'Allow'
+      defaultAction: 'Allow'
     }
 
     // Private Endpoint separated to dedicated module below
@@ -920,36 +920,8 @@ module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.13.2
   }
 }
 
-module docIntelPrivateEndpoint 'br/public:avm/res/network/private-endpoint:0.8.1' = if (enablePrivateNetworking) {
-  name: take('pep-${docIntelAccountName}-deployment', 64)
-  params: {
-    name: 'pep-${docIntelAccountName}'
-    customNetworkInterfaceName: 'nic-${docIntelAccountName}'
-    location: solutionLocation
-    tags: tags
-    privateLinkServiceConnections: [
-      {
-        name: 'pep-${docIntelAccountName}-connection'
-        properties: {
-          privateLinkServiceId: documentIntelligence.outputs.resourceId
-          groupIds: ['account']
-        }
-      }
-    ]
-    privateDnsZoneGroup: {
-      privateDnsZoneGroupConfigs: [
-        {
-          name: 'docintel-dns-zone-cognitiveservices'
-          privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.cognitiveServices]!.outputs.resourceId
-        }
-      ]
-    }
-    subnetResourceId: virtualNetwork!.outputs.pepsSubnetResourceId
-  }
-}
-
 // ========== Azure Kubernetes Service (AKS) ========== //
-module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.1' = {
+module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.13.0' = {
   name: take('avm.res.container-service.managed-cluster.aks-${solutionSuffix}', 64)
   params: {
     name: 'aks-${solutionSuffix}'
@@ -966,7 +938,9 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.
     }
     serviceCidr: '10.20.0.0/16'
     dnsServiceIP: '10.20.0.10'
-    enablePrivateCluster: false
+    apiServerAccessProfile: {
+      enablePrivateCluster: false
+    }
     primaryAgentPoolProfiles: [
       {
         name: 'agentpool'
@@ -986,9 +960,18 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.
          vnetSubnetResourceId: enablePrivateNetworking ? virtualNetwork!.outputs.webSubnetResourceId : null
       }
     ]
-    autoNodeOsUpgradeProfileUpgradeChannel: 'Unmanaged'
-    autoUpgradeProfileUpgradeChannel: 'stable'
-    enableAzureDefender: enablePrivateNetworking
+    autoUpgradeProfile: {
+      upgradeChannel: 'stable'
+      nodeOSUpgradeChannel: 'Unmanaged'
+    }
+    securityProfile: {
+      defender: {
+        logAnalyticsWorkspaceResourceId: (enablePrivateNetworking && enableMonitoring) ? logAnalyticsWorkspaceResourceId : null
+        securityMonitoring: {
+          enabled: enablePrivateNetworking && enableMonitoring
+        }
+      }
+    }
     networkPlugin: 'azure'
     networkPolicy: 'azure'
     omsAgentEnabled: true
@@ -1032,7 +1015,7 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.
 
 // ========== Application Insights ========== //
 var applicationInsightsResourceName = 'appi-${solutionSuffix}'
-module applicationInsights 'br/public:avm/res/insights/component:0.6.0' = if (enableMonitoring) {
+module applicationInsights 'br/public:avm/res/insights/component:0.7.1' = if (enableMonitoring) {
   name: take('avm.res.insights.component.${applicationInsightsResourceName}', 64)
   params: {
     name: applicationInsightsResourceName
