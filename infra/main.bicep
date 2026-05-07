@@ -262,12 +262,40 @@ module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0
     // WAF aligned configuration for Private Networking
     publicNetworkAccessForIngestion: enablePrivateNetworking ? 'Disabled' : 'Enabled'
     publicNetworkAccessForQuery: enablePrivateNetworking ? 'Disabled' : 'Enabled'
-    // Note: Windows-specific data sources (WindowsEvent, WindowsPerformanceCounter, IISLogs)
-    // were previously configured here when enablePrivateNetworking=true. They have been removed
-    // because the application workload runs on Linux containers in AKS and does not use IIS.
-    // The only Windows resource is the Jumpbox VM, which does not have the Log Analytics agent
-    // (MMA/AMA) installed and would not emit data to these sources.
-    dataSources: null
+dataSources: enablePrivateNetworking
+      ? [
+          {
+            tags: tags
+            eventLogName: 'Application'
+            eventTypes: [
+              {
+                eventType: 'Error'
+              }
+              {
+                eventType: 'Warning'
+              }
+              {
+                eventType: 'Information'
+              }
+            ]
+            kind: 'WindowsEvent'
+            name: 'applicationEvent'
+          }
+          {
+            counterName: '% Processor Time'
+            instanceName: '*'
+            intervalSeconds: 60
+            kind: 'WindowsPerformanceCounter'
+            name: 'windowsPerfCounter1'
+            objectName: 'Processor'
+          }
+          {
+            kind: 'IISLogs'
+            name: 'sampleIISLog1'
+            state: 'OnPremiseEnabled'
+          }
+        ]
+      : null
   }
 }
 var logAnalyticsWorkspaceResourceId = useExistingLogAnalytics ? existingLogAnalyticsWorkspaceId : logAnalyticsWorkspace!.outputs.resourceId
