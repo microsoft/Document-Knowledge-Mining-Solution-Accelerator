@@ -262,7 +262,7 @@ module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0
     // WAF aligned configuration for Private Networking
     publicNetworkAccessForIngestion: enablePrivateNetworking ? 'Disabled' : 'Enabled'
     publicNetworkAccessForQuery: enablePrivateNetworking ? 'Disabled' : 'Enabled'
-dataSources: enablePrivateNetworking
+    dataSources: enablePrivateNetworking
       ? [
           {
             tags: tags
