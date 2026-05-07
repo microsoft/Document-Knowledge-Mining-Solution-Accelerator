@@ -84,16 +84,6 @@ param subnets subnetType[] = [
     }
   }
   {
-    name: 'deployment-scripts'
-    addressPrefixes: ['10.0.4.0/24']
-    networkSecurityGroup: {
-      name: 'nsg-deployment-scripts'
-      securityRules: []
-      }
-    delegation: 'Microsoft.ContainerInstance/containerGroups'
-    serviceEndpoints: ['Microsoft.Storage']
-  }
-  {
     name: 'jumpbox'
     addressPrefixes: ['10.0.12.0/23'] // /23 (10.0.12.0 - 10.0.13.255), 512 addresses
     networkSecurityGroup: {
@@ -306,7 +296,6 @@ output subnets subnetOutputType[] = [
 output webSubnetResourceId string = contains(map(subnets, subnet => subnet.name), 'web') ? virtualNetwork.outputs.subnetResourceIds[indexOf(map(subnets, subnet => subnet.name), 'web')] : ''
 output pepsSubnetResourceId string = contains(map(subnets, subnet => subnet.name), 'peps') ? virtualNetwork.outputs.subnetResourceIds[indexOf(map(subnets, subnet => subnet.name), 'peps')] : ''
 output bastionSubnetResourceId string = contains(map(subnets, subnet => subnet.name), 'AzureBastionSubnet') ? virtualNetwork.outputs.subnetResourceIds[indexOf(map(subnets, subnet => subnet.name), 'AzureBastionSubnet')] : ''
-output deploymentScriptsSubnetResourceId string = contains(map(subnets, subnet => subnet.name), 'deployment-scripts') ? virtualNetwork.outputs.subnetResourceIds[indexOf(map(subnets, subnet => subnet.name), 'deployment-scripts')] : ''
 output jumpboxSubnetResourceId string = contains(map(subnets, subnet => subnet.name), 'jumpbox') ? virtualNetwork.outputs.subnetResourceIds[indexOf(map(subnets, subnet => subnet.name), 'jumpbox')] : ''
 
 @export()
