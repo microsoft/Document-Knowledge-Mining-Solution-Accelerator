@@ -29,6 +29,7 @@ Returns exit-code 0 when no errors are found, 1 when errors are found (in --stri
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import re
 import sys
@@ -301,12 +302,7 @@ def discover_pairs(infra_dir: Path) -> list[tuple[Path, Path]]:
 
 def _html_escape(text: str) -> str:
     """Escape HTML special characters."""
-    return (
-        text.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace('"', "&quot;")
-    )
+    return html.escape(text, quote=True)
 
 
 def generate_html_report(
