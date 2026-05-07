@@ -211,7 +211,6 @@ var privateDnsZones = [
   'privatelink.queue.${environment().suffixes.storage}'
   'privatelink.api.azureml.ms'
   'privatelink.azconfig.io'
-  'privatelink.azurecr.io' // Todo: to be deleted
 ]
 // DNS Zone Index Constants
 var dnsZoneIndex = {
@@ -223,7 +222,6 @@ var dnsZoneIndex = {
   storageQueue: 5
   aiFoundry: 6
   appConfig: 7
-  containerRegistry: 8
 }
 @batchSize(5)
 module avmPrivateDnsZones 'br/public:avm/res/network/private-dns-zone:0.8.1' = [
@@ -737,8 +735,12 @@ module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.32.0' = {
       corsRules: []
       deleteRetentionPolicyEnabled: false
       containers: [
+        // 'smemory' is the blob container consumed at runtime by Kernel Memory
+        // (KernelMemory:Services:AzureBlobs:Container in App Configuration). Pre-creating it here
+        // aligns infrastructure-as-code with actual runtime usage. Replaces the legacy 'data'
+        // container, which had no consumer in application code.
         {
-          name: 'data'
+          name: 'smemory'
           publicAccess: 'None'
         }
       ]
