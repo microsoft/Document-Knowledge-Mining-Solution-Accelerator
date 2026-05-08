@@ -38,17 +38,18 @@ namespace Microsoft.GS.DPS.Storage.Components
         /// <returns></returns>
         public static string GetKey(Guid id, int numberofPartitions)
         {
-            using (var sha1 = SHA1.Create())
-            {
-                var hasedVal = sha1.ComputeHash(id.ToByteArray());
-                var intHashedVal = BitConverter.ToUInt32(hasedVal, 0);
+            // Use SHA256 instead of SHA1 (SHA1 flagged as broken/weak by SDL).
+            // This is a *non-cryptographic* use: only the first 4 bytes are consumed to derive a numeric
+            // partition key. Existing rows already in CosmosDB persist their original __partitionkey field,
+            // so changing the algorithm only affects partition assignment for newly-created entities.
+            var hashedVal = SHA256.HashData(id.ToByteArray());
+            var intHashedVal = BitConverter.ToUInt32(hashedVal, 0);
 
-                var range = numberofPartitions - 1;
-                var length = range.ToString().Length;
+            var range = numberofPartitions - 1;
+            var length = range.ToString().Length;
 
-                var key = (intHashedVal % numberofPartitions).ToString();
-                return key.PadLeft(length, '0');
-            }
+            var key = (intHashedVal % numberofPartitions).ToString();
+            return key.PadLeft(length, '0');
         }
     }
 }

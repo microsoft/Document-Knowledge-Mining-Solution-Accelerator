@@ -8,13 +8,24 @@ interface IPageNumberTabProps {
   documentUrl: string | undefined;
 }
 
+// Linear, non-backtracking replacement for /^(?:\/\/|[^/]+)*\// (avoids ReDoS).
+// Strips an optional "<scheme>//" prefix, then everything up to and including the next '/'.
+const stripUrlPrefix = (s: string): string => {
+  let i = 0;
+  if (s.startsWith("//")) {
+    i = 2;
+  }
+  const slash = s.indexOf("/", i);
+  return slash === -1 ? s : s.substring(slash + 1);
+};
+
 export const PageNumberTab: React.FC<IPageNumberTabProps> = ({ selectedTab, selectedPageMetadata, documentUrl}) => {
   if (selectedTab !== "Page Number" || !selectedPageMetadata || !documentUrl) {
     return null;
   }
 
   const imageUrl = window.ENV.STORAGE_URL +
-    selectedPageMetadata.document_url.replace(/^(?:\/\/|[^/]+)*\//, "") +
+    stripUrlPrefix(selectedPageMetadata.document_url) +
     "/" 
 
   return (

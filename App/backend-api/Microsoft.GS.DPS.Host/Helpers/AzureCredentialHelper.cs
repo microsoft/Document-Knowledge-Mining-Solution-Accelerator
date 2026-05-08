@@ -19,10 +19,23 @@ namespace Microsoft.GS.DPSHost.Helpers
         {
             var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
 
-            // CodeQL [SM05139] Okay use of DefaultAzureCredential as it is only used in development
-            return string.Equals(env, "Development", StringComparison.OrdinalIgnoreCase)
-                ? new DefaultAzureCredential() // CodeQL [SM05139] Okay use of DefaultAzureCredential as it is only used in development
-                : (clientId != null ? new ManagedIdentityCredential(clientId) : new ManagedIdentityCredential());
+            if (string.Equals(env, "Development", StringComparison.OrdinalIgnoreCase))
+            {
+                // Include ManagedIdentityCredential first so the same image works in AKS
+                // (where ASPNETCORE_ENVIRONMENT is Development to load appsettings.Development.json
+                // for the App Configuration endpoint) without falling back to dev-only credentials
+                // that don't exist inside the pod.
+                return new ChainedTokenCredential(
+                    clientId != null ? new ManagedIdentityCredential(clientId) : new ManagedIdentityCredential(),
+                    new VisualStudioCredential(),
+                    new AzureCliCredential(),
+                    new AzurePowerShellCredential(),
+                    new AzureDeveloperCliCredential());
+            }
+
+            return clientId != null
+                ? new ManagedIdentityCredential(clientId)
+                : new ManagedIdentityCredential();
         }
     }
 }

@@ -77,17 +77,18 @@ Chat.AddAPIs(app);
 UserInterface.AddAPIs(app);
 
 // Inject the HTTP request pipeline.
-//if (app.Environment.IsDevelopment())
-//{
-
-app.UseSwagger();
-app.UseSwaggerUI(options =>
+// Swagger UI is enabled only in the Development environment to avoid exposing the
+// API surface and schema in production (CodeQL SM04686). Set ASPNETCORE_ENVIRONMENT=Development
+// (or use launchSettings.json) to access /swagger locally.
+if (app.Environment.IsDevelopment())
 {
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "API V1");
-    options.RoutePrefix = string.Empty;
-});
-
-//}
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "API V1");
+        options.RoutePrefix = string.Empty;
+    });
+}
 
 app.UseCors("AllowAll");
 app.UseHttpsRedirection();
