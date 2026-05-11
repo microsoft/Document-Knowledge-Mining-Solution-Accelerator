@@ -9,10 +9,17 @@ interface IPageNumberTabProps {
 }
 
 // Linear, non-backtracking replacement for /^(?:\/\/|[^/]+)*\// (avoids ReDoS).
-// Strips an optional "<scheme>//" prefix, then everything up to and including the next '/'.
+// Strips an optional "<scheme>://" or leading "//", then everything up to and
+// including the next '/' (the host segment). Mirrors the prior regex behavior
+// for both absolute (https://host/path) and protocol-relative (//host/path) URLs.
 const stripUrlPrefix = (s: string): string => {
   let i = 0;
-  if (s.startsWith("//")) {
+  // Skip optional "<scheme>://" (e.g. https://, http://, ftp://). Anchored,
+  // bounded character class -> no catastrophic backtracking.
+  const schemeMatch = /^[a-z][a-z0-9+.-]*:\/\//i.exec(s);
+  if (schemeMatch) {
+    i = schemeMatch[0].length;
+  } else if (s.startsWith("//")) {
     i = 2;
   }
   const slash = s.indexOf("/", i);

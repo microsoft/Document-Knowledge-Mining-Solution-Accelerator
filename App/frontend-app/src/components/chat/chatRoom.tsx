@@ -574,13 +574,20 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
     );
 }
 function uuidv4() {
+    // Resolve crypto via globalThis so this works in browsers, web workers, and Node.
+    const c: Crypto | undefined =
+        typeof globalThis !== 'undefined' ? (globalThis as { crypto?: Crypto }).crypto : undefined;
+
     // Use the cryptographically secure native UUID generator when available.
-    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-        return crypto.randomUUID();
+    if (c && typeof c.randomUUID === 'function') {
+        return c.randomUUID();
     }
     // Fallback: derive UUIDv4 from cryptographically strong random bytes (no Math.random()).
+    if (!c || typeof c.getRandomValues !== 'function') {
+        throw new Error('uuidv4: a secure random number generator (crypto.getRandomValues) is not available in this environment.');
+    }
     const bytes = new Uint8Array(16);
-    crypto.getRandomValues(bytes);
+    c.getRandomValues(bytes);
     bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
     bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 10
     const hex = Array.from(bytes, b => b.toString(16).padStart(2, '0'));

@@ -30,7 +30,7 @@ namespace Microsoft.GS.DPS.Storage.Components
 
         /// <summary>
         /// Generate partitionkey for CosmosDB
-        /// using SHA1 hash with id, convert it to uint and divide with number of partitions
+        /// using SHA256 hash with id, convert it to uint and divide with number of partitions
         /// assigned default value as 9999 (9999 partition at this moment)
         /// </summary>
         /// <param name="id"></param>
