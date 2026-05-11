@@ -10,8 +10,10 @@ interface IPageNumberTabProps {
 
 // Linear, non-backtracking replacement for /^(?:\/\/|[^/]+)*\// (avoids ReDoS).
 // Strips an optional "<scheme>://" or leading "//", then everything up to and
-// including the next '/' (the host segment). Mirrors the prior regex behavior
-// for both absolute (https://host/path) and protocol-relative (//host/path) URLs.
+// including the next '/'. For absolute/protocol-relative URLs this removes the
+// host segment (for example, https://host/path -> path, //host/path -> path),
+// and for relative inputs it removes the first path segment (for example,
+// foo/bar -> bar), matching the prior regex behavior.
 const stripUrlPrefix = (s: string): string => {
   let i = 0;
   // Skip optional "<scheme>://" (e.g. https://, http://, ftp://). Anchored,
