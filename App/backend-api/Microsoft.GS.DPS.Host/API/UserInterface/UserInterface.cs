@@ -11,7 +11,7 @@ namespace Microsoft.GS.DPSHost.API
 {
     public class UserInterface
     {
-        private static Dictionary<string, byte[]> thumbnails = new Dictionary<string, byte[]>();
+        private static readonly Dictionary<string, byte[]> thumbnails = new Dictionary<string, byte[]>();
 
         // Static method to register APIs
         public static void AddAPIs(WebApplication app)

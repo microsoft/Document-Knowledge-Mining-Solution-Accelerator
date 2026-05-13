@@ -28,17 +28,17 @@ namespace Microsoft.GS.DPS.API
 
     public class ChatHost(MemoryWebClient kmClient, Kernel kernel, API.KernelMemory kernelMemory, ChatSessionRepository chatSessions)
     {
-        private MemoryWebClient _kmClient = kmClient;
-        private Kernel _kernel = kernel;
-        private API.KernelMemory _kernelMemory = kernelMemory;
-        private IChatCompletionService _chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
-        private ChatSessionRepository _chatSessions = chatSessions;
-        private static string s_systemPrompt;
-        private static string s_assistancePrompt;
-        private static string s_additionalPrompt;
+        private readonly MemoryWebClient _kmClient = kmClient;
+        private readonly Kernel _kernel = kernel;
+        private readonly API.KernelMemory _kernelMemory = kernelMemory;
+        private readonly IChatCompletionService _chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
+        private readonly ChatSessionRepository _chatSessions = chatSessions;
+        private static readonly string s_systemPrompt;
+        private static readonly string s_assistancePrompt;
+        private static readonly string s_additionalPrompt;
 
 
-        string sessionId = string.Empty;
+        readonly string sessionId = string.Empty;
         ChatHistory chatHistory = null;
         ChatSession chatSession = null;
 
@@ -49,7 +49,7 @@ namespace Microsoft.GS.DPS.API
             var assemblyLocation = Assembly.GetExecutingAssembly().Location;
             var assemblyDirectory = System.IO.Path.GetDirectoryName(assemblyLocation);
             // binding assembly directory with file path (Prompts/Chat_SystemPrompt.txt)
-            var systemPromptFilePath = System.IO.Path.Combine(assemblyDirectory, "Prompts", "Chat_SystemPrompt.txt");
+            var systemPromptFilePath = System.IO.Path.Join(assemblyDirectory, "Prompts", "Chat_SystemPrompt.txt");
             ChatHost.s_systemPrompt = System.IO.File.ReadAllText(systemPromptFilePath);
             ChatHost.s_assistancePrompt =
                     @"
@@ -201,6 +201,7 @@ namespace Microsoft.GS.DPS.API
                     Content = "Sorry, your request couldn't be processed as it may contain sensitive or restricted content. Please rephrase your query and try again."
                 };
             }
+            #pragma warning disable CA1031 // Top-level chat-completion safety net: convert any failure to a user-facing fallback response
             catch(Exception ex)
             {
                 Console.WriteLine($"unexpected error: {ex.Message}");
@@ -211,6 +212,7 @@ namespace Microsoft.GS.DPS.API
                     };
                 
             }
+            #pragma warning restore CA1031
             if (returnedChatMessageContent == null)
             {
                 returnedChatMessageContent = new ChatMessageContent

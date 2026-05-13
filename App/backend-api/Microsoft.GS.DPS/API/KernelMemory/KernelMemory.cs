@@ -23,11 +23,11 @@ namespace Microsoft.GS.DPS.API
 {
     public class KernelMemory
     {
-        private MemoryWebClient _kmClient;
-        private DocumentRepository _documentRepository;
-        private DataCacheManager _dataCache;
-        private TagUpdater _tagUpdator;
-        private static string keywordExtractorPrompt = "";
+        private readonly MemoryWebClient _kmClient;
+        private readonly DocumentRepository _documentRepository;
+        private readonly DataCacheManager _dataCache;
+        private readonly TagUpdater _tagUpdator;
+        private static readonly string keywordExtractorPrompt = "";
 
         static KernelMemory()
         {
@@ -35,7 +35,7 @@ namespace Microsoft.GS.DPS.API
             var assemblyLocation = Assembly.GetExecutingAssembly().Location;
             var assemblyDirectory = System.IO.Path.GetDirectoryName(assemblyLocation);
             // binding assembly directory with file path (Prompts/KeywordExtract_SystemPrompt.txt)
-            var systemPromptFilePath = System.IO.Path.Combine(assemblyDirectory, "Prompts", "KeywordExtract_SystemPrompt.txt");
+            var systemPromptFilePath = System.IO.Path.Join(assemblyDirectory, "Prompts", "KeywordExtract_SystemPrompt.txt");
             KernelMemory.keywordExtractorPrompt = System.IO.File.ReadAllText(systemPromptFilePath);
         }
 
@@ -139,7 +139,8 @@ namespace Microsoft.GS.DPS.API
             var summaryFile = await _kmClient.ExportFileAsync(documentId, summaryFileName);
             var summaryFileStream = await summaryFile.GetStreamAsync();
             // Read Stream to string
-            return await new StreamReader(summaryFileStream).ReadToEndAsync();
+            using var reader = new StreamReader(summaryFileStream);
+            return await reader.ReadToEndAsync();
         }
 
 
@@ -151,7 +152,11 @@ namespace Microsoft.GS.DPS.API
             var keywordFile = await _kmClient.ExportFileAsync(documentId, keywordFileName);
             var keywordFileStream = await keywordFile.GetStreamAsync();
             // Read Stream to string
-            string? keywordContent = await new StreamReader(keywordFileStream).ReadToEndAsync();
+            string? keywordContent;
+            using (var reader = new StreamReader(keywordFileStream))
+            {
+                keywordContent = await reader.ReadToEndAsync();
+            }
 
             if (string.IsNullOrEmpty(keywordContent))
             {
@@ -196,10 +201,12 @@ namespace Microsoft.GS.DPS.API
 
                     return keywordDict;
                 }
+                #pragma warning disable CA1031 // LLM keyword-extraction output may be malformed; fall back to empty result rather than failing the import
                 catch (Exception)
                 {
                     return new Dictionary<string, string>();
                 }
+                #pragma warning restore CA1031
             }
         }
 

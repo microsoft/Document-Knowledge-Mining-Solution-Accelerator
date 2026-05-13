@@ -50,7 +50,7 @@ namespace Microsoft.GS.DPS.Storage.Components
         {
             var collection = _database.GetCollection<TEntity>(typeof(TEntity).Name.ToLowerInvariant());
 
-            GenericSpecification<TEntity> genericSpecification = specification as GenericSpecification<TEntity>;
+            GenericSpecification<TEntity> genericSpecification = (GenericSpecification<TEntity>)specification;
 
             if (genericSpecification.OrderBy == null)
             {
