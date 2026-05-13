@@ -7,7 +7,7 @@ import { Document } from "../../api/apiTypes/documentResults";
 import { Button } from "@fluentui/react-components";
 import { ChatAdd24Regular } from "@fluentui/react-icons";
 import { Textarea } from "@fluentai/textarea";
-import { ChatApiResponse, ChatRequest, History } from "../../api/apiTypes/chatTypes";
+import { ChatApiResponse, ChatRequest } from "../../api/apiTypes/chatTypes";
 import { Completion } from "../../api/chatService";
 import styles from "./sidecar.module.scss";
 import { useTranslation } from "react-i18next";

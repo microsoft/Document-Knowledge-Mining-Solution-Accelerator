@@ -5,7 +5,6 @@ import { InputOnChangeData, Tooltip, useId } from "@fluentui/react-components";
 import { useDebouncedCallback } from "use-debounce";
 import { Search24Regular } from "@fluentui/react-icons";
 import "./searchInput.scss";
-import { UploadMultipleFiles } from "../../api/storageService";
 
 export interface SearchBoxHandle {
     setValue(decodedQuery: string): unknown;
