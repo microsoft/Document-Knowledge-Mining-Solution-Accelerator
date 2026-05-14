@@ -699,7 +699,7 @@ module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.32.0' = {
     }
     allowBlobPublicAccess: enablePrivateNetworking ? true : false
     publicNetworkAccess: enablePrivateNetworking ? 'Disabled' : 'Enabled'
-
+    requireInfrastructureEncryption: true
     privateEndpoints: enablePrivateNetworking
       ? [
           {
@@ -822,6 +822,7 @@ module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.14.2' = {
     tags: tags
     enableTelemetry: enableTelemetry
     customSubDomainName: openAiAccountName
+    disableLocalAuth: true
     managedIdentities: {
       systemAssigned: true
     }
@@ -897,6 +898,7 @@ module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.14.2
     tags: tags
     sku: 'S0'
     customSubDomainName: docIntelAccountName
+    disableLocalAuth: true
     managedIdentities: {
       systemAssigned: true
     }

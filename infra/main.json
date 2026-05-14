@@ -5,8 +5,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.43.1.21952",
-      "templateHash": "16210311400744160873"
+      "version": "0.43.8.12551",
+      "templateHash": "6450034536549346009"
     }
   },
   "parameters": {
@@ -6883,8 +6883,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.43.1.21952",
-              "templateHash": "10615902090169258577"
+              "version": "0.43.8.12551",
+              "templateHash": "14509138889694036561"
             }
           },
           "definitions": {
@@ -21078,8 +21078,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.43.1.21952",
-              "templateHash": "2328998422553242639"
+              "version": "0.43.8.12551",
+              "templateHash": "2224548258804916323"
             },
             "name": "Container Registry Module"
           },
@@ -35692,6 +35692,9 @@
           },
           "allowBlobPublicAccess": "[if(parameters('enablePrivateNetworking'), createObject('value', true()), createObject('value', false()))]",
           "publicNetworkAccess": "[if(parameters('enablePrivateNetworking'), createObject('value', 'Disabled'), createObject('value', 'Enabled'))]",
+          "requireInfrastructureEncryption": {
+            "value": true
+          },
           "privateEndpoints": "[if(parameters('enablePrivateNetworking'), createObject('value', createArray(createObject('name', format('pep-blob-{0}', variables('solutionSuffix')), 'privateDnsZoneGroup', createObject('privateDnsZoneGroupConfigs', createArray(createObject('name', 'storage-dns-zone-group-blob', 'privateDnsZoneResourceId', reference(format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').storageBlob)).outputs.resourceId.value))), 'subnetResourceId', reference('virtualNetwork').outputs.pepsSubnetResourceId.value, 'service', 'blob'), createObject('name', format('pep-queue-{0}', variables('solutionSuffix')), 'privateDnsZoneGroup', createObject('privateDnsZoneGroupConfigs', createArray(createObject('name', 'storage-dns-zone-group-queue', 'privateDnsZoneResourceId', reference(format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').storageQueue)).outputs.resourceId.value))), 'subnetResourceId', reference('virtualNetwork').outputs.pepsSubnetResourceId.value, 'service', 'queue'))), createObject('value', createArray()))]",
           "blobServices": {
             "value": {
@@ -43814,8 +43817,8 @@
         }
       },
       "dependsOn": [
-        "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').storageBlob)]",
         "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').storageQueue)]",
+        "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').storageBlob)]",
         "userAssignedIdentity",
         "virtualNetwork"
       ]
@@ -45947,6 +45950,9 @@
           },
           "customSubDomainName": {
             "value": "[variables('openAiAccountName')]"
+          },
+          "disableLocalAuth": {
+            "value": true
           },
           "managedIdentities": {
             "value": {
@@ -49105,8 +49111,8 @@
       },
       "dependsOn": [
         "avmOpenAi",
-        "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').openAI)]",
         "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').cognitiveServices)]",
+        "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').openAI)]",
         "virtualNetwork"
       ]
     },
@@ -49137,6 +49143,9 @@
           },
           "customSubDomainName": {
             "value": "[variables('docIntelAccountName')]"
+          },
+          "disableLocalAuth": {
+            "value": true
           },
           "managedIdentities": {
             "value": {
