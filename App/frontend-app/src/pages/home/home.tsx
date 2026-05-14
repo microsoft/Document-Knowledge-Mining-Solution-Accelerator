@@ -68,7 +68,6 @@ export function Home({ isSearchResultsPage }: HomeProps) {
     const [inOrderBy, setInOrderBy] = useState<string>("");
     const [searchResultDocuments, setSearchResultDocuments] = useState<Document[]>([]);
 
-    const [, setSelectedDocument] = useState<Document[]>([]);
     const { query, setQuery, filters: persistedFilters, setFilters: setPersistedFilters } = useContext(AppContext);
     const [selectedDateFilter] = useState(null);
     // const tempFilter = new SearchFacet
@@ -249,8 +248,6 @@ export function Home({ isSearchResultsPage }: HomeProps) {
 
     const headerMenuTabsRef = useRef<HTMLDivElement>(null);
 
-    const [, setWidthClass] = useState(window.innerWidth > 2000 ? "w-[165%]" : "w-[125%]");
-
     useEffect(() => {
         const filtersFromUrl = searchParams.get("filters");
     
@@ -295,18 +292,6 @@ export function Home({ isSearchResultsPage }: HomeProps) {
             }
         }
     }, []);    
-
-    useEffect(() => {
-        const handleResize = () => {
-            setWidthClass(window.innerWidth > 2000 ? "w-[165%]" : "w-[125%]");
-        };
-
-        window.addEventListener("resize", handleResize);
-
-        return () => {
-            window.removeEventListener("resize", handleResize);
-        };
-    }, []);
 
     //API call
     useEffect(() => {
@@ -454,8 +439,6 @@ export function Home({ isSearchResultsPage }: HomeProps) {
     }, [data]);
 
     function handleChatWithDocument(document: Document) {
-        setSelectedDocument([document]);
-        
         setShowCopilot(true);
         if (headerMenuTabsRef.current && showCopilot === false) {
             headerMenuTabsRef.current.scrollIntoView({ behavior: "smooth" });

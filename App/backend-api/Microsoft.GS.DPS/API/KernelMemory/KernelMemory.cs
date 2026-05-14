@@ -1,4 +1,5 @@
 ﻿using DnsClient.Internal;
+using Microsoft.Extensions.Logging;
 using Microsoft.GS.DPS.Images;
 using Microsoft.GS.DPS.Model.KernelMemory;
 using Microsoft.GS.DPS.Storage.Document;
@@ -27,6 +28,7 @@ namespace Microsoft.GS.DPS.API
         private readonly DocumentRepository _documentRepository;
         private readonly DataCacheManager _dataCache;
         private readonly TagUpdater _tagUpdator;
+        private readonly ILogger<KernelMemory>? _logger;
         private static readonly string keywordExtractorPrompt = "";
 
         static KernelMemory()
@@ -39,12 +41,13 @@ namespace Microsoft.GS.DPS.API
             KernelMemory.keywordExtractorPrompt = System.IO.File.ReadAllText(systemPromptFilePath);
         }
 
-        public KernelMemory(MemoryWebClient kmClient, DocumentRepository documentRepository, DataCacheManager dataCache, TagUpdater tagUpdator)
+        public KernelMemory(MemoryWebClient kmClient, DocumentRepository documentRepository, DataCacheManager dataCache, TagUpdater tagUpdator, ILogger<KernelMemory>? logger = null)
         {
             _kmClient = kmClient;
             _documentRepository = documentRepository;
             _dataCache = dataCache;
             _tagUpdator = tagUpdator;
+            _logger = logger;
         }
 
         public async Task<DocumentImportedResult> ImportDocument(Stream documentStream,
@@ -202,8 +205,9 @@ namespace Microsoft.GS.DPS.API
                     return keywordDict;
                 }
                 #pragma warning disable CA1031 // LLM keyword-extraction output may be malformed; fall back to empty result rather than failing the import
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    _logger?.LogWarning(ex, "Failed to extract keywords for document {DocumentId} ({FileName}); returning empty keyword set.", documentId, fileName);
                     return new Dictionary<string, string>();
                 }
                 #pragma warning restore CA1031

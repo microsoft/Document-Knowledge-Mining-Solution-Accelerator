@@ -38,7 +38,6 @@ namespace Microsoft.GS.DPS.API
         private static readonly string s_additionalPrompt;
 
 
-        readonly string sessionId = string.Empty;
         ChatHistory chatHistory = null;
         ChatSession chatSession = null;
 
@@ -84,7 +83,7 @@ namespace Microsoft.GS.DPS.API
             //Create a new ChatSession Entity for Saving into Azure Cosmos
             return new ChatSession()
             {
-                SessionId = this.sessionId, // New Session ID
+                SessionId = sessionId, // New Session ID
                 StartTime = DateTime.UtcNow // Session Created Time
             };
 

@@ -1,4 +1,4 @@
-import React, { forwardRef, useImperativeHandle, ChangeEvent, KeyboardEvent, useRef, useState } from "react";
+import React, { forwardRef, useImperativeHandle, ChangeEvent, KeyboardEvent, useState } from "react";
 import { Input } from "@fluentui/react-input";
 import { useTranslation } from "react-i18next";
 import { InputOnChangeData, Tooltip, useId } from "@fluentui/react-components";
@@ -22,11 +22,9 @@ interface SearchBoxProps {
 }
 
 const UploadButton = () => {
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
     return (
         <>
-            {/* <input type="file" ref={fileInputRef} style={{ display: "none" }} onChange={uploadDocuments} multiple />
+            {/* <input type="file" style={{ display: "none" }} onChange={uploadDocuments} multiple />
             <Button
                 className="upload_button"
                 icon={<ArrowUpload24Filled />}
