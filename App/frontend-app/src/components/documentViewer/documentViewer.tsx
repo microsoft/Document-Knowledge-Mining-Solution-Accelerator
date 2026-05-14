@@ -245,7 +245,7 @@ export function DocDialog(
                         />
                 </div>
 
-                <DialogBody style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, width: "100%", overflow: "hidden", padding: 0 }}>
+                <DialogBody style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, width: "100%", overflow: "auto", padding: 0 }}>
                     {selectedTab === "Document" && (
                         <div className="flex shadow-xl" style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
                             <IFrameComponent
