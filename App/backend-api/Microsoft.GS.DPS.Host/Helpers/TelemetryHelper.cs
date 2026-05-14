@@ -102,7 +102,7 @@ namespace Microsoft.GS.DPSHost.Helpers
             {
                 // Overload signature: TrackDependency(dependencyTypeName, target, dependencyName, data, startTime, duration, success)
                 // Map the wrapper's dependencyName -> telemetry dependencyName (and target), and commandName -> data.
-                _telemetryClient.TrackDependency("Other", dependencyName, dependencyName, commandName, startTime, duration, resultCode: success ? "0" : "1", success);
+                _telemetryClient.TrackDependency("Other", dependencyName, dependencyName, commandName, startTime, duration, success ? "0" : "1", success);
             }
             #pragma warning disable CA1031 // Telemetry must never fail the calling code path
             catch (Exception ex)

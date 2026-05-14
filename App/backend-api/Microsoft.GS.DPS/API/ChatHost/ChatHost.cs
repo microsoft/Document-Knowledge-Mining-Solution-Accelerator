@@ -207,7 +207,7 @@ namespace Microsoft.GS.DPS.API
              
                     returnedChatMessageContent = new ChatMessageContent
                     {
-                        Content = "An error occured while processing request, try again"
+                        Content = "An error occurred while processing request, try again"
                     };
                 
             }

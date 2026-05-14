@@ -21,20 +21,6 @@ interface SearchBoxProps {
     onKeyDown?: (event: KeyboardEvent<HTMLInputElement>) => void;  // Include onKeyDown as a prop
 }
 
-const UploadButton = () => {
-    return (
-        <>
-            {/* <input type="file" style={{ display: "none" }} onChange={uploadDocuments} multiple />
-            <Button
-                className="upload_button"
-                icon={<ArrowUpload24Filled />}
-                appearance="subtle"
-                onClick={handleClick}
-            /> */}
-        </>
-    );
-};
-
 export const SearchBox = forwardRef<SearchBoxHandle, SearchBoxProps>((
     { className, labelClassName, inputClassName, initialValue = "", placeholder, onSearchChanged, onKeyDown },
     ref
@@ -94,7 +80,6 @@ export const SearchBox = forwardRef<SearchBoxHandle, SearchBoxProps>((
                             {/* <KeyBoardButton />
                             <MicButton />
                             <SearchVisualButton /> */}
-                            <UploadButton />
                         </div>
                     }
                     size="large"

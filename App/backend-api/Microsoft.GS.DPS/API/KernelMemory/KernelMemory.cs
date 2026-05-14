@@ -1,5 +1,4 @@
-﻿using DnsClient.Internal;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.GS.DPS.Images;
 using Microsoft.GS.DPS.Model.KernelMemory;
 using Microsoft.GS.DPS.Storage.Document;
@@ -203,6 +202,11 @@ namespace Microsoft.GS.DPS.API
                     }
 
                     return keywordDict;
+                }
+                catch (JsonException ex)
+                {
+                    _logger?.LogWarning(ex, "Failed to parse keyword JSON for document {DocumentId} ({FileName}); returning empty keyword set.", documentId, fileName);
+                    return new Dictionary<string, string>();
                 }
                 #pragma warning disable CA1031 // LLM keyword-extraction output may be malformed; fall back to empty result rather than failing the import
                 catch (Exception ex)
