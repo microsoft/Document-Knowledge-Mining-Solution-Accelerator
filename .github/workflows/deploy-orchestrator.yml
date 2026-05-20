@@ -18,6 +18,11 @@ on:
         required: false
         default: false
         type: boolean
+      enable_scalability:
+        description: 'Enable Scalability (WAF deployments only)'
+        required: false
+        default: false
+        type: boolean
       EXP:
         description: 'Enable EXP'
         required: false
@@ -60,6 +65,7 @@ jobs:
       azure_location: ${{ inputs.azure_location }}
       resource_group_name: ${{ inputs.resource_group_name }}
       waf_enabled: ${{ inputs.waf_enabled }}
+      enable_scalability: ${{ inputs.enable_scalability }}
       EXP: ${{ inputs.EXP }}
       existing_webapp_url: ${{ inputs.existing_webapp_url }}
       AZURE_ENV_EXISTING_LOG_ANALYTICS_WORKSPACE_RID: ${{ inputs.AZURE_ENV_EXISTING_LOG_ANALYTICS_WORKSPACE_RID }}
