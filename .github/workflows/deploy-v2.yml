@@ -44,11 +44,6 @@ on:
         required: false
         default: ''
         type: string
-      build_docker_image:
-        description: 'Build & Use Custom Images (Optional)'
-        required: false
-        default: false
-        type: boolean
 
       waf_enabled:
         description: 'Deploy WAF'
