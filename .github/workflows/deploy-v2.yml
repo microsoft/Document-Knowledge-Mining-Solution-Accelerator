@@ -24,7 +24,7 @@ on:
   workflow_dispatch:
     inputs:
       azure_location:
-        description: 'Azure Location For Deployment'
+        description: 'Azure Region (Non-AI Services)'
         required: false
         default: 'australiaeast'
         type: choice
@@ -32,11 +32,13 @@ on:
           - 'australiaeast'
           - 'centralus'
           - 'eastasia'
+          - 'eastus'
           - 'eastus2'
           - 'japaneast'
           - 'northeurope'
           - 'southeastasia'
           - 'uksouth'
+          - 'westeurope'
       resource_group_name:
         description: 'Resource Group Name (Optional)'
         required: false
@@ -44,18 +46,23 @@ on:
         type: string
 
       waf_enabled:
-        description: 'Enable WAF'
+        description: 'Deploy WAF'
+        required: false
+        default: false
+        type: boolean
+      enable_scalability:
+        description: 'Enable Scalability (WAF only)'
         required: false
         default: false
         type: boolean
       EXP:
-        description: 'Enable EXP'
+        description: 'Deploy EXP'
         required: false
         default: false
         type: boolean
       
       cleanup_resources:
-        description: 'Cleanup Deployed Resources'
+        description: 'Auto Delete RG'
         required: false
         default: false
         type: boolean
@@ -71,12 +78,12 @@ on:
           - 'None'
       
       AZURE_ENV_EXISTING_LOG_ANALYTICS_WORKSPACE_RID:
-        description: 'Log Analytics Workspace ID (Optional)'
+        description: 'Existing Log Analytics Workspace Resource ID (Optional)'
         required: false
         default: ''
         type: string
       existing_webapp_url:
-        description: 'Existing WebApp URL (Skips Deployment)'
+        description: 'Run Tests Against Existing RG (Provide Web App URL)'
         required: false
         default: ''
         type: string
@@ -95,6 +102,7 @@ jobs:
       azure_location: ${{ steps.validate.outputs.azure_location }}
       resource_group_name: ${{ steps.validate.outputs.resource_group_name }}
       waf_enabled: ${{ steps.validate.outputs.waf_enabled }}
+      enable_scalability: ${{ steps.validate.outputs.enable_scalability }}
       exp: ${{ steps.validate.outputs.exp }}
       cleanup_resources: ${{ steps.validate.outputs.cleanup_resources }}
       run_e2e_tests: ${{ steps.validate.outputs.run_e2e_tests }}
@@ -109,6 +117,7 @@ jobs:
           INPUT_AZURE_LOCATION: ${{ github.event.inputs.azure_location }}
           INPUT_RESOURCE_GROUP_NAME: ${{ github.event.inputs.resource_group_name }}
           INPUT_WAF_ENABLED: ${{ github.event.inputs.waf_enabled }}
+          INPUT_ENABLE_SCALABILITY: ${{ github.event.inputs.enable_scalability }}
           INPUT_EXP: ${{ github.event.inputs.EXP }}
           INPUT_CLEANUP_RESOURCES: ${{ github.event.inputs.cleanup_resources }}
           INPUT_RUN_E2E_TESTS: ${{ github.event.inputs.run_e2e_tests }}
@@ -151,6 +160,15 @@ jobs:
             VALIDATION_FAILED=true
           else
             echo "✅ waf_enabled: '$WAF_ENABLED' is valid"
+          fi
+
+          # Validate enable_scalability (boolean)
+          ENABLE_SCALABILITY="${INPUT_ENABLE_SCALABILITY:-false}"
+          if [[ "$ENABLE_SCALABILITY" != "true" && "$ENABLE_SCALABILITY" != "false" ]]; then
+            echo "❌ ERROR: enable_scalability must be 'true' or 'false', got: '$ENABLE_SCALABILITY'"
+            VALIDATION_FAILED=true
+          else
+            echo "✅ enable_scalability: '$ENABLE_SCALABILITY' is valid"
           fi
 
           # Validate EXP (boolean)
@@ -221,6 +239,7 @@ jobs:
           echo "azure_location=$LOCATION" >> $GITHUB_OUTPUT
           echo "resource_group_name=$INPUT_RESOURCE_GROUP_NAME" >> $GITHUB_OUTPUT
           echo "waf_enabled=$WAF_ENABLED" >> $GITHUB_OUTPUT
+          echo "enable_scalability=$ENABLE_SCALABILITY" >> $GITHUB_OUTPUT
           echo "exp=$EXP_ENABLED" >> $GITHUB_OUTPUT
           echo "cleanup_resources=$CLEANUP_RESOURCES" >> $GITHUB_OUTPUT
           echo "run_e2e_tests=$TEST_OPTION" >> $GITHUB_OUTPUT
@@ -235,6 +254,7 @@ jobs:
       azure_location: ${{ needs.validate-inputs.outputs.azure_location || 'australiaeast' }}
       resource_group_name: ${{ needs.validate-inputs.outputs.resource_group_name || '' }}
       waf_enabled: ${{ needs.validate-inputs.outputs.waf_enabled == 'true' }}
+      enable_scalability: ${{ needs.validate-inputs.outputs.enable_scalability == 'true' }}
       EXP: ${{ needs.validate-inputs.outputs.exp == 'true' }}
       cleanup_resources: ${{ needs.validate-inputs.outputs.cleanup_resources == 'true' }}
       run_e2e_tests: ${{ needs.validate-inputs.outputs.run_e2e_tests || 'GoldenPath-Testing' }}
