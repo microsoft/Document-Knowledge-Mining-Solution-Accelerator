@@ -40,6 +40,8 @@ Before starting the post-deployment process, ensure you have the following:
 6. **[Docker Desktop](https://docs.docker.com/get-docker/)** - Container platform for building and publishing images
    > ⚠️ **Important**: Ensure Docker Desktop is running before executing the deployment script
 
+7. **[Bicep CLI](https://learn.microsoft.com/azure/azure-resource-manager/bicep/install)** <small>(v0.33.0+)</small> - Required for compiling infrastructure templates
+
 ### Azure Requirements
 
 7. **Azure Access** - One of the following roles on the subscription:
