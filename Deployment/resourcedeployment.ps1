@@ -102,14 +102,32 @@ function PromptForParameters {
  $params = PromptForParameters -email $email
 $email = $params.email
 
+$script:alreadyLoggedIn = $false
+
 function LoginAzure([string]$tenantId, [string]$subscriptionID) {
     Write-Host "Log in to Azure.....`r`n" -ForegroundColor Yellow
+    if ([string]::IsNullOrEmpty($tenantId) -or [string]::IsNullOrEmpty($subscriptionID)) {
+        az login
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Failed to log in to Azure. Please check your credentials." -ForegroundColor Red
+            failureBanner
+            exit 1
+        }
+        else{
+            Write-Host "Logged in to Azure successfully." -ForegroundColor Green
+            $script:alreadyLoggedIn = $true
+            return
+        }
+    }
     if ($env:CI -eq "true"){
-        az login --service-principal `
-            --username $env:AZURE_CLIENT_ID `
-            --password $env:AZURE_CLIENT_SECRET `
-            --tenant $env:AZURE_TENANT_ID `
-        Write-Host "CI deployment mode"
+        # Authentication is handled by the caller workflow via OIDC (azure/login@v2)
+        $account = az account show 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "❌ Error: No active Azure CLI session found. Ensure the caller workflow authenticates via azure/login@v2." -ForegroundColor Red
+            failureBanner
+            exit 1
+        }
+        Write-Host "CI deployment mode - using existing OIDC session"
     }
     else{
         az login --tenant $tenantId
@@ -261,6 +279,9 @@ class DeploymentResult {
     [string]$AzCosmosDBConnectionString
     [string]$AzAppConfigEndpoint
     [string]$AzAppConfigName
+    [string]$ApplicationInsightsConnectionString
+    [string]$ApplicationInsightsInstrumentationKey
+    [string]$ApplicationInsightsName
 
     DeploymentResult() {
         # Resource Group
@@ -297,6 +318,10 @@ class DeploymentResult {
         $this.AzAppConfigEndpoint = ""
         # App Config Name
         $this.AzAppConfigName = ""
+        # Application Insights
+        $this.ApplicationInsightsConnectionString = ""
+        $this.ApplicationInsightsInstrumentationKey = ""
+        $this.ApplicationInsightsName = ""
 
     }
 
@@ -344,6 +369,11 @@ class DeploymentResult {
         # Azure App Configuration
         $this.AzAppConfigEndpoint     = Get-AzdEnvValueOrDefault -KeyName "AZURE_APP_CONFIG_ENDPOINT"
         $this.AzAppConfigName         = Get-AzdEnvValueOrDefault -KeyName "AZURE_APP_CONFIG_NAME"
+
+        # Application Insights
+        $this.ApplicationInsightsConnectionString = Get-AzdEnvValueOrDefault -KeyName "APPLICATIONINSIGHTS_CONNECTION_STRING"
+        $this.ApplicationInsightsInstrumentationKey = Get-AzdEnvValueOrDefault -KeyName "APPLICATIONINSIGHTS_INSTRUMENTATION_KEY"
+        $this.ApplicationInsightsName = Get-AzdEnvValueOrDefault -KeyName "APPLICATIONINSIGHTS_NAME"
     }
 
     [void]MapResultAz([string]$resourceGroupName) {
@@ -353,59 +383,90 @@ class DeploymentResult {
             Write-Error "Deployment name not found in the resource group tags."
             exit 1
         }
-
+    
         $deploymentOutputs=$(az deployment group show --resource-group "$resourceGroupName" --name "$deploymentName" --query "properties.outputs" -o json | ConvertFrom-Json)
-
-        $this.TenantId                = $deploymentOutputs.azurE_TENANT_ID.value
+    
+        # Helper function to get value from deployment outputs with fallback
+        function Get-DeploymentOutputValue {
+            param (
+                [Parameter(Mandatory=$true)]
+                $outputs,
+                [Parameter(Mandatory=$true)]
+                [string]$primaryKey,
+                [Parameter(Mandatory=$true)]
+                [string]$fallbackKey
+            )
+            
+            $value = $null
+            
+            # Try primary key first (old convention)
+            if ($outputs.PSObject.Properties.Name -contains $primaryKey) {
+                $value = $outputs.$primaryKey.value
+            }
+            
+            # If not found or empty, try fallback key (new convention)
+            if ([string]::IsNullOrEmpty($value) -and ($outputs.PSObject.Properties.Name -contains $fallbackKey)) {
+                $value = $outputs.$fallbackKey.value
+            }
+            
+            return $value
+        }
+    
+        # Tenant ID
+        $this.TenantId = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_TENANT_ID" -fallbackKey "azureTenantId"
         if (!$this.TenantId) {
             $this.TenantId = $(az account show --query tenantId -o tsv)
         }
-
-        $this.SubscriptionId          = $(az account show --query id -o tsv)
-
+    
+        $this.SubscriptionId = $(az account show --query id -o tsv)
+    
         # Resource Group
-        $this.ResourceGroupName       = $resourceGroupName
-        $this.ResourceGroupId         = $deploymentOutputs.azurE_RESOURCE_GROUP_ID.value
+        $this.ResourceGroupName = $resourceGroupName
+        $this.ResourceGroupId = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_RESOURCE_GROUP_ID" -fallbackKey "azureResourceGroupId"
         if (!$this.ResourceGroupId) {
-            Write-Error "Required value 'AZURE_RESOURCE_GROUP_ID' not found in the deployment outputs."
+            Write-Error "Required value 'AZURE_RESOURCE_GROUP_ID' or 'azureResourceGroupId' not found in the deployment outputs."
             exit 1
         }
-
+    
         # Storage Account
-        $this.StorageAccountName      = $deploymentOutputs.storagE_ACCOUNT_NAME.value
-
+        $this.StorageAccountName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "storagE_ACCOUNT_NAME" -fallbackKey "storageAccountName"
+    
         # Search Service
-        $this.AzSearchServiceName     = $deploymentOutputs.azurE_SEARCH_SERVICE_NAME.value
-        $this.AzSearchServicEndpoint  = "https://$($this.AzSearchServiceName).search.windows.net"
-
+        $this.AzSearchServiceName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_SEARCH_SERVICE_NAME" -fallbackKey "azureSearchServiceName"
+        $this.AzSearchServicEndpoint = "https://$($this.AzSearchServiceName).search.windows.net"
+    
         # AKS
-        $this.AksName                 = $deploymentOutputs.azurE_AKS_NAME.value
-        $this.AksMid                  = $deploymentOutputs.azurE_AKS_MI_ID.value
-
+        $this.AksName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_AKS_NAME" -fallbackKey "azureAksName"
+        $this.AksMid = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_AKS_MI_ID" -fallbackKey "azureAksMiId"
+    
         # Container Registry
-        $this.AzContainerRegistryName = $deploymentOutputs.azurE_CONTAINER_REGISTRY_NAME.value
-
+        $this.AzContainerRegistryName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_CONTAINER_REGISTRY_NAME" -fallbackKey "azureContainerRegistryName"
+    
         # Cognitive Service - Azure AI Document Intelligence Service
-        $this.AzCognitiveServiceName     = $deploymentOutputs.azurE_COGNITIVE_SERVICE_NAME.value
-        $this.AzCognitiveServiceEndpoint = $deploymentOutputs.azurE_COGNITIVE_SERVICE_ENDPOINT.value
-
+        $this.AzCognitiveServiceName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_COGNITIVE_SERVICE_NAME" -fallbackKey "azureCognitiveServiceName"
+        $this.AzCognitiveServiceEndpoint = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_COGNITIVE_SERVICE_ENDPOINT" -fallbackKey "azureCognitiveServiceEndpoint"
+    
         # Open AI Service
-        $this.AzOpenAiServiceName     = $deploymentOutputs.azurE_OPENAI_SERVICE_NAME.value
-        $this.AzOpenAiServiceEndpoint = $deploymentOutputs.azurE_OPENAI_SERVICE_ENDPOINT.value
-
+        $this.AzOpenAiServiceName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_OPENAI_SERVICE_NAME" -fallbackKey "azureOpenAiServiceName"
+        $this.AzOpenAiServiceEndpoint = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_OPENAI_SERVICE_ENDPOINT" -fallbackKey "azureOpenAiServiceEndpoint"
+    
         # Cosmos DB
-        $this.AzCosmosDBName          = $deploymentOutputs.azurE_COSMOSDB_NAME.value
-
+        $this.AzCosmosDBName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_COSMOSDB_NAME" -fallbackKey "azureCosmosDbName"
+    
         # Open AI Service Models
-        $this.AzGPT4oModelName        = $deploymentOutputs.aZ_GPT4O_MODEL_NAME.value
-        $this.AzGPT4oModelId          = $deploymentOutputs.aZ_GPT4O_MODEL_ID.value
-        $this.AzGPTEmbeddingModelName = $deploymentOutputs.aZ_GPT_EMBEDDING_MODEL_NAME.value
-        $this.AzGPTEmbeddingModelId   = $deploymentOutputs.aZ_GPT_EMBEDDING_MODEL_ID.value
-
+        $this.AzGPT4oModelName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "aZ_GPT4O_MODEL_NAME" -fallbackKey "azGpt4oModelName"
+        $this.AzGPT4oModelId = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "aZ_GPT4O_MODEL_ID" -fallbackKey "azGpt4oModelId"
+        $this.AzGPTEmbeddingModelName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "aZ_GPT_EMBEDDING_MODEL_NAME" -fallbackKey "azGptEmbeddingModelName"
+        $this.AzGPTEmbeddingModelId = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "aZ_GPT_EMBEDDING_MODEL_ID" -fallbackKey "azGptEmbeddingModelId"
+    
         # App Configuration
-        $this.AzAppConfigEndpoint     = $deploymentOutputs.azurE_APP_CONFIG_ENDPOINT.value
-        $this.AzAppConfigName         = $deploymentOutputs.azurE_APP_CONFIG_NAME.value
+        $this.AzAppConfigEndpoint = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_APP_CONFIG_ENDPOINT" -fallbackKey "azureAppConfigEndpoint"
+        $this.AzAppConfigName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "azurE_APP_CONFIG_NAME" -fallbackKey "azureAppConfigName"
 
+        # Application Insights
+        $this.ApplicationInsightsConnectionString = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "applicationinsightS_CONNECTION_STRING" -fallbackKey "applicationInsightsConnectionString"
+        $this.ApplicationInsightsInstrumentationKey = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "applicationinsightS_INSTRUMENTATION_KEY" -fallbackKey "applicationInsightsInstrumentationKey"
+        $this.ApplicationInsightsName = Get-DeploymentOutputValue -outputs $deploymentOutputs -primaryKey "applicationinsightS_NAME" -fallbackKey "applicationInsightsName"
     }
 }
 
@@ -452,13 +513,16 @@ try {
 
     # Map the deployment result to DeploymentResult object from .env file
     if ($ResourceGroupName) {
+        LoginAzure "" ""
         $deploymentResult.MapResultAz($ResourceGroupName.Trim())
     }
     else {
         $deploymentResult.MapResultAzd()
     }
 
-    LoginAzure $deploymentResult.TenantId $deploymentResult.SubscriptionId
+    if (-not $script:alreadyLoggedIn) {
+        LoginAzure $deploymentResult.TenantId $deploymentResult.SubscriptionId
+    }
 
     # Display the deployment result
     DisplayResult($deploymentResult)
@@ -487,6 +551,16 @@ try {
 
     Write-Host "Validation Completed" -ForegroundColor Green
 
+    # Detect WAF deployment mode from resource group tag (set by Bicep: Type = 'WAF' | 'Non-WAF')
+    $isWafDeployment = $false
+    $rgDeploymentType = az group show --name $deploymentResult.ResourceGroupName --query "tags.Type" -o tsv 2>$null
+    if ($rgDeploymentType -eq "WAF") {
+        $isWafDeployment = $true
+        Write-Host "WAF deployment mode detected. Backend APIs will be restricted to private access." -ForegroundColor Cyan
+    } else {
+        Write-Host "Non-WAF deployment mode detected. Standard deployment will be used." -ForegroundColor Yellow
+    }
+
     # Step 1-3 Loading aiservice's configution file template then replace the placeholder with the actual values
     # Define the placeholders and their corresponding values for AI service configuration
     
@@ -512,7 +586,8 @@ try {
         '{azurequeues-account}' = $deploymentResult.StorageAccountName
         '{gpt-4o-modelname}' = $deploymentResult.AzGPT4oModelName 
         '{azureopenaiembedding-deployment}' = $deploymentResult.AzGPTEmbeddingModelName 
-        '{kernelmemory-endpoint}' = "http://kernelmemory-service" 
+        '{kernelmemory-endpoint}' = "http://kernelmemory-service"
+        '{applicationinsights-connectionstring}' = $deploymentResult.ApplicationInsightsConnectionString
     }
 
     ## Load and update the AI service configuration template
@@ -579,6 +654,38 @@ try {
 
     # 2.Connect to AKS cluster
     try {
+        Write-Host "Checking if user already has AKS Cluster Admin role..." -ForegroundColor Cyan
+        # -----------------------------------------
+        # Check and assign AKS RBAC Cluster Admin role
+        # -----------------------------------------
+
+        $subscriptionId = (az account show --query id -o tsv)
+        $resourceGroup = $deploymentResult.ResourceGroupName
+        $aksName = $deploymentResult.AksName
+
+        # Get current signed-in user
+        $currentUser = az ad signed-in-user show --query id -o tsv
+
+        # Get AKS resource ID
+        $aksResourceId = az aks show --resource-group $resourceGroup --name $aksName --subscription $subscriptionId --query id -o tsv
+
+        # Check if role already assigned
+        $roleCheck = az role assignment list `
+            --assignee $currentUser `
+            --role "Azure Kubernetes Service RBAC Cluster Admin" `
+            --scope $aksResourceId `
+            --query "[].id" -o tsv
+
+        if (-not $roleCheck) {
+            Write-Host "Assigning 'Azure Kubernetes Service RBAC Cluster Admin' role to current user..."
+            az role assignment create `
+                --assignee $currentUser `
+                --role "Azure Kubernetes Service RBAC Cluster Admin" `
+                --scope $aksResourceId | Out-Null
+            Write-Host "Role assignment complete."
+        } else {
+            Write-Host "User already has 'Azure Kubernetes Service RBAC Cluster Admin' role."
+        }
         Write-Host "Connecting to AKS cluster..." -ForegroundColor Cyan
         az aks get-credentials --resource-group $deploymentResult.ResourceGroupName --name $deploymentResult.AksName --overwrite-existing
         Write-Host "Connected to AKS cluster." -ForegroundColor Green
@@ -632,13 +739,20 @@ try {
     #  6-1. Get Az Network resource Name with the public IP address
     Write-Host "Assign DNS Name to the public IP address" -ForegroundColor Green
     $publicIpName=$(az network public-ip list --resource-group $aksResourceGroupName --query "[?ipAddress=='$externalIP'].name" --output tsv)
-    #  6-2. Generate Unique backend API fqdn Name - esgdocanalysis-3 digit random number with padding 0
-    $dnsName = "kmgs$($(Get-Random -Minimum 0 -Maximum 9999).ToString("D4"))"
-    
-    # Validate if the AKS Resource Group Name, Public IP name and DNS Name are provided
+    #  6-2. Reuse existing DNS name if already assigned, otherwise generate a new one
+    # Validate if the AKS Resource Group Name and Public IP name are provided
     ValidateVariableIsNullOrEmpty -variableValue $aksResourceGroupName -variableName "AKS Resource Group name"  
     
     ValidateVariableIsNullOrEmpty -variableValue $publicIpName -variableName "Public IP name" 
+
+    $existingDnsName = az network public-ip show --resource-group $aksResourceGroupName --name $publicIpName --query "dnsSettings.domainNameLabel" --output tsv 2>$null
+    if ($existingDnsName) {
+        Write-Host "Reusing existing DNS name: $existingDnsName" -ForegroundColor Yellow
+        $dnsName = $existingDnsName
+    } else {
+        $dnsName = "kmgs$($(Get-Random -Minimum 0 -Maximum 9999).ToString("D4"))"
+        Write-Host "Generated new DNS name: $dnsName" -ForegroundColor Green
+    }
 
     ValidateVariableIsNullOrEmpty -variableValue $dnsName -variableName "DNS Name" 
     
@@ -712,7 +826,7 @@ try {
         foreach ($nodePool in $nodePools) {
             Write-Host "Upgrading node pool: $nodePool" -ForegroundColor Cyan
             Write-Host "Node pool $nodePool upgrade initiated." -ForegroundColor Green
-            az aks nodepool upgrade --resource-group $deploymentResult.ResourceGroupName --cluster-name $deploymentResult.AksName --name $nodePool 
+            az aks nodepool upgrade --resource-group $deploymentResult.ResourceGroupName --cluster-name $deploymentResult.AksName --name $nodePool --yes
         }
     }
     catch {
@@ -737,12 +851,19 @@ try {
     $certManagerTemplate | Set-Content -Path $certManagerPath -Force
 
     # 3.2 Update deploy.ingress.yaml.template file and save as deploy.ingress.yaml
-    # webfront / apibackend
+    # In WAF mode, use the WAF-specific template that only exposes the frontend publicly
+    # In non-WAF mode, use the standard template that exposes both frontend and backend
     $ingressPlaceholders = @{
         '{{ fqdn }}' = $fqdn
     }
 
-    $ingressTemplate = Get-Content -Path .\kubernetes\deploy.ingress.yaml.template -Raw
+    if ($isWafDeployment) {
+        $ingressTemplatePath = ".\kubernetes\deploy.ingress.waf.yaml.template"
+        Write-Host "Using WAF ingress template (frontend-only public access)." -ForegroundColor Cyan
+    } else {
+        $ingressTemplatePath = ".\kubernetes\deploy.ingress.yaml.template"
+    }
+    $ingressTemplate = Get-Content -Path $ingressTemplatePath -Raw
     $ingress = Invoke-PlaceholdersReplacement $ingressTemplate $ingressPlaceholders
     $ingressPath = ".\kubernetes\deploy.ingress.yaml"
     $ingress | Set-Content -Path $ingressPath -Force
@@ -843,8 +964,16 @@ try {
     # Front App
     ###############################
     
-    $frontAppConfigServicePlaceholders = @{
-        '{{ backend-fqdn }}' = "https://${fqdn}/backend"
+    # WAF mode: use relative path so browser calls go through frontend Vite proxy (backend stays private)
+    # Standard mode: use absolute URL (backend is on public ingress)
+    if ($isWafDeployment) {
+        $frontAppConfigServicePlaceholders = @{
+            '{{ backend-fqdn }}' = "/backend"
+        }
+    } else {
+        $frontAppConfigServicePlaceholders = @{
+            '{{ backend-fqdn }}' = "https://${fqdn}/backend"
+        }
     }
     
     ## Load and update the front app configuration template
@@ -900,11 +1029,27 @@ try {
     # 5.3. Deploy Deployment in Kubernetes
     kubectl apply -f "./kubernetes/deploy.deployment.yaml" -n $kubenamespace
 
+    # 5.3.1. Restart deployments to pick up new container images
+    kubectl rollout restart deployment/aiservice-deployment -n $kubenamespace
+    kubectl rollout restart deployment/kernelmemory-deployment -n $kubenamespace
+    kubectl rollout restart deployment/frontapp-deployment -n $kubenamespace
+
     # 5.4. Deploy Services in Kubernetes
     kubectl apply -f "./kubernetes/deploy.service.yaml" -n $kubenamespace
 
     # 5.5. Deploy Ingress Controller in Kubernetes for external access
-    kubectl apply -f "./kubernetes/deploy.ingress.yaml" -n $kubenamespace
+    if ($isWafDeployment) {
+        # WAF mode: use WAF ingress (no public backend route — backend traffic proxied through frontend)
+        Write-Host "Applying WAF-specific ingress (backend is private, proxied through frontend)..." -ForegroundColor Cyan
+        kubectl apply -f "./kubernetes/deploy.ingress.yaml" -n $kubenamespace
+
+        # Deploy network policies to restrict direct backend pod access
+        kubectl apply -f "./kubernetes/deploy.networkpolicy.yaml.template" -n $kubenamespace
+        Write-Host "WAF ingress and network policies applied successfully." -ForegroundColor Green
+    } else {
+        # Standard mode: public ingress with backend route
+        kubectl apply -f "./kubernetes/deploy.ingress.yaml" -n $kubenamespace
+    }
 
     # #####################################################################
     # # Data file uploading

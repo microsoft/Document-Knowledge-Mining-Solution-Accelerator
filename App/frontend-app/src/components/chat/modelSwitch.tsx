@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Text, Tooltip } from "@fluentui/react-components";
 import { useTranslation } from "react-i18next";
 
 interface ModelSwitchProps {
@@ -7,17 +6,7 @@ interface ModelSwitchProps {
 }
 
 export function ModelSwitch({ onSwitchChange }: ModelSwitchProps) {
-    const { t } = useTranslation();
-    const GPT35 = "chat_35";
-    const GPT4 = "chat_4";
     const GPT4O = "chat_4o";
-
-    const [activeSwitch, setActiveSwitch] = useState(GPT4O);
-
-    const handleClick = (model: string) => {
-        setActiveSwitch(model);
-        onSwitchChange(model);
-    };
 
     return (
         <div className="flex h-[70px] w-[210px] items-center justify-center rounded-lg ">

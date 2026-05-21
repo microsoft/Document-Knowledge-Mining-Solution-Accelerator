@@ -1,13 +1,10 @@
 import { Button, Checkbox, Text } from "@fluentui/react-components";
 import { Tag, TagGroup } from "@fluentui/react-tags-preview";
-import { Document48Regular } from "@fluentui/react-icons";
 import { Icon } from "@fluentui/react";
 import { getFileTypeIconProps } from "@fluentui/react-file-type-icons";
-import { KMBrandRamp } from "../../styles";
 import { DocDialog } from "../documentViewer/documentViewer";
 import { useEffect, useState } from "react";
-import { Document, Tokens } from "../../api/apiTypes/documentResults";
-import { downloadFile } from "../../api/storageService";
+import { Document } from "../../api/apiTypes/documentResults";
 import "./searchResultCard.scss";
 interface SearchResultCardProps {
     document: Document;

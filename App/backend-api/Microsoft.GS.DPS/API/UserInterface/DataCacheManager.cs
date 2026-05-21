@@ -42,29 +42,26 @@ namespace Microsoft.GS.DPS.API.UserInterface
             var consolidatedKeywords = new Dictionary<string, List<string>>();
             var documents = await _documentRepository.GetAllDocuments();
 
-            foreach (var document in documents)
+            foreach (var document in documents.Where(d => d.Keywords != null))
             {
-                if (document.Keywords != null)
+                foreach (var keywordDict in document.Keywords)
                 {
-                    foreach (var keywordDict in document.Keywords)
+                    if (!consolidatedKeywords.ContainsKey(keywordDict.Key))
                     {
-                        if (!consolidatedKeywords.ContainsKey(keywordDict.Key))
-                        {
-                            consolidatedKeywords[keywordDict.Key] = new List<string>();
-                        }
-
-                        var values = keywordDict.Value.Split(',').Select(v => v.Trim()).ToArray();
-
-                        foreach (var value in values)
-                        {
-                            if (!consolidatedKeywords[keywordDict.Key].Contains(value))
-                            {
-                                consolidatedKeywords[keywordDict.Key].Add(value);
-                            }
-                        }
-
-                        consolidatedKeywords[keywordDict.Key] = consolidatedKeywords[keywordDict.Key].OrderBy(v => v).ToList();
+                        consolidatedKeywords[keywordDict.Key] = new List<string>();
                     }
+
+                    var values = keywordDict.Value.Split(',').Select(v => v.Trim()).ToArray();
+
+                    foreach (var value in values)
+                    {
+                        if (!consolidatedKeywords[keywordDict.Key].Contains(value))
+                        {
+                            consolidatedKeywords[keywordDict.Key].Add(value);
+                        }
+                    }
+
+                    consolidatedKeywords[keywordDict.Key] = consolidatedKeywords[keywordDict.Key].OrderBy(v => v).ToList();
                 }
             }
 

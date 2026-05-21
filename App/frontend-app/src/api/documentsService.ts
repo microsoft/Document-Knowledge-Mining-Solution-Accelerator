@@ -2,7 +2,6 @@ import { SearchRequest } from "../types/searchRequest";
 import { httpClient } from "../utils/httpClient/httpClient";
 import { DocumentResults } from "./apiTypes/documentResults";
 import { Embedded } from "./apiTypes/embedded";
-import { SingleDocument } from "./apiTypes/singleDocument";
 
 
 
@@ -57,25 +56,23 @@ export const importDocuments = async (formData: FormData): Promise<any> => {
 };
 
   
-  
+// function formatKeywords(keywords: { [key: string]: string }): { [key: string]: string } {
+//     // This function formats keywords into the desired comma-separated string for each category
+//     const formattedKeywords: { [key: string]: string } = {};
 
-function formatKeywords(keywords: { [key: string]: string }): { [key: string]: string } {
-    // This function formats keywords into the desired comma-separated string for each category
-    const formattedKeywords: { [key: string]: string } = {};
+//     Object.keys(keywords).forEach((category) => {
+//         const keywordList = keywords[category];
+//         if (Array.isArray(keywordList)) {
+//             // If the keywords are in an array, join them into a comma-separated string
+//             formattedKeywords[category] = keywordList.join(', ');
+//         } else {
+//             // If already a string (or incorrect format), preserve it
+//             formattedKeywords[category] = keywordList;
+//         }
+//     });
 
-    Object.keys(keywords).forEach((category) => {
-        const keywordList = keywords[category];
-        if (Array.isArray(keywordList)) {
-            // If the keywords are in an array, join them into a comma-separated string
-            formattedKeywords[category] = keywordList.join(', ');
-        } else {
-            // If already a string (or incorrect format), preserve it
-            formattedKeywords[category] = keywordList;
-        }
-    });
-
-    return formattedKeywords;
-}
+//     return formattedKeywords;
+// }
 
 // Update in your documentsService file
 export const downloadDocument = async (documentId: string, fileName: string): Promise<Blob> => {

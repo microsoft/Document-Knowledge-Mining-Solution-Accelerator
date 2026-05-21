@@ -80,9 +80,7 @@ namespace Microsoft.GS.DPS.Storage.Components
 
         public async Task<IEnumerable<TEntity>> GetAllAsync(IEnumerable<TIdentifier> identifiers)
         {
-
             List<TEntity> results = new List<TEntity>();
-            IMongoCollection<TEntity> collection = _database.GetCollection<TEntity>(typeof(TEntity).Name.ToLowerInvariant());
             foreach (var i in identifiers)
             {
                 results.Add(await this.GetAsync(i));

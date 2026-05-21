@@ -1,6 +1,5 @@
 import { Table, TableBody, TableCell, TableHeader, TableHeaderCell, TableRow } from "@fluentui/react-components";
 import { useState } from "react";
-import { Document } from "../../api/apiTypes/embedded";
 import { ChevronCircleDown24Regular, ChevronCircleRight24Regular } from "@fluentui/react-icons";
 import { mapMetadataKeys } from "../../utils/mapper/metadataMapper";
 import { useTranslation } from "react-i18next";
@@ -47,7 +46,7 @@ export function MetadataTable({ metadata }: MetadataTableProps) {
             ];
         }
 
-        if (typeof value === "object" && value !== null) {
+        if (typeof value === "object") {
             return [
                 {
                     key: { label: key },

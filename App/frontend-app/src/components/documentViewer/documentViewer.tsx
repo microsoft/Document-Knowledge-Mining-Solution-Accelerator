@@ -2,28 +2,21 @@ import {
     Dialog,
     DialogBody,
     DialogSurface,
-    Divider,
     SelectTabData,
     SelectTabEvent,
     TabListProps,
-    Text,
     makeStyles,
     shorthands,
 } from "@fluentui/react-components";
 import { useEffect, useState } from "react";
 import { MetadataTable } from "./metadataTable";
-import TableTab from "./tableTab";
-import { Embedded, Result } from "../../api/apiTypes/embedded";
 import { Document } from "../../api/apiTypes/embedded";
-import { downloadDocument, getEmbedded } from "../../api/documentsService";
-import { Tokens } from "../../api/apiTypes/documentResults";
 import { IFrameComponent } from "./iFrameComponent";
 import { DialogContentComponent } from "./dialogContentComponent";
 import { PagesTab } from "./PagesTab";
 import { PageNumberTab } from "./pageNumberTab";
 import { DialogTitleBar } from "./dialogTitleBar";
 import { AIKnowledgeTab } from "./aIKnowledgeTab";
-import { useTranslation } from "react-i18next";
 
 const useStyles = makeStyles({
     dialog: {
@@ -32,6 +25,9 @@ const useStyles = makeStyles({
         maxWidth: "none",
         width: "95%",
         ...shorthands.borderRadius("1rem"),
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
     },
     tabList: {
         alignItems: "flex-start",
@@ -43,7 +39,7 @@ const useStyles = makeStyles({
     },
 
     aiKnowledgeTab:{
-        height:"calc(100vh - 150px) !important",
+        height:"100%",
         overflow:"auto"
     }
 });
@@ -68,14 +64,12 @@ interface Cell {
 export function DocDialog(
     { metadata, isOpen, allChunkTexts, clearChatFlag, onClose, ...props }: DocDialogProps & Partial<TabListProps>
 ) {
-    const {t} = useTranslation();
     const styles = useStyles();
     
     const [selectedTab, setSelectedTab] = useState<string>("Document");
     const [urlWithSasToken, setUrlWithSasToken] = useState<string | undefined>(undefined);
     const [selectedPage, setSelectedPage] = useState<number | null>(null);
-    const [tablesData, setTablesData] = useState<string[]>([]);
-    const [pageMetadata, setPageMetadata] = useState<Document[] | null>(null);
+    const [pageMetadata] = useState<Document[] | null>(null);
     const [iframeKey, setIframeKey] = useState(0);
     const [isExpanded, setIsExpanded] = useState(false);
     const [clearedChatFlag, setClearChatFlag] = useState(clearChatFlag);
@@ -211,7 +205,6 @@ export function DocDialog(
     }, [iframeKey]);
 
     const AI_KNOWLEDGE_FIELDS = window.ENV.AI_KNOWLEDGE_FIELDS;
-    const METADATA_EXCLUSION_LIST = window.ENV.METADATA_EXCLUSION_LIST;
 
     let aiKnowledgeMetadata = {};
 
@@ -233,7 +226,7 @@ export function DocDialog(
     return (
         <Dialog open={isOpen}>
             <DialogSurface className={styles.dialog}>
-                <div className="flex">
+                <div className="flex" style={{ flexShrink: 0 }}>
                     <DialogTitleBar
                         metadata={metadata}
                         selectedPage={selectedPage}
@@ -252,26 +245,22 @@ export function DocDialog(
                         />
                 </div>
 
-                <DialogBody style={{ height: "100%", width: "100%" }}>
+                <DialogBody style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, width: "100%", overflow: "auto", padding: 0 }}>
                     {selectedTab === "Document" && (
-                        <div className="flex h-[150%] w-[200%] justify-between" style={{height:'100vh'}}>
-                            <div className="mr-5 h-[80%] w-[75%] shadow-xl">
-                                <IFrameComponent
-                                    className="h-[100%]"
-                                    metadata={metadata}
-                                    urlWithSasToken={iframeSrc}
-                                    iframeKey={iframeKey}
-                                />
-                            </div>
-                            <div className="w-[25%]" style={{height:'80vh', overflowX: 'hidden'}}>
-                                <DialogContentComponent
-                                    className=""
-                                    metadata={metadata}
-                                    allChunkTexts={allChunkTexts}
-                                    isExpanded={isExpanded}
-                                    setIsExpanded={setIsExpanded}
-                                />
-                            </div>
+                        <div className="flex shadow-xl" style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+                            <IFrameComponent
+                                className="h-[100%] w-[70%]"
+                                metadata={metadata}
+                                urlWithSasToken={iframeSrc}
+                                iframeKey={iframeKey}
+                            />
+                            <DialogContentComponent
+                                className="w-[30%] overflow-y-auto flex-shrink-0"
+                                metadata={metadata}
+                                allChunkTexts={allChunkTexts}
+                                isExpanded={isExpanded}
+                                setIsExpanded={setIsExpanded}
+                            />
                         </div>
                     )}
 {/* 
@@ -288,7 +277,7 @@ export function DocDialog(
                     )}
 
 {selectedTab === "AI Knowledge" && (
-    <div className={`flex h-[150%] w-[200%] justify-between ${styles.aiKnowledgeTab}`}>
+    <div className={`flex w-full ${styles.aiKnowledgeTab}`}>
     <AIKnowledgeTab 
         metadata={metadata?.keywords ? Object.fromEntries(
             Object.entries(metadata.keywords).map(([key, value]) => [

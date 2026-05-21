@@ -30,9 +30,9 @@ namespace Microsoft.GS.DPSHost.API
                 var document = await documentRepository.FindByDocumentIdAsync(DocumentId);
 
                 //Check if the thumbnail is already in the cache
-                if (thumbnails.ContainsKey(document.MimeType))
+                if (thumbnails.TryGetValue(document.MimeType, out var thumbnail))
                 {
-                    return Results.File(thumbnails[document.MimeType], "image/png");
+                    return Results.File(thumbnail, "image/png");
                 }
                 else
                 {
@@ -108,14 +108,7 @@ namespace Microsoft.GS.DPSHost.API
             {
                 DPS.Storage.Document.Entities.Document result = await documents.GetDocument(DocumentId);
 
-                if (result == null)
-                {
-                    return Results.NotFound();
-                }
-                else
-                {
-                    return Results.Ok(result);
-                }
+                return result == null ? Results.NotFound() : Results.Ok(result);
             }
             )
             .DisableAntiforgery();

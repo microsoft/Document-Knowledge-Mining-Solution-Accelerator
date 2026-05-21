@@ -15,7 +15,7 @@ import {
 } from "@fluentui/react-components";
 import { AddCircle24Regular, Dismiss24Regular, SubtractCircle24Regular } from "@fluentui/react-icons";
 import { useState } from "react";
-import { ChatMessage, History, Reference } from "../../api/apiTypes/chatTypes";
+import { History, Reference } from "../../api/apiTypes/chatTypes";
 import { ChatOptions } from "../../api/apiTypes/chatTypes";
 import { PostFeedback } from "../../api/chatService";
 import { useTranslation } from "react-i18next";

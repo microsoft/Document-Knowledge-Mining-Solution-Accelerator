@@ -1,6 +1,5 @@
 import { ReactNode, createContext, useState } from 'react';
 import { ChatApiResponse } from './api/apiTypes/chatTypes';
-import { SearchFacet } from './types/searchRequest';
 
 export interface IAppContext {
     conversationAnswers: [prompt: string, response: ChatApiResponse, userTimestamp?: Date, answerTimestamp?: Date][];

@@ -36,7 +36,7 @@ export function IFrameComponent({ className, metadata, urlWithSasToken, iframeKe
                 );
             }
             case "application/pdf": {
-                const url = new URL(urlWithSasToken);
+                const url = new URL(urlWithSasToken, window.location.origin);
                 url.searchParams.append("embed", "True");
 
                 return <iframe title="PDF Viewer" key={iframeKey} src={url.toString()} width="100%" height="100%" />;

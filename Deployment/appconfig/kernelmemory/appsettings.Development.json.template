@@ -117,28 +117,18 @@
         "BucketName": ""
       },
       "AzureAISearch": {
-        "Auth": "ApiKey",
-        "Endpoint": "",
-        "APIKey": "",
+        // Auth and Endpoint are configured in Azure App Configuration
         "UseHybridSearch": true
       },
       "AzureAIDocIntel": {
-        "Auth": "ApiKey",
-        "APIKey": "",
-        "Endpoint": ""
+        // Auth and Endpoint are configured in Azure App Configuration
       },
       "AzureBlobs": {
-        "Auth": "AzureIdentity",
-        "Account": "",
-        "Container": "",
-        "ConnectionString": "",
+        // Auth, Account, and Container are configured in Azure App Configuration
         "EndpointSuffix": "core.windows.net"
       },
       "AzureOpenAIEmbedding": {
-        "Auth": "ApiKey",
-        "Endpoint": "",
-        "APIKey": "",
-        "Deployment": "",
+        // Auth, Endpoint, and Deployment are configured in Azure App Configuration
         "MaxTokenTotal": 8191,
         "EmbeddingDimensions": null,
         "MaxEmbeddingBatchSize": 1,
@@ -146,18 +136,13 @@
         "APIType": "EmbeddingGeneration"
       },
       "AzureOpenAIText": {
-        "Auth": "ApiKey",
-        "Endpoint": "",
-        "APIKey": "",
-        "Deployment": "",
+        // Auth, Endpoint, and Deployment are configured in Azure App Configuration
         "MaxTokenTotal": 128000,
         "APIType": "ChatCompletion",
         "MaxRetries": 10
       },
       "AzureQueues": {
-        "Auth": "AzureIdentity",
-        "Account": "",
-        "ConnectionString": "",
+        // Auth and Account are configured in Azure App Configuration
         "EndpointSuffix": "core.windows.net",
         "PollDelayMsecs": 100,
         "FetchBatchSize": 3,

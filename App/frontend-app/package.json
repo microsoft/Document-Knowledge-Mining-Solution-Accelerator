@@ -47,16 +47,16 @@
         "react-router-dom": "^7.14.2",
         "react-tiff": "^0.0.16",
         "react-uploader": "^3.43.0",
-        "use-debounce": "^10.1.1"
+        "use-debounce": "^10.0.6"
     },
     "devDependencies": {
         "@testing-library/jest-dom": "^6.9.0",
-        "@testing-library/react": "^16.3.2",
+        "@testing-library/react": "^16.3.0",
         "@types/cors": "^2.8.19",
-        "@types/express": "^5.0.6",
+        "@types/express": "^5.0.3",
         "@types/jest": "^30.0.0",
-        "@types/react": "^19.2.14",
-        "@types/react-dom": "^19.2.3",
+        "@types/react": "^19.1.17",
+        "@types/react-dom": "^19.1.11",
         "@types/react-router-dom": "^5.3.3",
         "@typescript-eslint/eslint-plugin": "^8.59.1",
         "@typescript-eslint/parser": "^8.59.1",
@@ -91,7 +91,7 @@
         "vite": "^8.0.10"
     },
     "volta": {
-        "node": "18.16.0",
+        "node": "20.18.1",
         "yarn": "1.22.19"
     }
 }

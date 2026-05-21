@@ -1,6 +1,5 @@
 import { Button } from "@fluentui/react-components";
 import { DOTS, usePagination } from "../../utils/customHooks/usePagination";
-import { useState } from "react";
 import { ChevronLeft24Regular, ChevronRight24Regular } from "@fluentui/react-icons";
 
 interface PaginagtionProps {

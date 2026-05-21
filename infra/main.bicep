@@ -29,7 +29,7 @@ var solutionSuffix= toLower(trim(replace(
   'Standard'
   'GlobalStandard'
 ])
-param gptModelDeploymentType string = 'GlobalStandard'
+param deploymentType string = 'GlobalStandard'
 
 @minLength(1)
 @description('Optional. Name of the GPT model to deploy:')
@@ -43,7 +43,7 @@ param gptModelVersion string = '2025-04-14'
 
 @description('Optional. Capacity of the GPT model deployment:')
 @minValue(10)
-param gptModelCapacity int = 100
+param gptDeploymentCapacity int = 100
 
 @minLength(1)
 @description('Optional. Name of the Text Embedding model to deploy:')
@@ -57,7 +57,7 @@ param embeddingModelVersion string = '1'
 
 @description('Optional. Capacity of the Text Embedding model deployment:')
 @minValue(10)
-param embeddingModelCapacity int = 100
+param embeddingDeploymentCapacity int = 100
 
 @description('Optional: Existing Log Analytics Workspace Resource ID')
 param existingLogAnalyticsWorkspaceId string = ''
@@ -71,7 +71,7 @@ param vmAdminUsername string?
 param vmAdminPassword string?
 
 @description('Optional. Size of the Jumpbox Virtual Machine when created. Set to custom value if enablePrivateNetworking is true.')
-param vmSize string = 'Standard_DS2_v2'
+param vmSize string = 'Standard_D2s_v5'
 
 @description('Optional. The tags to apply to all deployed Azure resources.')
 param tags resourceInput<'Microsoft.Resources/resourceGroups@2025-04-01'>.tags = {}
@@ -101,16 +101,17 @@ param enableScalability bool = false
   }
 })
 @description('Required. Location for AI Foundry deployment. This is the location where the AI Foundry resources will be deployed.')
-param aiDeploymentsLocation string
+param azureAiServiceLocation string
 
 @description('Optional created by user name')
 param createdBy string = contains(deployer(), 'userPrincipalName')? split(deployer().userPrincipalName, '@')[0]: deployer().objectId
 
 // ========== Resource Group Tag ========== //
-resource resourceGroupTags 'Microsoft.Resources/tags@2021-04-01' = {
+resource resourceGroupTags 'Microsoft.Resources/tags@2023-07-01' = {
   name: 'default'
   properties: {
     tags: {
+      ...resourceGroup().tags
       ...tags
       TemplateName: 'DKM'
       Type: enablePrivateNetworking ? 'WAF' : 'Non-WAF'
@@ -163,14 +164,14 @@ var gptModelDeployment = {
   modelName: gptModelName
   deploymentName: gptModelName
   deploymentVersion: gptModelVersion
-  deploymentCapacity: gptModelCapacity
+  deploymentCapacity: gptDeploymentCapacity
 }
 
 var embeddingModelDeployment = {
   modelName: embeddingModelName
   deploymentName: embeddingModelName
   deploymentVersion: embeddingModelVersion
-  deploymentCapacity: embeddingModelCapacity
+  deploymentCapacity: embeddingDeploymentCapacity
 }
 
 var openAiDeployments = [
@@ -182,7 +183,7 @@ var openAiDeployments = [
       version: gptModelDeployment.deploymentVersion
     }
     sku: {
-      name: gptModelDeploymentType
+      name: deploymentType
       capacity: gptModelDeployment.deploymentCapacity
     }
   }
@@ -194,7 +195,7 @@ var openAiDeployments = [
       version: embeddingModelDeployment.deploymentVersion
     }
     sku: {
-      name: gptModelDeploymentType
+      name: deploymentType
       capacity: embeddingModelDeployment.deploymentCapacity
     }
   }
@@ -210,7 +211,6 @@ var privateDnsZones = [
   'privatelink.queue.${environment().suffixes.storage}'
   'privatelink.api.azureml.ms'
   'privatelink.azconfig.io'
-  'privatelink.azurecr.io' // Todo: to be deleted
 ]
 // DNS Zone Index Constants
 var dnsZoneIndex = {
@@ -222,17 +222,16 @@ var dnsZoneIndex = {
   storageQueue: 5
   aiFoundry: 6
   appConfig: 7
-  containerRegistry: 8
 }
 @batchSize(5)
-module avmPrivateDnsZones 'br/public:avm/res/network/private-dns-zone:0.7.1' = [
+module avmPrivateDnsZones 'br/public:avm/res/network/private-dns-zone:0.8.1' = [
   for (zone, i) in privateDnsZones: if (enablePrivateNetworking) {
     name: 'dns-zone-${i}'
     params: {
       name: zone
       tags: tags
       enableTelemetry: enableTelemetry
-      virtualNetworkLinks: [{ virtualNetworkResourceId: network!.outputs.vnetResourceId }]
+      virtualNetworkLinks: [{ virtualNetworkResourceId: virtualNetwork!.outputs.resourceId }]
     }
   }
 ]
@@ -241,7 +240,7 @@ module avmPrivateDnsZones 'br/public:avm/res/network/private-dns-zone:0.7.1' = [
 // WAF best practices for Log Analytics: https://learn.microsoft.com/en-us/azure/well-architected/service-guides/azure-log-analytics
 // WAF PSRules for Log Analytics: https://azure.github.io/PSRule.Rules.Azure/en/rules/resource/#azure-monitor-logs
 var logAnalyticsWorkspaceResourceName = 'log-${solutionSuffix}'
-module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0.12.0' = if (enableMonitoring && !useExistingLogAnalytics) {
+module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0.15.0' = if (enableMonitoring && !useExistingLogAnalytics) {
   name: take('avm.res.operational-insights.workspace.${logAnalyticsWorkspaceResourceName}', 64)
   params: {
     name: logAnalyticsWorkspaceResourceName
@@ -253,7 +252,7 @@ module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0
     features: { enableLogAccessUsingOnlyResourcePermissions: true }
     diagnosticSettings: [{ useThisWorkspace: true }]
     // WAF aligned configuration for Redundancy
-    dailyQuotaGb: enableRedundancy ? 10 : null //WAF recommendation: 10 GB per day is a good starting point for most workloads
+    dailyQuotaGb: enableRedundancy ? '10' : null //WAF recommendation: 10 GB per day is a good starting point for most workloads
     replication: enableRedundancy
       ? {
           enabled: true
@@ -301,25 +300,111 @@ module logAnalyticsWorkspace 'br/public:avm/res/operational-insights/workspace:0
 }
 var logAnalyticsWorkspaceResourceId = useExistingLogAnalytics ? existingLogAnalyticsWorkspaceId : logAnalyticsWorkspace!.outputs.resourceId
 
-// ========== Network Module ========== //
-module network 'modules/network.bicep' = if (enablePrivateNetworking) {
-  name: take('network-${solutionSuffix}-deployment', 64)
+// Virtual Network with NSGs and Subnets
+module virtualNetwork 'modules/virtualNetwork.bicep' = if (enablePrivateNetworking) {
+  name: take('module.virtualNetwork.${solutionSuffix}', 64)
   params: {
-    resourcesName: solutionSuffix
-    logAnalyticsWorkSpaceResourceId: logAnalyticsWorkspaceResourceId
-    vmAdminUsername: vmAdminUsername ?? 'JumpboxAdminUser'
-    vmAdminPassword: vmAdminPassword ?? 'JumpboxAdminP@ssw0rd1234!'
-    vmSize: vmSize ?? 'Standard_DS2_v2' // Default VM size 
+    name: 'vnet-${solutionSuffix}'
+    addressPrefixes: ['10.0.0.0/20'] // 4096 addresses (enough for 8 /23 subnets or 16 /24)
     location: solutionLocation
     tags: tags
+    logAnalyticsWorkspaceId: logAnalyticsWorkspaceResourceId
+    resourceSuffix: solutionSuffix
     enableTelemetry: enableTelemetry
   }
 }
+// Azure Bastion Host
+var bastionHostName = 'bas-${solutionSuffix}'
+module bastionHost 'br/public:avm/res/network/bastion-host:0.8.2' = if (enablePrivateNetworking) {
+  name: take('avm.res.network.bastion-host.${bastionHostName}', 64)
+  params: {
+    name: bastionHostName
+    skuName: 'Standard'
+    location: solutionLocation
+    virtualNetworkResourceId: virtualNetwork!.outputs.resourceId
+    diagnosticSettings: [
+      {
+        name: 'bastionDiagnostics'
+        workspaceResourceId: logAnalyticsWorkspaceResourceId
+        logCategoriesAndGroups: [
+          {
+            categoryGroup: 'allLogs'
+            enabled: true
+          }
+        ]
+      }
+    ]
+    tags: tags
+    enableTelemetry: enableTelemetry
+    publicIPAddressObject: {
+      name: 'pip-${bastionHostName}'
+      availabilityZones: []
+    }
+  }
+}
 
+// Jumpbox Virtual Machine
+var jumpboxVmName = take('vm-jumpbox-${solutionSuffix}', 15)
+module jumpboxVM 'br/public:avm/res/compute/virtual-machine:0.22.0' = if (enablePrivateNetworking) {
+  name: take('avm.res.compute.virtual-machine.${jumpboxVmName}', 64)
+  params: {
+    name: take(jumpboxVmName, 15) // Shorten VM name to 15 characters to avoid Azure limits
+    vmSize: vmSize ?? 'Standard_D2s_v5'
+    location: solutionLocation
+    adminUsername: vmAdminUsername ?? 'JumpboxAdminUser'
+    adminPassword: vmAdminPassword ?? 'JumpboxAdminP@ssw0rd1234!'
+    tags: tags
+    availabilityZone: -1
+    imageReference: {
+      offer: 'WindowsServer'
+      publisher: 'MicrosoftWindowsServer'
+      sku: '2019-datacenter'
+      version: 'latest'
+    }
+    osType: 'Windows'
+    osDisk: {
+      name: 'osdisk-${jumpboxVmName}'
+      managedDisk: {
+        storageAccountType: 'Standard_LRS'
+      }
+    }
+    encryptionAtHost: false // Some Azure subscriptions do not support encryption at host
+    nicConfigurations: [
+      {
+        name: 'nic-${jumpboxVmName}'
+        ipConfigurations: [
+          {
+            name: 'ipconfig1'
+            subnetResourceId: virtualNetwork!.outputs.jumpboxSubnetResourceId
+          }
+        ]
+        diagnosticSettings: [
+          {
+            name: 'jumpboxDiagnostics'
+            workspaceResourceId: logAnalyticsWorkspaceResourceId
+            logCategoriesAndGroups: [
+              {
+                categoryGroup: 'allLogs'
+                enabled: true
+              }
+            ]
+            metricCategories: [
+              {
+                category: 'AllMetrics'
+                enabled: true
+              }
+            ]
+          }
+        ]
+      }
+    ]
+        enableTelemetry: enableTelemetry
+  }
+}
 // ========== User Assigned Identity ========== //
 // WAF best practices for identity and access management: https://learn.microsoft.com/en-us/azure/well-architected/security/identity-access
 var userAssignedIdentityResourceName = 'id-${solutionSuffix}'
-module userAssignedIdentity 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.1' = {
+module userAssignedIdentity 'br/public:avm/res/managed-identity/user-assigned-identity:0.5.0' = {
   name: take('avm.res.managed-identity.user-assigned-identity.${userAssignedIdentityResourceName}', 64)
   params: {
     name: userAssignedIdentityResourceName
@@ -350,7 +435,7 @@ module avmContainerRegistry './modules/container-registry.bicep' = {
 }
 
 // ========== Cosmos Database for Mongo DB ========== //
-module avmCosmosDB 'br/public:avm/res/document-db/database-account:0.15.0' = {
+module avmCosmosDB 'br/public:avm/res/document-db/database-account:0.19.0' = {
   name: take('avm.res.cosmos-${solutionSuffix}', 64)
   params: {
     name: 'cosmos-${solutionSuffix}'
@@ -389,7 +474,7 @@ module avmCosmosDB 'br/public:avm/res/document-db/database-account:0.15.0' = {
               ]
             }
             service: 'MongoDB'
-            subnetResourceId: network!.outputs.subnetPrivateEndpointsResourceId // Use the backend subnet
+            subnetResourceId: virtualNetwork!.outputs.pepsSubnetResourceId // Use the private endpoints subnet
           }
         ]
       : []
@@ -399,7 +484,7 @@ module avmCosmosDB 'br/public:avm/res/document-db/database-account:0.15.0' = {
         'EnableMongo'
       ]
       //capabilitiesToAdd: enableRedundancy ? null : ['EnableServerless']
-      automaticFailover: enableRedundancy ? true : false
+      enableAutomaticFailover: enableRedundancy ? true : false
       failoverLocations: enableRedundancy
       ? [
           {
@@ -425,7 +510,7 @@ module avmCosmosDB 'br/public:avm/res/document-db/database-account:0.15.0' = {
 
 // ========== App Configuration store ========== //
 var appConfigName = 'appcs-${solutionSuffix}'
-module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6.3' = {
+module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.9.2' = {
   name: take('avm.res.app-configuration.configuration-store.${appConfigName}', 64)
   params: {
     name: appConfigName
@@ -444,6 +529,10 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
     ]
 
     keyValues: [
+      {
+        name: 'ApplicationInsights:ConnectionString'
+        value: enableMonitoring ? applicationInsights!.outputs.connectionString : ''
+      }
       {
         name: 'Application:AIServices:GPT-4o-mini:Endpoint'
         value: avmOpenAi.outputs.endpoint
@@ -478,7 +567,7 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
       }
       {
         name: 'Application:Services:AzureAISearch:Endpoint'
-        value: 'https://${avmSearchSearchServices.outputs.name}.search.windows.net'
+        value: 'https://${avmSearchSearchServices.name}.search.windows.net'
       }
       {
         name: 'KernelMemory:Services:AzureAIDocIntel:Auth'
@@ -494,7 +583,7 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
       }
       {
         name: 'KernelMemory:Services:AzureAISearch:Endpoint'
-        value: 'https://${avmSearchSearchServices.outputs.name}.search.windows.net'
+        value: 'https://${avmSearchSearchServices.name}.search.windows.net'
       }
       {
         name: 'KernelMemory:Services:AzureBlobs:Account'
@@ -546,7 +635,7 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.6
   }
 }
 
-module avmAppConfigUpdated 'br/public:avm/res/app-configuration/configuration-store:0.6.3' = if(enablePrivateNetworking) {
+module avmAppConfigUpdated 'br/public:avm/res/app-configuration/configuration-store:0.9.2' = if(enablePrivateNetworking) {
   name: take('avm.res.app-configuration.configuration-store-update.${appConfigName}', 64)
   params: {
     name: appConfigName
@@ -571,7 +660,7 @@ module avmAppConfigUpdated 'br/public:avm/res/app-configuration/configuration-st
                 }
               ]
             }
-            subnetResourceId: network!.outputs.subnetPrivateEndpointsResourceId
+            subnetResourceId: virtualNetwork!.outputs.pepsSubnetResourceId
           }
         ]
       : []
@@ -583,7 +672,7 @@ module avmAppConfigUpdated 'br/public:avm/res/app-configuration/configuration-st
 
 // ========== Storage account module ========== //
 var storageAccountName = 'st${solutionSuffix}'
-module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = {
+module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.32.0' = {
   name: take('avm.res.storage.storage-account.${storageAccountName}', 64)
   params : {
     name: storageAccountName
@@ -610,7 +699,7 @@ module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = {
     }
     allowBlobPublicAccess: enablePrivateNetworking ? true : false
     publicNetworkAccess: enablePrivateNetworking ? 'Disabled' : 'Enabled'
-
+    requireInfrastructureEncryption: true
     privateEndpoints: enablePrivateNetworking
       ? [
           {
@@ -623,7 +712,7 @@ module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = {
                 }
               ]
             }
-            subnetResourceId: network!.outputs.subnetPrivateEndpointsResourceId
+            subnetResourceId: virtualNetwork!.outputs.pepsSubnetResourceId
             service: 'blob'
           }
           {
@@ -636,7 +725,7 @@ module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = {
                 }
               ]
             }
-            subnetResourceId: network!.outputs.subnetPrivateEndpointsResourceId
+            subnetResourceId: virtualNetwork!.outputs.pepsSubnetResourceId
             service: 'queue'
           }
         ]
@@ -646,8 +735,12 @@ module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = {
       corsRules: []
       deleteRetentionPolicyEnabled: false
       containers: [
+        // 'smemory' is the blob container consumed at runtime by Kernel Memory
+        // (KernelMemory:Services:AzureBlobs:Container in App Configuration). Pre-creating it here
+        // aligns infrastructure-as-code with actual runtime usage. Replaces the legacy 'data'
+        // container, which had no consumer in application code.
         {
-          name: 'data'
+          name: 'smemory'
           publicAccess: 'None'
         }
       ]
@@ -657,8 +750,17 @@ module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.20.0' = {
 
 // ========== AI Foundry: AI Search ========== //
 var aiSearchName = 'srch-${solutionSuffix}'
-module avmSearchSearchServices 'br/public:avm/res/search/search-service:0.9.1' = {
-  name: take('avm.res.cognitive-search-services.${aiSearchName}', 64)
+resource avmSearchSearchServices 'Microsoft.Search/searchServices@2025-05-01' = {
+  name: aiSearchName
+  location: solutionLocation
+  sku: {
+    name: enableScalability ? 'standard' : 'basic'
+  }
+}
+
+// Separate module for Search Service to enable managed identity and update other properties, as this reduces deployment time
+module avmSearchSearchServicesUpdate 'br/public:avm/res/search/search-service:0.12.0' = {
+  name: take('avm.res.search-services-identity.${aiSearchName}', 64)
   params: {
     name: aiSearchName
     tags: tags
@@ -698,25 +800,29 @@ module avmSearchSearchServices 'br/public:avm/res/search/search-service:0.9.1' =
                 { privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.search]!.outputs.resourceId }
               ]
             }
-            subnetResourceId: network!.outputs.subnetPrivateEndpointsResourceId
+            subnetResourceId: virtualNetwork!.outputs.pepsSubnetResourceId
           }
         ]
       : []
   }
+  dependsOn: [
+    avmSearchSearchServices
+  ]
 }
 
 // ========== Cognitive Services - OpenAI module ========== //
 var openAiAccountName = 'oai-${solutionSuffix}'
-module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
+module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.14.2' = {
   name: take('avm.res.cognitiveservices.account.${openAiAccountName}', 64)
   params: {
     name: openAiAccountName
-    location: aiDeploymentsLocation
+    location: azureAiServiceLocation
     kind: 'OpenAI'
     sku: 'S0'
     tags: tags
     enableTelemetry: enableTelemetry
     customSubDomainName: openAiAccountName
+    disableLocalAuth: true
     managedIdentities: {
       systemAssigned: true
     }
@@ -728,23 +834,7 @@ module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
       bypass: 'AzureServices'
     }
 
-    privateEndpoints: enablePrivateNetworking
-      ? [
-          {
-            name: 'pep-openai-${solutionSuffix}'
-            subnetResourceId: network!.outputs.subnetPrivateEndpointsResourceId
-            service: 'account'
-            privateDnsZoneGroup: {
-              privateDnsZoneGroupConfigs: [
-                {
-                  name: 'openai-dns-zone-group'
-                  privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.openAI]!.outputs.resourceId
-                }
-              ]
-            }
-          }
-        ]
-      : []
+    privateEndpoints: []
 
     // Role assignments
     roleAssignments: [
@@ -765,9 +855,41 @@ module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.13.2' = {
   }
 }
 
+module openaiPrivateEndpoint 'br/public:avm/res/network/private-endpoint:0.12.0' = if (enablePrivateNetworking) {
+  name: take('pep-${openAiAccountName}-deployment', 64)
+  params: {
+    name: 'pep-${openAiAccountName}'
+    customNetworkInterfaceName: 'nic-${openAiAccountName}'
+    location: solutionLocation
+    tags: tags
+    privateLinkServiceConnections: [
+      {
+        name: 'pep-${openAiAccountName}-connection'
+        properties: {
+          privateLinkServiceId: avmOpenAi.outputs.resourceId
+          groupIds: ['account']
+        }
+      }
+    ]
+    privateDnsZoneGroup: {
+      privateDnsZoneGroupConfigs: [
+        {
+          name: 'ai-services-dns-zone-cognitiveservices'
+          privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.cognitiveServices]!.outputs.resourceId
+        }
+        {
+          name: 'ai-services-dns-zone-openai'
+          privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.openAI]!.outputs.resourceId
+        }
+      ]
+    }
+    subnetResourceId: virtualNetwork!.outputs.pepsSubnetResourceId
+  }
+}
+
 // ========== Cognitive Services - Document Intellignece module ========== //
 var docIntelAccountName = 'di-${solutionSuffix}'
-module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.13.2' = {
+module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.14.2' = {
   name: take('avm.res.cognitiveservices.account.${docIntelAccountName}', 64)
   params: {
     name: docIntelAccountName
@@ -776,6 +898,7 @@ module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.13.2
     tags: tags
     sku: 'S0'
     customSubDomainName: docIntelAccountName
+    disableLocalAuth: true
     managedIdentities: {
       systemAssigned: true
     }
@@ -787,24 +910,8 @@ module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.13.2
       defaultAction: enablePrivateNetworking ? 'Deny' : 'Allow'
     }
 
-    // Private Endpoint for Form Recognizer
-    privateEndpoints: enablePrivateNetworking
-      ? [
-          {
-            name: 'pep-docintel-${solutionSuffix}'
-            subnetResourceId: network!.outputs.subnetPrivateEndpointsResourceId
-            service: 'account'
-            privateDnsZoneGroup: {
-              privateDnsZoneGroupConfigs: [
-                {
-                  name: 'docintel-dns-zone-group'
-                  privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.cognitiveServices]!.outputs.resourceId
-                }
-              ]
-            }
-          }
-        ]
-      : []
+    // Private Endpoint separated to dedicated module below
+    privateEndpoints: []
 
     // Role Assignments
     roleAssignments: [
@@ -817,15 +924,43 @@ module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.13.2
   }
 }
 
+module docIntelPrivateEndpoint 'br/public:avm/res/network/private-endpoint:0.12.0' = if (enablePrivateNetworking) {
+  name: take('pep-${docIntelAccountName}-deployment', 64)
+  params: {
+    name: 'pep-${docIntelAccountName}'
+    customNetworkInterfaceName: 'nic-${docIntelAccountName}'
+    location: solutionLocation
+    tags: tags
+    privateLinkServiceConnections: [
+      {
+        name: 'pep-${docIntelAccountName}-connection'
+        properties: {
+          privateLinkServiceId: documentIntelligence.outputs.resourceId
+          groupIds: ['account']
+        }
+      }
+    ]
+    privateDnsZoneGroup: {
+      privateDnsZoneGroupConfigs: [
+        {
+          name: 'docintel-dns-zone-cognitiveservices'
+          privateDnsZoneResourceId: avmPrivateDnsZones[dnsZoneIndex.cognitiveServices]!.outputs.resourceId
+        }
+      ]
+    }
+    subnetResourceId: virtualNetwork!.outputs.pepsSubnetResourceId
+  }
+}
+
 // ========== Azure Kubernetes Service (AKS) ========== //
-module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.1' = {
+module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.13.0' = {
   name: take('avm.res.container-service.managed-cluster.aks-${solutionSuffix}', 64)
   params: {
     name: 'aks-${solutionSuffix}'
     location: solutionLocation
     tags: tags
     enableTelemetry: enableTelemetry
-    kubernetesVersion: '1.32.7'
+    kubernetesVersion: '1.34.2'
     dnsPrefix: 'aks-${solutionSuffix}'
     enableRBAC: true
     disableLocalAccounts: false
@@ -835,7 +970,9 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.
     }
     serviceCidr: '10.20.0.0/16'
     dnsServiceIP: '10.20.0.10'
-    enablePrivateCluster: false
+    apiServerAccessProfile: {
+      enablePrivateCluster: false
+    }
     primaryAgentPoolProfiles: [
       {
         name: 'agentpool'
@@ -851,12 +988,22 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.
         enableAutoScaling: true
         scaleSetEvictionPolicy: 'Delete'
         scaleSetPriority: 'Regular'
-        vnetSubnetResourceId: enablePrivateNetworking ? network!.outputs.subnetWebResourceId : null
+     // Use the dedicated AKS subnet to avoid subnet delegation conflicts
+         vnetSubnetResourceId: enablePrivateNetworking ? virtualNetwork!.outputs.webSubnetResourceId : null
       }
     ]
-    autoNodeOsUpgradeProfileUpgradeChannel: 'Unmanaged'
-    autoUpgradeProfileUpgradeChannel: 'stable'
-    enableAzureDefender: enablePrivateNetworking
+    autoUpgradeProfile: {
+      upgradeChannel: 'stable'
+      nodeOSUpgradeChannel: 'Unmanaged'
+    }
+    securityProfile: {
+      defender: {
+        logAnalyticsWorkspaceResourceId: (enablePrivateNetworking && enableMonitoring) ? logAnalyticsWorkspaceResourceId : null
+        securityMonitoring: {
+          enabled: enablePrivateNetworking && enableMonitoring
+        }
+      }
+    }
     networkPlugin: 'azure'
     networkPolicy: 'azure'
     omsAgentEnabled: true
@@ -900,7 +1047,7 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.10.
 
 // ========== Application Insights ========== //
 var applicationInsightsResourceName = 'appi-${solutionSuffix}'
-module applicationInsights 'br/public:avm/res/insights/component:0.6.0' = if (enableMonitoring) {
+module applicationInsights 'br/public:avm/res/insights/component:0.7.1' = if (enableMonitoring) {
   name: take('avm.res.insights.component.${applicationInsightsResourceName}', 64)
   params: {
     name: applicationInsightsResourceName
@@ -954,13 +1101,13 @@ output AZURE_COGNITIVE_SERVICE_NAME string = documentIntelligence.outputs.name
 output AZURE_COGNITIVE_SERVICE_ENDPOINT string = documentIntelligence.outputs.endpoint
 
 @description('Contains Azure Search Service Name.')
-output AZURE_SEARCH_SERVICE_NAME string = avmSearchSearchServices.outputs.name
+output AZURE_SEARCH_SERVICE_NAME string = avmSearchSearchServices.name
 
 @description('Contains Azure AKS Name.')
 output AZURE_AKS_NAME string = managedCluster.outputs.name
 
 @description('Contains Azure AKS Managed Identity ID.')
-output AZURE_AKS_MI_ID string = managedCluster.outputs.systemAssignedMIPrincipalId
+output AZURE_AKS_MI_ID string = managedCluster.outputs.systemAssignedMIPrincipalId ?? ''
 
 @description('Contains Azure Container Registry Name.')
 output AZURE_CONTAINER_REGISTRY_NAME string = avmContainerRegistry.outputs.name
@@ -972,7 +1119,7 @@ output AZURE_OPENAI_SERVICE_NAME string = avmOpenAi.outputs.name
 output AZURE_OPENAI_SERVICE_ENDPOINT string = avmOpenAi.outputs.endpoint
 
 @description('Contains Azure Search Service Endpoint.')
-output AZ_SEARCH_SERVICE_ENDPOINT string = avmSearchSearchServices.outputs.name
+output AZ_SEARCH_SERVICE_ENDPOINT string = avmSearchSearchServices.name
 
 @description('Contains Azure GPT-4o Model Deployment Name.')
 output AZ_GPT4O_MODEL_ID string = gptModelDeployment.deploymentName
@@ -985,3 +1132,12 @@ output AZ_GPT_EMBEDDING_MODEL_NAME string = embeddingModelDeployment.modelName
 
 @description('Contains Azure OpenAI Embedding Model Deployment Name.')
 output AZ_GPT_EMBEDDING_MODEL_ID string = embeddingModelDeployment.deploymentName
+
+@description('Contains Application Insights Connection String.')
+output APPLICATIONINSIGHTS_CONNECTION_STRING string = enableMonitoring ? applicationInsights!.outputs.connectionString : ''
+
+@description('Contains Application Insights Instrumentation Key.')
+output APPLICATIONINSIGHTS_INSTRUMENTATION_KEY string = enableMonitoring ? applicationInsights!.outputs.instrumentationKey : ''
+
+@description('Contains Application Insights Name.')
+output APPLICATIONINSIGHTS_NAME string = enableMonitoring ? applicationInsights!.outputs.name : ''

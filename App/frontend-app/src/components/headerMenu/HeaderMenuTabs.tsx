@@ -94,7 +94,7 @@ export function HeaderMenuTabs({
 
                 {selectedDocuments && selectedDocuments.length > 0 && (
                     <Button appearance="subtle">
-                        {selectedDocuments && selectedDocuments.length > 0 && (
+                        {selectedDocuments.length > 0 && (
                             <Menu>
                                 <MenuTrigger>
                                     <div>{t('components.header-menu.selected-documents')} {`(${selectedDocuments.length})`}</div>

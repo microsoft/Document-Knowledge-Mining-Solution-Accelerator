@@ -24,6 +24,7 @@ spec:
       containers:
       - name: aiservice
         image: {{ aiservice-imagepath }}
+        imagePullPolicy: Always
         ports:
         - containerPort: 8080
         resources:
@@ -52,6 +53,7 @@ spec:
       containers:
       - name: kernelmemory
         image: {{ kernelmemory-imagepath }}
+        imagePullPolicy: Always
         ports:
         - containerPort: 8080
         resources:
@@ -80,6 +82,7 @@ spec:
       containers:
       - name: frontapp
         image: {{ frontapp-imagepath }}
+        imagePullPolicy: Always
         ports:
         - containerPort: 5900
         resources:

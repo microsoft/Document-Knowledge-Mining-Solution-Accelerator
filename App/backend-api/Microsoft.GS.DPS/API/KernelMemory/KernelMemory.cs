@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using DnsClient.Internal;
+﻿using DnsClient.Internal;
 using Microsoft.GS.DPS.Images;
 using Microsoft.GS.DPS.Model.KernelMemory;
 using Microsoft.GS.DPS.Storage.Document;
@@ -36,7 +35,7 @@ namespace Microsoft.GS.DPS.API
             var assemblyLocation = Assembly.GetExecutingAssembly().Location;
             var assemblyDirectory = System.IO.Path.GetDirectoryName(assemblyLocation);
             // binding assembly directory with file path (Prompts/KeywordExtract_SystemPrompt.txt)
-            var systemPromptFilePath = System.IO.Path.Combine(assemblyDirectory, "Prompts/KeywordExtract_SystemPrompt.txt");
+            var systemPromptFilePath = System.IO.Path.Combine(assemblyDirectory, "Prompts", "KeywordExtract_SystemPrompt.txt");
             KernelMemory.keywordExtractorPrompt = System.IO.File.ReadAllText(systemPromptFilePath);
         }
 
@@ -197,7 +196,7 @@ namespace Microsoft.GS.DPS.API
 
                     return keywordDict;
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     return new Dictionary<string, string>();
                 }
