@@ -83,6 +83,7 @@
         "prettier-plugin-tailwindcss": "^0.8.0",
         "react-tiff": "^0.0.16",
         "sass": "^1.99.0",
+        "@tailwindcss/postcss": "^4.2.4",
         "tailwindcss": "^4.2.4",
         "ts-jest": "^29.4.9",
         "ts-node": "^10.9.2",
