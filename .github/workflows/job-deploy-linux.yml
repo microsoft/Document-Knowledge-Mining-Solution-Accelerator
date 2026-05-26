@@ -339,6 +339,10 @@ jobs:
         env:
           # From GitHub secrets
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          # Needed so the script can refresh the OIDC federated token mid-run
+          # (avoids AADSTS700024 'client assertion expired' before `az acr login`).
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
           # From workflow inputs and deployment outputs
           RESOURCE_GROUP_NAME:          ${{ inputs.RESOURCE_GROUP_NAME }}

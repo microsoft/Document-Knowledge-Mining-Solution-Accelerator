@@ -1001,7 +1001,35 @@ try {
     # $acrKernelMemoryTag = "$($deploymentResult.AzContainerRegistryName).azurecr.io/$acrNamespace/kernelmemory"
     # $acrFrontAppTag = "$($deploymentResult.AzContainerRegistryName).azurecr.io/$acrNamespace/frontapp"
 
-    # 1. Login to Azure Container Registry
+    # 1. Refresh Azure CLI auth using a fresh GitHub OIDC token before ACR login.
+    #    The federated client assertion issued by azure/login@v2 has only ~5 min
+    #    validity and AKS provisioning above can take much longer, which causes
+    #    `az acr login` to fail with AADSTS700024 (assertion expired) and then
+    #    docker push returns 401 unauthorized. Re-mint a fresh token here.
+    if ($env:ACTIONS_ID_TOKEN_REQUEST_URL -and $env:ACTIONS_ID_TOKEN_REQUEST_TOKEN `
+        -and $env:AZURE_CLIENT_ID -and $env:AZURE_TENANT_ID) {
+        Write-Host "Refreshing Azure CLI federated credentials before ACR login..." -ForegroundColor Yellow
+        try {
+            $tokenUrl = "$($env:ACTIONS_ID_TOKEN_REQUEST_URL)&audience=api://AzureADTokenExchange"
+            $headers = @{ Authorization = "Bearer $($env:ACTIONS_ID_TOKEN_REQUEST_TOKEN)" }
+            $idToken = (Invoke-RestMethod -Uri $tokenUrl -Headers $headers -Method Get).value
+            az login --service-principal `
+                --username $env:AZURE_CLIENT_ID `
+                --tenant $env:AZURE_TENANT_ID `
+                --federated-token $idToken `
+                --output none
+            if ($env:AZURE_SUBSCRIPTION_ID) {
+                az account set --subscription $env:AZURE_SUBSCRIPTION_ID --output none
+            }
+            Write-Host "✅ Azure CLI re-authenticated with fresh OIDC token." -ForegroundColor Green
+        } catch {
+            Write-Host "⚠️ Failed to refresh OIDC token: $($_.Exception.Message). Proceeding with existing credentials." -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "⚠️ OIDC refresh skipped (missing ACTIONS_ID_TOKEN_* or AZURE_CLIENT_ID/TENANT_ID env vars)." -ForegroundColor Yellow
+    }
+
+    # 2. Login to Azure Container Registry
     az acr login --name $deploymentResult.AzContainerRegistryName
     
     # $acrNamespace = "kmgs"
