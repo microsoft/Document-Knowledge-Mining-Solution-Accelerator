@@ -392,33 +392,63 @@ jobs:
 
       - name: Validate Deployment
         shell: bash
+        env:
+          APP_NAMESPACE: ns-km
+          AZURE_AKS_NAME: ${{ env.AZURE_AKS_NAME }}
+          RESOURCE_GROUP_NAME: ${{ inputs.RESOURCE_GROUP_NAME }}
         run: |
           webapp_url="${{ steps.get_webapp_url.outputs.WEB_APPURL }}"
           echo "Validating web app at: $webapp_url"
 
-          # Enhanced health check with retry logic
-          max_attempts=7
+          # Wait for AKS workloads to become Available before probing the public endpoint.
+          # First-time pod startup (large container images + cert-manager Let's Encrypt
+          # issuance + ingress wiring) commonly takes 5-10 minutes, which previously
+          # caused the curl health check to give up while pods were still Pending.
+          if [ -n "$AZURE_AKS_NAME" ] && [ -n "$RESOURCE_GROUP_NAME" ]; then
+            echo "Fetching AKS kubeconfig for $AZURE_AKS_NAME..."
+            az aks get-credentials \
+              --resource-group "$RESOURCE_GROUP_NAME" \
+              --name "$AZURE_AKS_NAME" \
+              --overwrite-existing \
+              --only-show-errors || echo "⚠️ Failed to fetch kubeconfig; falling back to HTTP-only validation."
+
+            if command -v kubectl >/dev/null 2>&1 && kubectl get ns "$APP_NAMESPACE" >/dev/null 2>&1; then
+              echo "Waiting up to 15 minutes for deployments in namespace '$APP_NAMESPACE' to become Available..."
+              if ! kubectl wait --for=condition=Available --timeout=900s \
+                   deployment --all -n "$APP_NAMESPACE"; then
+                echo "⚠️ kubectl wait timed out. Current pod status:"
+                kubectl get pods -n "$APP_NAMESPACE" -o wide || true
+                kubectl describe pods -n "$APP_NAMESPACE" | tail -n 200 || true
+              else
+                echo "✅ All deployments in '$APP_NAMESPACE' are Available."
+              fi
+            else
+              echo "⚠️ Namespace '$APP_NAMESPACE' not found or kubectl unavailable; skipping pod readiness wait."
+            fi
+          fi
+
+          # HTTP health check with retry logic.
+          # ~10 minutes of additional headroom on top of the pod-readiness wait above
+          # to cover ingress propagation and TLS cert issuance.
+          max_attempts=20
           attempt=1
           success=false
 
           while [ $attempt -le $max_attempts ] && [ "$success" = false ]; do
             echo "Attempt $attempt/$max_attempts: Checking web app health..."
 
-            # Check if web app responds
-            http_code=$(curl -s -o /dev/null -w "%{http_code}" "$webapp_url" || echo "000")
+            # -k tolerates a not-yet-issued Let's Encrypt cert (HTTP 200 from backend is what matters).
+            http_code=$(curl -sk -o /dev/null -w "%{http_code}" "$webapp_url" || echo "000")
 
             if [ "$http_code" -eq 200 ]; then
               echo "✅ Web app is healthy (HTTP $http_code)"
               success=true
-            elif [ "$http_code" -eq 404 ]; then
-              echo "❌ Web app not found (HTTP 404)"
-              break
-            elif [ "$http_code" -eq 503 ] || [ "$http_code" -eq 502 ]; then
-              echo "⚠️ Web app temporarily unavailable (HTTP $http_code), retrying..."
-              sleep 20
+            elif [ "$http_code" -eq 404 ] || [ "$http_code" -eq 503 ] || [ "$http_code" -eq 502 ] || [ "$http_code" -eq 000 ]; then
+              echo "⚠️ Web app not ready yet (HTTP $http_code), retrying in 30s..."
+              sleep 30
             else
-              echo "⚠️ Web app returned HTTP $http_code, retrying..."
-              sleep 20
+              echo "⚠️ Web app returned HTTP $http_code, retrying in 30s..."
+              sleep 30
             fi
 
             attempt=$((attempt + 1))
