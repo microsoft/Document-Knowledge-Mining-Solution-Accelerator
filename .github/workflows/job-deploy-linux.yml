@@ -339,8 +339,6 @@ jobs:
         env:
           # From GitHub secrets
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          # Needed so the script can refresh the OIDC federated token mid-run
-          # (avoids AADSTS700024 'client assertion expired' before `az acr login`).
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
@@ -400,10 +398,7 @@ jobs:
           webapp_url="${{ steps.get_webapp_url.outputs.WEB_APPURL }}"
           echo "Validating web app at: $webapp_url"
 
-          # Wait for AKS workloads to become Available before probing the public endpoint.
-          # First-time pod startup (large container images + cert-manager Let's Encrypt
-          # issuance + ingress wiring) commonly takes 5-10 minutes, which previously
-          # caused the curl health check to give up while pods were still Pending.
+          # Wait for AKS workloads to become Available
           if [ -n "$AZURE_AKS_NAME" ] && [ -n "$RESOURCE_GROUP_NAME" ]; then
             echo "Fetching AKS kubeconfig for $AZURE_AKS_NAME..."
             az aks get-credentials \
@@ -427,9 +422,7 @@ jobs:
             fi
           fi
 
-          # HTTP health check with retry logic.
-          # ~10 minutes of additional headroom on top of the pod-readiness wait above
-          # to cover ingress propagation and TLS cert issuance.
+          # HTTP health check with retry logic
           max_attempts=20
           attempt=1
           success=false
@@ -459,9 +452,6 @@ jobs:
             exit 1
           fi
 
-          # Post-success strict-TLS probe: warn (but do not fail) if the Let's Encrypt
-          # cert hasn't propagated or is invalid. Keeps existing pass/fail behavior
-          # while surfacing TLS issues that the -k loop above intentionally tolerates.
           tls_code=$(curl -sS -o /dev/null -w "%{http_code}" "$webapp_url" 2>/tmp/tls_err.log || echo "000")
           if [ "$tls_code" -eq 200 ]; then
             echo "✅ Public endpoint also validates with strict TLS (HTTP $tls_code)."

@@ -1001,11 +1001,7 @@ try {
     # $acrKernelMemoryTag = "$($deploymentResult.AzContainerRegistryName).azurecr.io/$acrNamespace/kernelmemory"
     # $acrFrontAppTag = "$($deploymentResult.AzContainerRegistryName).azurecr.io/$acrNamespace/frontapp"
 
-    # 1. Refresh Azure CLI auth using a fresh GitHub OIDC token before ACR login.
-    #    The federated client assertion issued by azure/login@v2 has only ~5 min
-    #    validity and AKS provisioning above can take much longer, which causes
-    #    `az acr login` to fail with AADSTS700024 (assertion expired) and then
-    #    docker push returns 401 unauthorized. Re-mint a fresh token here.
+    # 1. Refresh Azure CLI auth using a fresh GitHub OIDC token before ACR login
     if ($env:ACTIONS_ID_TOKEN_REQUEST_URL -and $env:ACTIONS_ID_TOKEN_REQUEST_TOKEN `
         -and $env:AZURE_CLIENT_ID -and $env:AZURE_TENANT_ID) {
         Write-Host "Refreshing Azure CLI federated credentials before ACR login..." -ForegroundColor Yellow
