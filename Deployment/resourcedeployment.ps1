@@ -1018,8 +1018,15 @@ try {
                 --tenant $env:AZURE_TENANT_ID `
                 --federated-token $idToken `
                 --output none
+            # az is a native command - try/catch will not trip on non-zero exit; check $LASTEXITCODE explicitly.
+            if ($LASTEXITCODE -ne 0) {
+                throw "az login --service-principal exited with code $LASTEXITCODE"
+            }
             if ($env:AZURE_SUBSCRIPTION_ID) {
                 az account set --subscription $env:AZURE_SUBSCRIPTION_ID --output none
+                if ($LASTEXITCODE -ne 0) {
+                    throw "az account set exited with code $LASTEXITCODE"
+                }
             }
             Write-Host "✅ Azure CLI re-authenticated with fresh OIDC token." -ForegroundColor Green
         } catch {
@@ -1033,18 +1040,18 @@ try {
     az acr login --name $deploymentResult.AzContainerRegistryName
     
     # $acrNamespace = "kmgs"
-    # 2. Build and push the images to Azure Container Registry
-    #  2-1. Build and push the AI Service container image to  Azure Container Registry
+    # 3. Build and push the images to Azure Container Registry
+    #  3-1. Build and push the AI Service container image to  Azure Container Registry
     #$acrAIServiceTag = "$($deploymentResult.AzContainerRegistryName).azurecr.io/$acrNamespace/aiservice"
     docker build "../App/backend-api/." --no-cache -t $acrAIServiceTag
     docker push $acrAIServiceTag
 
-    #  2-2. Build and push the Kernel Memory Service container image to Azure Container Registry
+    #  3-2. Build and push the Kernel Memory Service container image to Azure Container Registry
     #$acrKernelMemoryTag = "$($deploymentResult.AzContainerRegistryName).azurecr.io/$acrNamespace/kernelmemory"
     docker build "../App/kernel-memory/." --no-cache -t $acrKernelMemoryTag
     docker push $acrKernelMemoryTag
 
-    #  2-3. Build and push the Frontend App Service container image to Azure Container Registry
+    #  3-3. Build and push the Frontend App Service container image to Azure Container Registry
     #$acrFrontAppTag = "$($deploymentResult.AzContainerRegistryName).azurecr.io/$acrNamespace/frontapp"
     docker build "../App/frontend-app/." --no-cache -t $acrFrontAppTag
     docker push $acrFrontAppTag

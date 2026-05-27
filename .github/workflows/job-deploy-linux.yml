@@ -459,6 +459,17 @@ jobs:
             exit 1
           fi
 
+          # Post-success strict-TLS probe: warn (but do not fail) if the Let's Encrypt
+          # cert hasn't propagated or is invalid. Keeps existing pass/fail behavior
+          # while surfacing TLS issues that the -k loop above intentionally tolerates.
+          tls_code=$(curl -sS -o /dev/null -w "%{http_code}" "$webapp_url" 2>/tmp/tls_err.log || echo "000")
+          if [ "$tls_code" -eq 200 ]; then
+            echo "✅ Public endpoint also validates with strict TLS (HTTP $tls_code)."
+          else
+            echo "⚠️ Strict-TLS probe returned HTTP $tls_code (non-fatal). curl stderr:"
+            cat /tmp/tls_err.log || true
+          fi
+
       - name: Run Post Deployment Script
         continue-on-error: true
         shell: pwsh
