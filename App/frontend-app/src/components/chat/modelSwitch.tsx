@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 interface ModelSwitchProps {
@@ -6,8 +5,6 @@ interface ModelSwitchProps {
 }
 
 export function ModelSwitch({ onSwitchChange }: ModelSwitchProps) {
-    const GPT4O = "chat_4o";
-
     return (
         <div className="flex h-[70px] w-[210px] items-center justify-center rounded-lg ">
             {/* <div className="align-center flex h-[50px] w-[240px] items-center justify-center rounded-full bg-neutral-300 shadow-md">

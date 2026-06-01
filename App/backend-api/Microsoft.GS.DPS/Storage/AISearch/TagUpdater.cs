@@ -49,10 +49,12 @@ namespace Microsoft.GS.DPS.Storage.AISearch
                         var response = await _searchClient.MergeOrUploadDocumentsAsync(new[] { updateDocument });
                         Console.WriteLine($"Document with ID {document["id"]} updated successfully. - {response.GetRawResponse()}");
                     }
+                    #pragma warning disable CA1031 // Tag update is best-effort; log and continue with the next document
                     catch (Exception ex)
                     {
                         Console.Error.WriteLine($"Error updating document with ID {document["id"]}: {ex.Message}");
                     }
+                    #pragma warning restore CA1031
                 }
             }
         }

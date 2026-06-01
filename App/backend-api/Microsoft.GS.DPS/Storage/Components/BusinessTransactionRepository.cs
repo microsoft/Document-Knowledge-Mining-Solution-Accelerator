@@ -50,7 +50,12 @@ namespace Microsoft.GS.DPS.Storage.Components
         {
             var collection = _database.GetCollection<TEntity>(typeof(TEntity).Name.ToLowerInvariant());
 
-            GenericSpecification<TEntity> genericSpecification = specification as GenericSpecification<TEntity>;
+            if (specification is not GenericSpecification<TEntity> genericSpecification)
+            {
+                throw new ArgumentException(
+                    $"Expected specification of type {nameof(GenericSpecification<TEntity>)}.",
+                    nameof(specification));
+            }
 
             if (genericSpecification.OrderBy == null)
             {

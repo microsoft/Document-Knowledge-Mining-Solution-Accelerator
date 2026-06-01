@@ -30,7 +30,7 @@ interface HomeProps {
     isSearchResultsPage?: boolean;
 }
 export function Home({ isSearchResultsPage }: HomeProps) {
-    const [filter, setFilter] = useState({
+    const [, setFilter] = useState({
         option: null,
         startDate: null,
         endDate: null,
@@ -68,7 +68,6 @@ export function Home({ isSearchResultsPage }: HomeProps) {
     const [inOrderBy, setInOrderBy] = useState<string>("");
     const [searchResultDocuments, setSearchResultDocuments] = useState<Document[]>([]);
 
-    const [selectedDocument, setSelectedDocument] = useState<Document[]>([]);
     const { query, setQuery, filters: persistedFilters, setFilters: setPersistedFilters } = useContext(AppContext);
     const [selectedDateFilter] = useState(null);
     // const tempFilter = new SearchFacet
@@ -247,13 +246,7 @@ export function Home({ isSearchResultsPage }: HomeProps) {
         setChatWidth(rightWidth);
     };
 
-    const handleSortSelected = (sort: string) => {
-        setInOrderBy(sort);
-    };
-
     const headerMenuTabsRef = useRef<HTMLDivElement>(null);
-
-    const [widthClass, setWidthClass] = useState(window.innerWidth > 2000 ? "w-[165%]" : "w-[125%]");
 
     useEffect(() => {
         const filtersFromUrl = searchParams.get("filters");
@@ -299,18 +292,6 @@ export function Home({ isSearchResultsPage }: HomeProps) {
             }
         }
     }, []);    
-
-    useEffect(() => {
-        const handleResize = () => {
-            setWidthClass(window.innerWidth > 2000 ? "w-[165%]" : "w-[125%]");
-        };
-
-        window.addEventListener("resize", handleResize);
-
-        return () => {
-            window.removeEventListener("resize", handleResize);
-        };
-    }, []);
 
     //API call
     useEffect(() => {
@@ -458,8 +439,6 @@ export function Home({ isSearchResultsPage }: HomeProps) {
     }, [data]);
 
     function handleChatWithDocument(document: Document) {
-        setSelectedDocument([document]);
-        
         setShowCopilot(true);
         if (headerMenuTabsRef.current && showCopilot === false) {
             headerMenuTabsRef.current.scrollIntoView({ behavior: "smooth" });
