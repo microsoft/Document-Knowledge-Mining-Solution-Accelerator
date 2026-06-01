@@ -1001,22 +1001,53 @@ try {
     # $acrKernelMemoryTag = "$($deploymentResult.AzContainerRegistryName).azurecr.io/$acrNamespace/kernelmemory"
     # $acrFrontAppTag = "$($deploymentResult.AzContainerRegistryName).azurecr.io/$acrNamespace/frontapp"
 
-    # 1. Login to Azure Container Registry
+    # 1. Refresh Azure CLI auth using a fresh GitHub OIDC token before ACR login
+    if ($env:ACTIONS_ID_TOKEN_REQUEST_URL -and $env:ACTIONS_ID_TOKEN_REQUEST_TOKEN `
+        -and $env:AZURE_CLIENT_ID -and $env:AZURE_TENANT_ID) {
+        Write-Host "Refreshing Azure CLI federated credentials before ACR login..." -ForegroundColor Yellow
+        try {
+            $tokenUrl = "$($env:ACTIONS_ID_TOKEN_REQUEST_URL)&audience=api://AzureADTokenExchange"
+            $headers = @{ Authorization = "Bearer $($env:ACTIONS_ID_TOKEN_REQUEST_TOKEN)" }
+            $idToken = (Invoke-RestMethod -Uri $tokenUrl -Headers $headers -Method Get).value
+            az login --service-principal `
+                --username $env:AZURE_CLIENT_ID `
+                --tenant $env:AZURE_TENANT_ID `
+                --federated-token $idToken `
+                --output none
+            # az is a native command - try/catch will not trip on non-zero exit; check $LASTEXITCODE explicitly.
+            if ($LASTEXITCODE -ne 0) {
+                throw "az login --service-principal exited with code $LASTEXITCODE"
+            }
+            if ($env:AZURE_SUBSCRIPTION_ID) {
+                az account set --subscription $env:AZURE_SUBSCRIPTION_ID --output none
+                if ($LASTEXITCODE -ne 0) {
+                    throw "az account set exited with code $LASTEXITCODE"
+                }
+            }
+            Write-Host "✅ Azure CLI re-authenticated with fresh OIDC token." -ForegroundColor Green
+        } catch {
+            Write-Host "⚠️ Failed to refresh OIDC token: $($_.Exception.Message). Proceeding with existing credentials." -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "⚠️ OIDC refresh skipped (missing ACTIONS_ID_TOKEN_* or AZURE_CLIENT_ID/TENANT_ID env vars)." -ForegroundColor Yellow
+    }
+
+    # 2. Login to Azure Container Registry
     az acr login --name $deploymentResult.AzContainerRegistryName
     
     # $acrNamespace = "kmgs"
-    # 2. Build and push the images to Azure Container Registry
-    #  2-1. Build and push the AI Service container image to  Azure Container Registry
+    # 3. Build and push the images to Azure Container Registry
+    #  3-1. Build and push the AI Service container image to  Azure Container Registry
     #$acrAIServiceTag = "$($deploymentResult.AzContainerRegistryName).azurecr.io/$acrNamespace/aiservice"
     docker build "../App/backend-api/." --no-cache -t $acrAIServiceTag
     docker push $acrAIServiceTag
 
-    #  2-2. Build and push the Kernel Memory Service container image to Azure Container Registry
+    #  3-2. Build and push the Kernel Memory Service container image to Azure Container Registry
     #$acrKernelMemoryTag = "$($deploymentResult.AzContainerRegistryName).azurecr.io/$acrNamespace/kernelmemory"
     docker build "../App/kernel-memory/." --no-cache -t $acrKernelMemoryTag
     docker push $acrKernelMemoryTag
 
-    #  2-3. Build and push the Frontend App Service container image to Azure Container Registry
+    #  3-3. Build and push the Frontend App Service container image to Azure Container Registry
     #$acrFrontAppTag = "$($deploymentResult.AzContainerRegistryName).azurecr.io/$acrNamespace/frontapp"
     docker build "../App/frontend-app/." --no-cache -t $acrFrontAppTag
     docker push $acrFrontAppTag
