@@ -1,36 +1,45 @@
-@description('The Azure region where the Cosmos DB account will be deployed.')
-param solutionLocation string
+// ============================================================================
+// Module: Cosmos DB
+// Description: Creates an Azure Cosmos DB (NoSQL) account with database/container
+// API: Microsoft.DocumentDB/databaseAccounts@2025-10-15
+// ============================================================================
 
-@description('The name of the Cosmos DB account.')
-param accountName string
-var databaseName = 'db_conversation_history'
-var collectionName = 'conversations'
+@description('Solution name suffix used to derive the resource name.')
+param solutionName string
 
-var containers = [
+@description('Name of the Cosmos DB account.')
+param name string = 'cosmos-${solutionName}'
+
+@description('Azure region for the resource.')
+param location string
+
+@description('Tags to apply to the resource.')
+param tags object = {}
+
+@description('Database name.')
+param databaseName string = 'db_conversation_history'
+
+@description('Container definitions.')
+param containers array = [
   {
-    name: collectionName
-    id: collectionName
-    partitionKey: '/userId'
+    name: 'conversations'
+    partitionKeyPath: '/userId'
   }
 ]
 
-@description('The type of Cosmos DB account to create.')
-@allowed([ 'GlobalDocumentDB', 'MongoDB', 'Parse' ])
-param kind string = 'GlobalDocumentDB'
-
-@description('Tags to apply to the Cosmos DB resources.')
-param tags object = {}
-
+// ============================================================================
+// Resource Deployment
+// ============================================================================
 resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2025-10-15' = {
-  name: accountName
-  kind: kind
-  location: solutionLocation
+  name: name
+  location: location
   tags: tags
+  kind: 'GlobalDocumentDB'
   properties: {
     consistencyPolicy: { defaultConsistencyLevel: 'Session' }
     locations: [
       {
-        locationName: solutionLocation
+        locationName: location
         failoverPriority: 0
         isZoneRedundant: false
       }
@@ -39,11 +48,9 @@ resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2025-10-15' = {
     enableAutomaticFailover: false
     enableMultipleWriteLocations: false
     disableLocalAuth: true
-    apiProperties: (kind == 'MongoDB') ? { serverVersion: '4.0' } : {}
     capabilities: [ { name: 'EnableServerless' } ]
   }
 }
-
 
 resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2025-10-15' = {
   parent: cosmos
@@ -56,19 +63,28 @@ resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2025-10-15
     name: container.name
     properties: {
       resource: {
-        id: container.id
-        partitionKey: { paths: [ container.partitionKey ] }
+        id: container.name
+        partitionKey: { paths: [ container.partitionKeyPath ] }
       }
       options: {}
     }
   }]
 }
 
-@description('The name of the created Cosmos DB account.')
-output cosmosAccountName string = cosmos.name
+// ============================================================================
+// Outputs
+// ============================================================================
+@description('Resource ID of the Cosmos DB account.')
+output resourceId string = cosmos.id
 
-@description('The name of the Cosmos DB database.')
-output cosmosDatabaseName string = databaseName
+@description('Name of the Cosmos DB account.')
+output name string = cosmos.name
 
-@description('The name of the Cosmos DB container.')
-output cosmosContainerName string = collectionName
+@description('Endpoint of the Cosmos DB account.')
+output endpoint string = 'https://${name}.documents.azure.com:443/'
+
+@description('Database name.')
+output databaseName string = databaseName
+
+@description('Container name (first container).')
+output containerName string = containers[0].name

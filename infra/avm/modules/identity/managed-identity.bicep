@@ -5,8 +5,11 @@
 // Usage: Call this module once per identity from main.bicep
 // ============================================================================
 
+@description('Solution name used for resource naming.')
+param solutionName string
+
 @description('Name of the managed identity.')
-param identityName string
+param identityName string = 'id-${solutionName}'
 
 @description('Azure region for the resource.')
 param location string

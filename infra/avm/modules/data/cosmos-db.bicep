@@ -8,7 +8,8 @@
 @description('Solution name suffix used to derive the resource name.')
 param solutionName string
 
-var accountName = 'cosmos-${solutionName}'
+@description('Name of the Cosmos DB account.')
+param name string = 'cosmos-${solutionName}'
 
 @description('Azure region for the resource.')
 param location string
@@ -66,9 +67,9 @@ param haLocation string = ''
 // AVM Module Deployment
 // ============================================================================
 module cosmosAccount 'br/public:avm/res/document-db/database-account:0.19.0' = {
-  name: take('avm.res.document-db.database-account.${accountName}', 64)
+  name: take('avm.res.document-db.database-account.${name}', 64)
   params: {
-    name: accountName
+    name: name
     location: location
     tags: tags
     enableTelemetry: enableTelemetry
@@ -92,8 +93,8 @@ module cosmosAccount 'br/public:avm/res/document-db/database-account:0.19.0' = {
     }
     privateEndpoints: enablePrivateNetworking ? [
       {
-        name: 'pep-${accountName}'
-        customNetworkInterfaceName: 'nic-${accountName}'
+        name: 'pep-${name}'
+        customNetworkInterfaceName: 'nic-${name}'
         subnetResourceId: privateEndpointSubnetId
         service: 'Sql'
         privateDnsZoneGroup: {
@@ -136,7 +137,7 @@ output resourceId string = cosmosAccount.outputs.resourceId
 output name string = cosmosAccount.outputs.name
 
 @description('Endpoint of the Cosmos DB account.')
-output endpoint string = 'https://${accountName}.documents.azure.com:443/'
+output endpoint string = 'https://${name}.documents.azure.com:443/'
 
 @description('Database name.')
 output databaseName string = databaseName

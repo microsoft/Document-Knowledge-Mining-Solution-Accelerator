@@ -1,40 +1,52 @@
-targetScope = 'resourceGroup'
+// ============================================================================
+// Module: Azure Key Vault
+// Description: Vanilla Bicep module for Azure Key Vault
+// Resource: Microsoft.KeyVault/vaults@2023-07-01
+// Docs: https://learn.microsoft.com/azure/templates/microsoft.keyvault/vaults
+// ============================================================================
 
-@description('The name of the solution, used as the base for resource naming.')
+@description('Solution name used for naming convention.')
 param solutionName string
 
-@description('The Azure region where the Key Vault will be deployed.')
-param solutionLocation string
+@description('Optional. Override name for the Key Vault. Defaults to kv-{solutionName}.')
+param name string = take('kv-${solutionName}', 24)
 
-@description('Tags to apply to the resource.')
+@description('Azure region for deployment.')
+param location string
+
+@description('Resource tags.')
 param tags object = {}
 
-@description('The SKU tier for the Key Vault.')
+@description('SKU for the key vault.')
+@allowed(['standard', 'premium'])
 param sku string = 'standard'
 
-@description('Indicates whether Azure RBAC authorization is enabled for the Key Vault.')
+@description('Enable RBAC authorization.')
 param enableRbacAuthorization bool = true
 
-@description('Indicates whether soft delete is enabled for the Key Vault.')
+@description('Enable soft delete.')
 param enableSoftDelete bool = true
 
-@description('The number of days that soft-deleted vaults are retained.')
+@description('Soft delete retention in days.')
 param softDeleteRetentionInDays int = 90
 
-@description('Indicates whether purge protection is enabled for the Key Vault.')
+@description('Enable purge protection.')
 param enablePurgeProtection bool = true
 
-@description('Controls public network access to the Key Vault.')
+@description('Public network access setting.')
+@allowed(['Enabled', 'Disabled'])
 param publicNetworkAccess string = 'Enabled'
 
 @description('The Microsoft Entra tenant ID for the Key Vault.')
 param tenantId string = subscription().tenantId
 
-var name = 'kv-${solutionName}'
+// ============================================================================
+// Key Vault Resource
+// ============================================================================
 
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: name
-  location: solutionLocation
+  location: location
   tags: tags
   properties: {
     tenantId: tenantId
@@ -55,6 +67,10 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   }
 }
 
+// ============================================================================
+// Outputs
+// ============================================================================
+
 @description('The name of the Key Vault.')
 output name string = keyVault.name
 
@@ -62,4 +78,4 @@ output name string = keyVault.name
 output uri string = keyVault.properties.vaultUri
 
 @description('The resource ID of the Key Vault.')
-output id string = keyVault.id
+output resourceId string = keyVault.id

@@ -25,7 +25,8 @@ param namePrefix string
 ])
 param kind string
 
-var name = '${namePrefix}-${solutionName}'
+@description('Optional. Override name for the resource. Defaults to {namePrefix}-{solutionName}.')
+param name string = '${namePrefix}-${solutionName}'
 
 @description('Azure region for the resource.')
 param location string

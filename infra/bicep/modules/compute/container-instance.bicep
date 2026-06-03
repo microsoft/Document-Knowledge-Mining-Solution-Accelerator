@@ -1,69 +1,119 @@
-targetScope = 'resourceGroup'
+// ============================================================================
+// Module: Azure Container Instance
+// Description: Creates an Azure Container Instance group
+// API: Microsoft.ContainerInstance/containerGroups@2025-09-01
+// ============================================================================
 
-@description('The name of the Container Instance group.')
+@description('Name of the container group.')
 param name string
 
-@description('The Azure region where the Container Instance group will be deployed.')
-param solutionLocation string
+@description('Azure region for deployment.')
+param location string
 
-@description('Tags to apply to the resource.')
+@description('Resource tags.')
 param tags object = {}
 
-@description('The containers to deploy in the container group.')
-param containers array
+@description('Container image to deploy.')
+param containerImage string
 
-@description('The operating system type for the container group.')
+@description('CPU cores for the container.')
+param cpu int = 2
+
+@description('Memory in GB for the container.')
+param memoryInGB int = 4
+
+@description('Port to expose.')
+param port int = 8000
+
+@description('Environment variables for the container.')
+param environmentVariables array = []
+
+@description('Operating system type.')
+@allowed(['Linux', 'Windows'])
 param osType string = 'Linux'
 
-@description('The restart policy for the container group.')
-param restartPolicy string = 'OnFailure'
+@description('Restart policy.')
+@allowed(['Always', 'OnFailure', 'Never'])
+param restartPolicy string = 'Always'
 
-@description('The managed identity type assigned to the container group.')
-param identityType string = 'None'
+@description('Managed identity configuration.')
+param managedIdentities object = {}
 
-@description('The user-assigned identities to associate with the container group when applicable.')
-param userAssignedIdentities object = {}
-
-@description('The IP address type for the container group.')
-param ipAddressType string = 'Public'
-
-@description('Image registry credentials for pulling private images.')
+@description('Image registry credentials.')
 param imageRegistryCredentials array = []
 
-var containerGroupIdentity = identityType == 'None' ? null : {
-  type: identityType
-  userAssignedIdentities: contains(identityType, 'UserAssigned') ? userAssignedIdentities : null
+@description('Subnet resource ID for VNet integration. If empty, public IP is used.')
+param subnetResourceId string = ''
+
+@description('Availability zone for the container group. Use -1 for no zone.')
+param availabilityZone int = -1
+
+// ============================================================================
+// Variables
+// ============================================================================
+var isPrivateNetworking = !empty(subnetResourceId)
+
+var identityConfig = empty(managedIdentities) ? { type: 'None' } : {
+  type: contains(managedIdentities, 'userAssignedResourceIds') ? 'UserAssigned' : 'SystemAssigned'
+  userAssignedIdentities: contains(managedIdentities, 'userAssignedResourceIds') ? reduce(managedIdentities.userAssignedResourceIds, {}, (cur, id) => union(cur, { '${id}': {} })) : null
 }
 
-var firstContainerPorts = length(containers) > 0 ? (containers[0].?properties.?ports ?? []) : []
-
-var ipAddressPorts = [for port in firstContainerPorts: {
-  port: port.port
-  protocol: port.?protocol ?? 'TCP'
-}]
-
-resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01' = {
+// ============================================================================
+// Resource Deployment
+// ============================================================================
+resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2025-09-01' = {
   name: name
-  location: solutionLocation
+  location: location
   tags: tags
-  identity: containerGroupIdentity
+  identity: identityConfig
+  zones: availabilityZone != -1 ? [string(availabilityZone)] : null
   properties: {
     osType: osType
     restartPolicy: restartPolicy
-    containers: containers
+    containers: [
+      {
+        name: name
+        properties: {
+          image: containerImage
+          resources: {
+            requests: {
+              cpu: cpu
+              memoryInGB: memoryInGB
+            }
+          }
+          ports: [
+            {
+              port: port
+              protocol: 'TCP'
+            }
+          ]
+          environmentVariables: environmentVariables
+        }
+      }
+    ]
     imageRegistryCredentials: imageRegistryCredentials
-    ipAddress: ipAddressType == 'Public' ? {
-      type: 'Public'
-      ports: ipAddressPorts
-    } : null
+    subnetIds: isPrivateNetworking ? [{ id: subnetResourceId }] : null
+    ipAddress: {
+      type: isPrivateNetworking ? 'Private' : 'Public'
+      ports: [
+        {
+          port: port
+          protocol: 'TCP'
+        }
+      ]
+      dnsNameLabel: isPrivateNetworking ? null : name
+    }
   }
 }
 
-@description('The name of the Container Instance group.')
+// ============================================================================
+// Outputs
+// ============================================================================
+@description('The name of the container group.')
 output name string = containerGroup.name
 
-@description('The resource ID of the Container Instance group.')
-output id string = containerGroup.id
+@description('The resource ID of the container group.')
+output resourceId string = containerGroup.id
 
-@description('The public IP address assigned to the container group, if available.')
-output ipAddress string = ipAddressType == 'Public' ? containerGroup.properties.ipAddress.ip : ''
+@description('The IP address of the container group.')
+output ipAddress string = containerGroup.properties.ipAddress.ip

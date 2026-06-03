@@ -7,17 +7,14 @@
 @description('Solution name suffix used to derive the resource name.')
 param solutionName string
 
-var topicName = 'egt-${solutionName}'
+@description('Name of the Event Grid topic.')
+param name string = 'egt-${solutionName}'
 
 @description('Azure region for the resource.')
 param location string
 
 @description('Tags to apply to the resource.')
 param tags object = {}
-
-@description('Input schema for the Event Grid topic.')
-@allowed(['EventGridSchema', 'CustomEventSchema', 'CloudEventSchemaV1_0'])
-param inputSchema string = 'EventGridSchema'
 
 @description('Public network access setting.')
 @allowed(['Enabled', 'Disabled'])
@@ -33,14 +30,13 @@ param eventSubscriptions array = []
 // Resource
 // ============================================================================
 resource eventGridTopic 'Microsoft.EventGrid/topics@2024-06-01-preview' = {
-  name: topicName
+  name: name
   location: location
   tags: tags
   identity: {
     type: 'SystemAssigned'
   }
   properties: {
-    inputSchema: inputSchema
     publicNetworkAccess: publicNetworkAccess
     disableLocalAuth: disableLocalAuth
   }

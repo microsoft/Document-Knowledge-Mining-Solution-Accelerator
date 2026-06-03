@@ -21,9 +21,6 @@ param location string
 @description('Optional. Tags to apply to resources.')
 param tags object = {}
 
-@description('Optional. Enable/Disable usage telemetry for module.')
-param enableTelemetry bool = true
-
 @description('Optional. SKU name for the AI Services account.')
 param skuName string = 'S0'
 
@@ -36,9 +33,21 @@ param allowProjectManagement bool = true
 @description('Optional. Public network access setting.')
 param publicNetworkAccess string = 'Enabled'
 
+@description('Optional. Managed identity type for the resources.')
+@allowed(['SystemAssigned', 'UserAssigned', 'SystemAssigned, UserAssigned', 'None'])
+param identityType string = 'SystemAssigned'
+
+@description('Optional. Network ACLs default action.')
+@allowed(['Allow', 'Deny'])
+param networkAclsDefaultAction string = 'Allow'
+
 // --- WAF: Monitoring ---
 @description('Optional. Diagnostic settings for the resource.')
 param diagnosticSettings array?
+
+// --- WAF: Telemetry ---
+@description('Optional. Enable/Disable usage telemetry for module.')
+param enableTelemetry bool = true
 
 // --- Role Assignments ---
 @description('Optional. Array of role assignments to create on the AI Services account.')
@@ -47,7 +56,7 @@ param roleAssignments array?
 // ============================================================================
 // AI Services Account (AVM Module)
 // ============================================================================
-module aiServicesAccount 'br/public:avm/res/cognitive-services/account:0.13.2' = {
+module aiServicesAccount 'br/public:avm/res/cognitive-services/account:0.14.2' = {
   name: take('avm.res.cognitive-services.account.${name}', 64)
   params: {
     name: name
@@ -60,7 +69,7 @@ module aiServicesAccount 'br/public:avm/res/cognitive-services/account:0.13.2' =
     allowProjectManagement: allowProjectManagement
     customSubDomainName: name
     networkAcls: {
-      defaultAction: 'Allow'
+      defaultAction: networkAclsDefaultAction
       virtualNetworkRules: []
       ipRules: []
     }
@@ -91,7 +100,7 @@ resource aiProject 'Microsoft.CognitiveServices/accounts/projects@2025-12-01' = 
   tags: tags
   kind: 'AIServices'
   identity: {
-    type: 'SystemAssigned'
+    type: identityType
   }
   properties: {}
   dependsOn: [aiServicesAccount]

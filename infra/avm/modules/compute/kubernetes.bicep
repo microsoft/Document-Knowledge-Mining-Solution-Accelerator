@@ -1,22 +1,20 @@
 // ============================================================================
 // Module: Azure Kubernetes Service (AKS)
 // Description: AVM wrapper for Azure Kubernetes Service Managed Cluster
-// AVM Module: avm/res/container-service/managed-cluster:0.13.0
+// AVM Module: avm/res/container-service/managed-cluster:0.13.1
 // ============================================================================
 
 @description('Solution name suffix used to derive the resource name.')
 param solutionName string
 
-var clusterName = 'aks-${solutionName}'
+@description('Name of the AKS cluster.')
+param name string = 'aks-${solutionName}'
 
 @description('Azure region for the resource.')
 param location string
 
 @description('Tags to apply to the resource.')
 param tags object = {}
-
-@description('Optional. Enable/Disable usage telemetry for module.')
-param enableTelemetry bool = true
 
 @description('Kubernetes version for the cluster.')
 param kubernetesVersion string = '1.34'
@@ -65,6 +63,13 @@ param serviceCidr string = '10.20.0.0/16'
 @description('DNS service IP (must be within serviceCidr).')
 param dnsServiceIP string = '10.20.0.10'
 
+@description('Auto-upgrade channel for the cluster.')
+@allowed(['none', 'patch', 'rapid', 'stable', 'node-image'])
+param autoUpgradeChannel string = 'stable'
+
+@description('Log Analytics workspace resource ID for monitoring.')
+param logAnalyticsWorkspaceResourceId string = ''
+
 // --- WAF: Networking ---
 @description('Public network access setting.')
 @allowed(['Enabled', 'Disabled'])
@@ -76,38 +81,33 @@ param enablePrivateCluster bool = false
 @description('Subnet resource ID for the agent pool (for VNet integration).')
 param agentPoolSubnetId string = ''
 
-// --- WAF: Auto Upgrade ---
-@description('Auto-upgrade channel for the cluster.')
-@allowed(['none', 'patch', 'rapid', 'stable', 'node-image'])
-param autoUpgradeChannel string = 'stable'
-
-// --- WAF: Monitoring ---
-@description('Log Analytics workspace resource ID for monitoring.')
-param logAnalyticsWorkspaceResourceId string = ''
-
 @description('Enable Microsoft Defender for Containers.')
 param enableDefender bool = false
 
 @description('Diagnostic settings for monitoring.')
 param diagnosticSettings array = []
 
-// --- WAF: Role Assignments ---
 @description('Role assignments for the cluster.')
 param roleAssignments array = []
 
-var effectiveDnsPrefix = !empty(dnsPrefix) ? dnsPrefix : clusterName
+@description('Enable Azure telemetry collection.')
+param enableTelemetry bool = true
+
+// ============================================================================
+// Variables
+// ============================================================================
+var effectiveDnsPrefix = !empty(dnsPrefix) ? dnsPrefix : name
 var enableMonitoring = !empty(logAnalyticsWorkspaceResourceId)
 
-// Inject subnet into agent pools if provided
 var effectiveAgentPools = [for pool in agentPools: union(pool, !empty(agentPoolSubnetId) ? { vnetSubnetResourceId: agentPoolSubnetId } : {})]
 
 // ============================================================================
 // AVM Module Deployment
 // ============================================================================
-module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.13.0' = {
-  name: take('avm.res.container-service.managed-cluster.${clusterName}', 64)
+module aksCluster 'br/public:avm/res/container-service/managed-cluster:0.13.1' = {
+  name: take('avm.res.container-service.managed-cluster.${name}', 64)
   params: {
-    name: clusterName
+    name: name
     location: location
     tags: tags
     enableTelemetry: enableTelemetry
@@ -153,3 +153,6 @@ output name string = aksCluster.outputs.name
 
 @description('Resource ID of the AKS cluster.')
 output resourceId string = aksCluster.outputs.resourceId
+
+@description('FQDN of the AKS cluster.')
+output fqdn string = aksCluster.outputs.?fqdn ?? ''

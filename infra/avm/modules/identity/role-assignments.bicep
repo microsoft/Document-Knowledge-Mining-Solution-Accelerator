@@ -31,13 +31,6 @@ param aiSearchPrincipalId string = ''
 @description('Principal ID of the backend App Service system-assigned identity (empty if not deployed).')
 param backendAppServicePrincipalId string = ''
 
-@description('Principal ID of the deploying user (for cross-scope roles on existing AI Foundry).')
-param deployerPrincipalId string = ''
-
-@description('Principal type of the deploying user.')
-@allowed(['User', 'ServicePrincipal'])
-param deployerPrincipalType string = 'User'
-
 // --- Resource References ---
 
 @description('Resource ID of the AI Foundry account (empty if not deployed — new project path).')
@@ -78,23 +71,23 @@ var roleDefinitions = {
 // Existing Resource References
 // ============================================================================
 
-resource aiFoundryAccount 'Microsoft.CognitiveServices/accounts@2025-06-01' existing = if (!empty(aiFoundryResourceId)) {
+resource aiFoundryAccount 'Microsoft.CognitiveServices/accounts@2025-12-01' existing = if (!empty(aiFoundryResourceId)) {
   name: last(split(aiFoundryResourceId, '/'))
 }
 
-resource aiSearchService 'Microsoft.Search/searchServices@2024-06-01-preview' existing = if (!empty(aiSearchResourceId)) {
+resource aiSearchService 'Microsoft.Search/searchServices@2025-05-01' existing = if (!empty(aiSearchResourceId)) {
   name: last(split(aiSearchResourceId, '/'))
 }
 
-resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing = if (!empty(storageAccountResourceId)) {
+resource storageAccount 'Microsoft.Storage/storageAccounts@2025-08-01' existing = if (!empty(storageAccountResourceId)) {
   name: last(split(storageAccountResourceId, '/'))
 }
 
-resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2024-11-15' existing = if (!empty(cosmosDbAccountName)) {
+resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2025-10-15' existing = if (!empty(cosmosDbAccountName)) {
   name: cosmosDbAccountName
 }
 
-resource cosmosContributorRoleDefinition 'Microsoft.DocumentDB/databaseAccounts/sqlRoleDefinitions@2024-11-15' existing = if (!empty(cosmosDbAccountName)) {
+resource cosmosContributorRoleDefinition 'Microsoft.DocumentDB/databaseAccounts/sqlRoleDefinitions@2025-10-15' existing = if (!empty(cosmosDbAccountName)) {
   parent: cosmosAccount
   name: '00000000-0000-0000-0000-000000000002' // Cosmos DB Built-in Data Contributor
 }
@@ -275,7 +268,7 @@ resource searchStorageReader 'Microsoft.Authorization/roleAssignments@2022-04-01
 //    Backend App Service → Cosmos DB (data-plane, uses sqlRoleAssignments)
 // ============================================================================
 
-resource backendAppCosmosRoleAssignment 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2024-11-15' = if (!empty(cosmosDbAccountName) && !empty(backendAppServicePrincipalId)) {
+resource backendAppCosmosRoleAssignment 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2025-10-15' = if (!empty(cosmosDbAccountName) && !empty(backendAppServicePrincipalId)) {
   parent: cosmosAccount
   name: guid(cosmosContributorRoleDefinition.id, cosmosAccount.id, backendAppServicePrincipalId)
   properties: {
@@ -285,12 +278,3 @@ resource backendAppCosmosRoleAssignment 'Microsoft.DocumentDB/databaseAccounts/s
   }
 }
 
-// ============================================================================
-// 5. DEPLOYER (USER) ROLE ASSIGNMENTS
-//    Deploying user → Cognitive Services User + Foundry User on existing AI Foundry
-//    (Mirrors inline roleAssignments on new AI Foundry in main.bicep)
-// ============================================================================
-
-// NOTE: Deployer roles (Cognitive Services User + Foundry User) on existing AI Foundry
-// are now assigned via 00_build_solution.py to avoid conflicts when the deployer
-// already has these roles on the existing AI Foundry.

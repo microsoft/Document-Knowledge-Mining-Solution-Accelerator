@@ -1,21 +1,52 @@
-@description('The Azure region where the SQL Server and database will be deployed.')
-param solutionLocation string
+// ============================================================================
+// Module: SQL Database
+// Description: Creates an Azure SQL Server and Database
+// API: Microsoft.Sql/servers@2025-01-01
+// ============================================================================
 
-@description('The name of the SQL Server.')
-param serverName string
+@description('Solution name suffix used to derive the resource name.')
+param solutionName string
 
-@description('The name of the SQL database.')
-param sqlDBName string
+@description('Name of the SQL Server.')
+param name string = 'sql-${solutionName}'
 
-@description('The principal ID of the deployer for SQL Server admin access.')
+@description('Name of the SQL Database.')
+param databaseName string = 'sqldb-${solutionName}'
+
+@description('Azure region for the resource.')
+param location string
+
+@description('Tags to apply to the resource.')
+param tags object = {}
+
+@description('Principal ID of the deployer for admin access.')
 param deployerPrincipalId string
 
-var location = solutionLocation
+@description('SKU name for the database.')
+param skuName string = 'GP_S_Gen5'
 
+@description('SKU tier for the database.')
+param skuTier string = 'GeneralPurpose'
+
+@description('SKU family.')
+param skuFamily string = 'Gen5'
+
+@description('vCore capacity.')
+param skuCapacity int = 2
+
+@description('Auto-pause delay in minutes.')
+param autoPauseDelay int = 60
+
+@description('Minimum capacity (vCores).')
+param minCapacity int = 1
+
+// ============================================================================
+// Resource Deployment
+// ============================================================================
 resource sqlServer 'Microsoft.Sql/servers@2025-01-01' = {
-  name: serverName
+  name: name
   location: location
-  kind: 'v12.0'
+  tags: tags
   properties: {
     publicNetworkAccess: 'Enabled'
     version: '12.0'
@@ -51,26 +82,34 @@ resource AllowAllWindowsAzureIps 'Microsoft.Sql/servers/firewallRules@2025-01-01
 
 resource sqlDB 'Microsoft.Sql/servers/databases@2025-01-01' = {
   parent: sqlServer
-  name: sqlDBName
+  name: databaseName
   location: location
   sku: {
-    name: 'GP_S_Gen5'
-    tier: 'GeneralPurpose'
-    family: 'Gen5'
-    capacity: 2
+    name: skuName
+    tier: skuTier
+    family: skuFamily
+    capacity: skuCapacity
   }
-  kind: 'v12.0,user,vcore,serverless'
   properties: {
     collation: 'SQL_Latin1_General_CP1_CI_AS'
-    autoPauseDelay: 60
-    minCapacity: 1
+    autoPauseDelay: autoPauseDelay
+    minCapacity: minCapacity
     readScale: 'Disabled'
     zoneRedundant: false
   }
 }
 
-@description('The fully qualified domain name of the SQL Server.')
-output sqlServerName string = '${serverName}.database.windows.net'
+// ============================================================================
+// Outputs
+// ============================================================================
+@description('Fully qualified domain name of the SQL Server.')
+output serverFqdn string = '${name}.database.windows.net'
 
-@description('The name of the SQL database.')
-output sqlDbName string = sqlDBName
+@description('Name of the SQL Database.')
+output databaseName string = databaseName
+
+@description('Resource ID of the SQL Server.')
+output serverResourceId string = sqlServer.id
+
+@description('Name of the SQL Server.')
+output name string = sqlServer.name

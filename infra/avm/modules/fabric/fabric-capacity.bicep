@@ -1,17 +1,21 @@
 // ============================================================================
 // Module: Fabric Capacity
 // Description: AVM wrapper for Microsoft Fabric Capacity
-// AVM Module: avm/res/fabric/capacity:0.1.1
+// AVM Module: avm/res/fabric/capacity:0.1.2
 // Docs: https://learn.microsoft.com/azure/templates/microsoft.fabric/capacities
 // ============================================================================
 
 @description('Solution name suffix used to derive the resource name.')
 param solutionName string
 
-var name = 'fc${solutionName}'
+@description('Optional. Override name for the Fabric capacity. Defaults to fc{solutionName}.')
+param name string = 'fc${solutionName}'
 
 @description('Azure region for the resource.')
 param location string
+
+@description('Tags to apply to the resource.')
+param tags object = {}
 
 @description('SKU tier of the Fabric capacity.')
 @allowed([
@@ -32,9 +36,6 @@ param skuName string = 'F2'
 @description('List of admin members (UPNs for users, object IDs for service principals).')
 param adminMembers array
 
-@description('Tags to apply to the resource.')
-param tags object = {}
-
 @description('Optional. Enable/Disable usage telemetry for module.')
 param enableTelemetry bool = true
 
@@ -42,7 +43,7 @@ param enableTelemetry bool = true
 // AVM Module Reference
 // ============================================================================
 
-module fabricCapacity 'br/public:avm/res/fabric/capacity:0.1.1' = {
+module fabricCapacity 'br/public:avm/res/fabric/capacity:0.1.2' = {
   name: take('avm.res.fabric.capacity.${name}', 64)
   params: {
     name: name

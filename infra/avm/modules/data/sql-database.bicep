@@ -1,15 +1,18 @@
 // ============================================================================
 // Module: SQL Database
 // Description: AVM wrapper for Azure SQL Server and Database
-// AVM Module: avm/res/sql/server:0.21.0
+// AVM Module: avm/res/sql/server:0.21.1
 // WAF: https://learn.microsoft.com/azure/well-architected/service-guides/azure-sql-database
 // ============================================================================
 
 @description('Solution name suffix used to derive the resource name.')
 param solutionName string
 
-var serverName = 'sql-${solutionName}'
-var databaseName = 'sqldb-${solutionName}'
+@description('Name of the SQL Server.')
+param name string = 'sql-${solutionName}'
+
+@description('Name of the SQL Database.')
+param databaseName string = 'sqldb-${solutionName}'
 
 @description('Azure region for the resource.')
 param location string
@@ -62,10 +65,10 @@ var privateDnsZoneConfigs = [for (zoneId, i) in privateDnsZoneResourceIds: {
 // ============================================================================
 // AVM Module Deployment
 // ============================================================================
-module sqlServer 'br/public:avm/res/sql/server:0.21.0' = {
-  name: take('avm.res.sql.server.${serverName}', 64)
+module sqlServer 'br/public:avm/res/sql/server:0.21.1' = {
+  name: take('avm.res.sql.server.${name}', 64)
   params: {
-    name: serverName
+    name: name
     location: location
     tags: tags
     enableTelemetry: enableTelemetry
@@ -109,8 +112,8 @@ module sqlServer 'br/public:avm/res/sql/server:0.21.0' = {
     ] : []
     privateEndpoints: enablePrivateNetworking ? [
       {
-        name: 'pep-${serverName}'
-        customNetworkInterfaceName: 'nic-${serverName}'
+        name: 'pep-${name}'
+        customNetworkInterfaceName: 'nic-${name}'
         subnetResourceId: privateEndpointSubnetId
         service: 'sqlServer'
         privateDnsZoneGroup: {
@@ -125,7 +128,7 @@ module sqlServer 'br/public:avm/res/sql/server:0.21.0' = {
 // Outputs
 // ============================================================================
 @description('Fully qualified domain name of the SQL Server.')
-output serverFqdn string = '${serverName}.database.windows.net'
+output serverFqdn string = '${name}.database.windows.net'
 
 @description('Name of the SQL Database.')
 output databaseName string = databaseName
@@ -134,4 +137,4 @@ output databaseName string = databaseName
 output serverResourceId string = sqlServer.outputs.resourceId
 
 @description('Name of the SQL Server.')
-output serverName string = sqlServer.outputs.name
+output name string = sqlServer.outputs.name

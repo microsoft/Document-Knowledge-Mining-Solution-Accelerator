@@ -1,14 +1,14 @@
 // ============================================================================
 // Module: App Service
-// Description: AVM wrapper for Azure App Service (Web App) with WAF alignment
-// AVM Module: avm/res/web/site:0.15.1
-// WAF: https://learn.microsoft.com/azure/well-architected/service-guides/app-service-web-apps
+// Description: AVM wrapper for Azure App Service (Web App)
+// AVM Module: avm/res/web/site:0.23.1
 // ============================================================================
 
 @description('Solution name suffix used to derive the resource name.')
 param solutionName string
 
-var appServiceName = solutionName
+@description('Name of the App Service.')
+param name string = solutionName
 
 @description('Azure region for the resource.')
 param location string
@@ -35,11 +35,9 @@ param kind string = 'app,linux'
 @description('Optional. Enable/Disable usage telemetry for module.')
 param enableTelemetry bool = true
 
-// --- WAF: Monitoring ---
 @description('Diagnostic settings for monitoring.')
 param diagnosticSettings array = []
 
-// --- WAF: Private Networking ---
 @description('Subnet resource ID for VNet integration.')
 param virtualNetworkSubnetId string = ''
 
@@ -49,10 +47,10 @@ param publicNetworkAccess string = 'Enabled'
 // ============================================================================
 // AVM Module Deployment
 // ============================================================================
-module appService 'br/public:avm/res/web/site:0.15.1' = {
-  name: take('avm.res.web.site.${appServiceName}', 64)
+module appService 'br/public:avm/res/web/site:0.23.1' = {
+  name: take('avm.res.web.site.${name}', 64)
   params: {
-    name: appServiceName
+    name: name
     location: location
     tags: tags
     kind: kind
@@ -66,13 +64,25 @@ module appService 'br/public:avm/res/web/site:0.15.1' = {
       ftpsState: 'Disabled'
       linuxFxVersion: linuxFxVersion
       minTlsVersion: '1.2'
-      vnetRouteAllEnabled: !empty(virtualNetworkSubnetId)
-      vnetImagePullEnabled: !empty(virtualNetworkSubnetId)
     }
     e2eEncryptionEnabled: true
-    appSettingsKeyValuePairs: appSettings
+    configs: [
+      {
+        name: 'appsettings'
+        properties: appSettings
+      }
+      {
+        name: 'logs'
+        properties: {
+          applicationLogs: { fileSystem: { level: 'Verbose' } }
+          detailedErrorMessages: { enabled: true }
+          failedRequestsTracing: { enabled: true }
+          httpLogs: { fileSystem: { enabled: true, retentionInDays: 1, retentionInMb: 35 } }
+        }
+      }
+    ]
     publicNetworkAccess: publicNetworkAccess
-    virtualNetworkSubnetId: !empty(virtualNetworkSubnetId) ? virtualNetworkSubnetId : null
+    virtualNetworkSubnetResourceId: !empty(virtualNetworkSubnetId) ? virtualNetworkSubnetId : null
     basicPublishingCredentialsPolicies: [
       {
         name: 'ftp'
@@ -83,12 +93,6 @@ module appService 'br/public:avm/res/web/site:0.15.1' = {
         allow: false
       }
     ]
-    logsConfiguration: {
-      applicationLogs: { fileSystem: { level: 'Verbose' } }
-      detailedErrorMessages: { enabled: true }
-      failedRequestsTracing: { enabled: true }
-      httpLogs: { fileSystem: { enabled: true, retentionInDays: 1, retentionInMb: 35 } }
-    }
     diagnosticSettings: !empty(diagnosticSettings) ? diagnosticSettings : []
   }
 }

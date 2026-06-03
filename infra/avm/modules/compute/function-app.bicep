@@ -1,5 +1,6 @@
 // ============================================================================
 // Module: Azure Function App (AVM)
+// AVM Module: avm/res/web/site:0.23.1
 // ============================================================================
 
 @description('Name of the function app.')
@@ -10,9 +11,6 @@ param location string
 
 @description('Resource tags.')
 param tags object = {}
-
-@description('Enable Azure telemetry collection.')
-param enableTelemetry bool = true
 
 @description('Resource ID of the App Service Plan.')
 param serverFarmResourceId string
@@ -40,19 +38,25 @@ param runtimeStack string = 'python'
 @description('Runtime version.')
 param runtimeVersion string = '3.11'
 
+@description('Enable Azure telemetry collection.')
+param enableTelemetry bool = true
+
+// ============================================================================
+// Variables
+// ============================================================================
+var baseAppSettings = {
+  AzureWebJobsStorage__accountName: storageAccountName
+  FUNCTIONS_EXTENSION_VERSION: '~4'
+  FUNCTIONS_WORKER_RUNTIME: runtimeStack
+}
+
+var customAppSettings = reduce(appSettings, {}, (cur, next) => union(cur, { '${next.name}': next.value }))
+var mergedAppSettings = union(baseAppSettings, customAppSettings)
+
 // ============================================================================
 // Function App (AVM)
 // ============================================================================
-
-var baseAppSettings = [
-  { name: 'AzureWebJobsStorage__accountName', value: storageAccountName }
-  { name: 'FUNCTIONS_EXTENSION_VERSION', value: '~4' }
-  { name: 'FUNCTIONS_WORKER_RUNTIME', value: runtimeStack }
-]
-
-var mergedAppSettings = concat(baseAppSettings, appSettings)
-
-module functionApp 'br/public:avm/res/web/site:0.15.0' = {
+module functionApp 'br/public:avm/res/web/site:0.23.1' = {
   name: take('avm.res.web.site.func.${name}', 64)
   params: {
     name: name
@@ -61,9 +65,14 @@ module functionApp 'br/public:avm/res/web/site:0.15.0' = {
     enableTelemetry: enableTelemetry
     kind: 'functionapp,linux'
     serverFarmResourceId: serverFarmResourceId
-    storageAccountResourceId: storageAccountResourceId
+    storageAccountRequired: false
     managedIdentities: managedIdentities
-    appSettingsKeyValuePairs: reduce(mergedAppSettings, {}, (cur, next) => union(cur, { '${next.name}': next.value }))
+    configs: [
+      {
+        name: 'appsettings'
+        properties: mergedAppSettings
+      }
+    ]
     siteConfig: union({
       linuxFxVersion: '${toUpper(runtimeStack)}|${runtimeVersion}'
     }, siteConfig)
@@ -73,7 +82,6 @@ module functionApp 'br/public:avm/res/web/site:0.15.0' = {
 // ============================================================================
 // Outputs
 // ============================================================================
-
 @description('The name of the function app.')
 output name string = functionApp.outputs.name
 

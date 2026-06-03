@@ -1,13 +1,14 @@
 // ============================================================================
 // Module: Azure Kubernetes Service (AKS)
 // Description: Deploys Azure Kubernetes Service Managed Cluster
-// API: Microsoft.ContainerService/managedClusters@2024-09-01
+// API: Microsoft.ContainerService/managedClusters@2025-03-01
 // ============================================================================
 
 @description('Solution name suffix used to derive the resource name.')
 param solutionName string
 
-var clusterName = 'aks-${solutionName}'
+@description('Name of the AKS cluster.')
+param name string = 'aks-${solutionName}'
 
 @description('Azure region for the resource.')
 param location string
@@ -32,13 +33,6 @@ param agentPools array = [
   }
 ]
 
-@description('DNS prefix for the cluster.')
-param dnsPrefix string = ''
-
-@description('SKU tier for the cluster.')
-@allowed(['Free', 'Standard', 'Premium'])
-param skuTier string = 'Standard'
-
 @description('Enable Kubernetes RBAC.')
 param enableRBAC bool = true
 
@@ -53,6 +47,13 @@ param networkPlugin string = 'azure'
 @allowed(['azure', 'calico', ''])
 param networkPolicy string = 'azure'
 
+@description('DNS prefix for the cluster.')
+param dnsPrefix string = ''
+
+@description('SKU tier for the cluster.')
+@allowed(['Free', 'Standard', 'Premium'])
+param skuTier string = 'Standard'
+
 @description('Service CIDR for Kubernetes services.')
 param serviceCidr string = '10.20.0.0/16'
 
@@ -66,13 +67,16 @@ param autoUpgradeChannel string = 'stable'
 @description('Log Analytics workspace resource ID for monitoring.')
 param logAnalyticsWorkspaceResourceId string = ''
 
-var effectiveDnsPrefix = !empty(dnsPrefix) ? dnsPrefix : clusterName
+// ============================================================================
+// Variables
+// ============================================================================
+var effectiveDnsPrefix = !empty(dnsPrefix) ? dnsPrefix : name
 
 // ============================================================================
-// Resource
+// Resource Deployment
 // ============================================================================
-resource aksCluster 'Microsoft.ContainerService/managedClusters@2024-09-01' = {
-  name: clusterName
+resource aksCluster 'Microsoft.ContainerService/managedClusters@2025-03-01' = {
+  name: name
   location: location
   tags: tags
   identity: {

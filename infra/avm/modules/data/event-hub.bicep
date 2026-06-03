@@ -5,6 +5,9 @@
 @description('Solution name used for naming convention.')
 param solutionName string
 
+@description('Name of the Event Hub namespace.')
+param name string = 'evhns-${solutionName}'
+
 @description('Azure region for deployment.')
 param location string
 
@@ -39,12 +42,6 @@ param privateEndpointSubnetId string = ''
 param privateDnsZoneResourceIds array = []
 
 // ============================================================================
-// Naming
-// ============================================================================
-
-var namespaceName = 'evhns-${solutionName}'
-
-// ============================================================================
 // Event Hub Namespace (AVM)
 // ============================================================================
 
@@ -69,9 +66,9 @@ var privateEndpointConfig = enablePrivateNetworking && !empty(privateEndpointSub
 ] : []
 
 module eventHubNamespace 'br/public:avm/res/event-hub/namespace:0.14.1' = {
-  name: take('avm.res.eventhub.namespace.${namespaceName}', 64)
+  name: take('avm.res.eventhub.namespace.${name}', 64)
   params: {
-    name: namespaceName
+    name: name
     location: location
     tags: tags
     enableTelemetry: enableTelemetry

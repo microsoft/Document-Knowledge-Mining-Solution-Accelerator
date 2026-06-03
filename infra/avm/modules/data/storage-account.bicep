@@ -1,14 +1,15 @@
 // ============================================================================
 // Module: Storage Account
 // Description: AVM wrapper for Azure Storage Account with WAF alignment
-// AVM Module: avm/res/storage/storage-account:0.19.0
+// AVM Module: avm/res/storage/storage-account:0.32.0
 // WAF: https://learn.microsoft.com/azure/well-architected/service-guides/storage-accounts
 // ============================================================================
 
 @description('Solution name suffix used to derive the resource name.')
 param solutionName string
 
-var storageAccountName = take('st${toLower(replace(solutionName, '-', ''))}', 24)
+@description('Name of the storage account.')
+param name string = take('st${toLower(replace(solutionName, '-', ''))}', 24)
 
 @description('Azure region for the resource.')
 param location string
@@ -78,10 +79,10 @@ param roleAssignments array = []
 // ============================================================================
 // AVM Module Deployment
 // ============================================================================
-module storage 'br/public:avm/res/storage/storage-account:0.19.0' = {
-  name: take('avm.res.storage.storage-account.${storageAccountName}', 64)
+module storage 'br/public:avm/res/storage/storage-account:0.32.0' = {
+  name: take('avm.res.storage.storage-account.${name}', 64)
   params: {
-    name: storageAccountName
+    name: name
     location: location
     tags: tags
     enableTelemetry: enableTelemetry
@@ -105,8 +106,8 @@ module storage 'br/public:avm/res/storage/storage-account:0.19.0' = {
     diagnosticSettings: !empty(diagnosticSettings) ? diagnosticSettings : []
     privateEndpoints: enablePrivateNetworking ? [
       {
-        name: 'pep-${storageAccountName}'
-        customNetworkInterfaceName: 'nic-${storageAccountName}'
+        name: 'pep-${name}'
+        customNetworkInterfaceName: 'nic-${name}'
         subnetResourceId: privateEndpointSubnetId
         service: 'blob'
         privateDnsZoneGroup: {

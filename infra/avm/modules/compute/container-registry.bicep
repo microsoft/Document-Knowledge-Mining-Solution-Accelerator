@@ -1,18 +1,19 @@
 // ============================================================================
 // Module: Azure Container Registry (AVM)
+// AVM Module: avm/res/container-registry/registry:0.12.1
 // ============================================================================
 
 @description('Solution name used for naming convention.')
 param solutionName string
+
+@description('Name of the container registry.')
+param name string = replace('cr${solutionName}', '-', '')
 
 @description('Azure region for deployment.')
 param location string
 
 @description('Resource tags.')
 param tags object = {}
-
-@description('Enable Azure telemetry collection.')
-param enableTelemetry bool = true
 
 @description('SKU for the container registry.')
 @allowed(['Basic', 'Standard', 'Premium'])
@@ -40,16 +41,12 @@ param privateEndpointSubnetId string = ''
 @description('Private DNS zone resource IDs for private endpoint.')
 param privateDnsZoneResourceIds array = []
 
-// ============================================================================
-// Naming
-// ============================================================================
-
-var registryName = replace('cr${solutionName}', '-', '')
+@description('Enable Azure telemetry collection.')
+param enableTelemetry bool = true
 
 // ============================================================================
 // Role Assignments
 // ============================================================================
-
 var acrPullRoleId = '7f951dda-4ed3-4680-a7ca-43fe172d538d'
 
 var roleAssignments = [for principalId in acrPullPrincipalIds: {
@@ -61,7 +58,6 @@ var roleAssignments = [for principalId in acrPullPrincipalIds: {
 // ============================================================================
 // Private Endpoint Config
 // ============================================================================
-
 var dnsZoneConfigs = [for (zoneId, i) in privateDnsZoneResourceIds: {
   name: 'config${i}'
   privateDnsZoneResourceId: zoneId
@@ -79,11 +75,10 @@ var privateEndpointConfig = enablePrivateNetworking && !empty(privateEndpointSub
 // ============================================================================
 // Container Registry (AVM)
 // ============================================================================
-
-module containerRegistry 'br/public:avm/res/container-registry/registry:0.9.0' = {
-  name: take('avm.res.containerregistry.${registryName}', 64)
+module containerRegistry 'br/public:avm/res/container-registry/registry:0.12.1' = {
+  name: take('avm.res.containerregistry.${name}', 64)
   params: {
-    name: registryName
+    name: name
     location: location
     tags: tags
     enableTelemetry: enableTelemetry
@@ -99,7 +94,6 @@ module containerRegistry 'br/public:avm/res/container-registry/registry:0.9.0' =
 // ============================================================================
 // Outputs
 // ============================================================================
-
 @description('The name of the container registry.')
 output name string = containerRegistry.outputs.name
 

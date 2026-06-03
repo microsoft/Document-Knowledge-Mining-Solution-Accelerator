@@ -1,18 +1,19 @@
 // ============================================================================
 // Module: Azure Key Vault (AVM)
+// AVM Module: avm/res/key-vault/vault:0.12.1
 // ============================================================================
 
 @description('Solution name used for naming convention.')
 param solutionName string
+
+@description('Optional. Override name for the Key Vault. Defaults to kv-{solutionName}.')
+param name string = take('kv-${solutionName}', 24)
 
 @description('Azure region for deployment.')
 param location string
 
 @description('Resource tags.')
 param tags object = {}
-
-@description('Enable Azure telemetry collection.')
-param enableTelemetry bool = true
 
 @description('SKU for the key vault.')
 @allowed(['standard', 'premium'])
@@ -34,11 +35,14 @@ param enablePurgeProtection bool = true
 @allowed(['Enabled', 'Disabled'])
 param publicNetworkAccess string = 'Enabled'
 
-@description('Role assignments.')
-param roleAssignments array = []
-
 @description('Secrets to store in the vault (name/value pairs).')
 param secrets array = []
+
+@description('Enable Azure telemetry collection.')
+param enableTelemetry bool = true
+
+@description('Role assignments.')
+param roleAssignments array = []
 
 @description('Enable private networking.')
 param enablePrivateNetworking bool = false
@@ -48,12 +52,6 @@ param privateEndpointSubnetId string = ''
 
 @description('Private DNS zone resource IDs.')
 param privateDnsZoneResourceIds array = []
-
-// ============================================================================
-// Naming
-// ============================================================================
-
-var vaultName = take('kv-${solutionName}', 24)
 
 // ============================================================================
 // Key Vault (AVM)
@@ -78,10 +76,10 @@ var privateEndpointConfig = enablePrivateNetworking && !empty(privateEndpointSub
   }
 ] : []
 
-module keyVault 'br/public:avm/res/key-vault/vault:0.11.0' = {
-  name: take('avm.res.keyvault.vault.${vaultName}', 64)
+module keyVault 'br/public:avm/res/key-vault/vault:0.12.1' = {
+  name: take('avm.res.keyvault.vault.${name}', 64)
   params: {
-    name: vaultName
+    name: name
     location: location
     tags: tags
     enableTelemetry: enableTelemetry

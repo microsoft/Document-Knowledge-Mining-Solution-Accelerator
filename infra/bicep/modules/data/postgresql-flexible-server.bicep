@@ -1,13 +1,14 @@
-@description('The Azure region where the PostgreSQL Flexible Server will be deployed.')
-param location string
-
 @description('Solution name suffix used to derive the resource name.')
 param solutionName string
 
+@description('Name of the PostgreSQL Flexible Server.')
+param name string = 'psql-${solutionName}'
+
+@description('The Azure region where the PostgreSQL Flexible Server will be deployed.')
+param location string
+
 @description('Tags to apply to the resource.')
 param tags object = {}
-
-var serverName = 'psql-${solutionName}'
 
 @description('Azure AD administrators for the server. Each entry requires objectId, principalName, and principalType (User, Group, or ServicePrincipal).')
 param administrators array
@@ -32,7 +33,7 @@ param databases array = []
 param configurations array = []
 
 resource postgresServer 'Microsoft.DBforPostgreSQL/flexibleServers@2026-01-01-preview' = {
-  name: serverName
+  name: name
   location: location
   tags: tags
   sku: {
@@ -126,7 +127,7 @@ resource serverConfigurations 'Microsoft.DBforPostgreSQL/flexibleServers/configu
 output serverFqdn string = postgresServer.properties.fullyQualifiedDomainName
 
 @description('The name of the PostgreSQL Flexible Server.')
-output serverName string = postgresServer.name
+output name string = postgresServer.name
 
 @description('The resource ID of the PostgreSQL Flexible Server.')
-output serverResourceId string = postgresServer.id
+output resourceId string = postgresServer.id

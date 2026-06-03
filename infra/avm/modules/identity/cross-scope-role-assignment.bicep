@@ -22,7 +22,7 @@ param aiFoundryName string
 param principalType string = 'ServicePrincipal'
 
 // Reference the existing AI Foundry resource in this resource group
-resource aiFoundryAccount 'Microsoft.CognitiveServices/accounts@2025-06-01' existing = {
+resource aiFoundryAccount 'Microsoft.CognitiveServices/accounts@2025-12-01' existing = {
   name: aiFoundryName
 }
 

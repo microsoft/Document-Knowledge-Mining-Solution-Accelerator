@@ -5,11 +5,17 @@
 // Docs: https://learn.microsoft.com/azure/templates/microsoft.fabric/capacities
 // ============================================================================
 
-@description('Name of the Fabric capacity resource.')
-param name string
+@description('Solution name suffix used to derive the resource name.')
+param solutionName string
+
+@description('Optional. Override name for the Fabric capacity. Defaults to fc{solutionName}.')
+param name string = 'fc${solutionName}'
 
 @description('Azure region for the resource.')
 param location string
+
+@description('Tags to apply to the resource.')
+param tags object = {}
 
 @description('SKU tier of the Fabric capacity.')
 @allowed([
@@ -29,9 +35,6 @@ param skuName string = 'F2'
 
 @description('List of admin members (UPNs for users, object IDs for service principals).')
 param adminMembers array
-
-@description('Tags to apply to the resource.')
-param tags object = {}
 
 // ============================================================================
 // Resource

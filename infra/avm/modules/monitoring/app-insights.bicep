@@ -8,7 +8,8 @@
 @description('Solution name suffix used to derive the resource name.')
 param solutionName string
 
-var appInsightsName = 'appi-${solutionName}'
+@description('Optional. Override name for the Application Insights instance. Defaults to appi-{solutionName}.')
+param name string = 'appi-${solutionName}'
 
 @description('Azure region for the resource.')
 param location string
@@ -22,9 +23,6 @@ param workspaceResourceId string
 @description('Application type.')
 param applicationType string = 'web'
 
-@description('Optional. Enable/Disable usage telemetry for module.')
-param enableTelemetry bool = true
-
 @description('Retention period in days. WAF recommends 365.')
 param retentionInDays int = 365
 
@@ -34,13 +32,16 @@ param disableIpMasking bool = false
 @description('Flow type for Application Insights.')
 param flowType string = 'Bluefield'
 
+@description('Optional. Enable/Disable usage telemetry for module.')
+param enableTelemetry bool = true
+
 // ============================================================================
 // AVM Module Deployment
 // ============================================================================
 module appInsights 'br/public:avm/res/insights/component:0.7.1' = {
-  name: take('avm.res.insights.component.${appInsightsName}', 64)
+  name: take('avm.res.insights.component.${name}', 64)
   params: {
-    name: appInsightsName
+    name: name
     location: location
     tags: tags
     workspaceResourceId: workspaceResourceId

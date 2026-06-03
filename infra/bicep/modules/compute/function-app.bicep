@@ -1,90 +1,100 @@
-targetScope = 'resourceGroup'
+// ============================================================================
+// Module: Azure Function App
+// Description: Creates an Azure Function App on Linux
+// API: Microsoft.Web/sites@2024-04-01
+// ============================================================================
 
-@description('The name of the Function App.')
+@description('Name of the function app.')
 param name string
 
-@description('The Azure region where the Function App will be deployed.')
-param solutionLocation string
+@description('Azure region for deployment.')
+param location string
 
-@description('Tags to apply to the resource.')
+@description('Resource tags.')
 param tags object = {}
 
-@description('The resource ID of the App Service plan hosting the Function App.')
-param serverFarmId string
+@description('Resource ID of the App Service Plan.')
+param serverFarmResourceId string
 
-@description('The name of the storage account used by the Function App.')
+@description('Resource ID of the storage account for function app.')
+param storageAccountResourceId string
+
+@description('Name of the storage account.')
 param storageAccountName string
 
-@description('The resource ID of the storage account (used to derive access key).')
-param storageAccountId string
-
-@description('Additional application settings to apply to the Function App.')
-param appSettings array = []
-
-@description('The worker runtime stack for the Function App.')
-param runtimeStack string = 'python'
-
-@description('The runtime version for the worker stack.')
-param runtimeVersion string = '3.11'
-
-@description('The managed identity type assigned to the Function App.')
-param identityType string = 'SystemAssigned'
-
-@description('The user-assigned identities to associate with the Function App when applicable.')
-param userAssignedIdentities object = {}
-
-var functionAppIdentity = identityType == 'None' ? null : {
-  type: identityType
-  userAssignedIdentities: contains(identityType, 'UserAssigned') ? userAssignedIdentities : null
+@description('Managed identity configuration.')
+param managedIdentities object = {
+  systemAssigned: true
 }
 
-var storageConnectionString = 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};AccountKey=${listKeys(storageAccountId, '2023-05-01').keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
-var linuxFxVersion = '${toUpper(runtimeStack)}|${runtimeVersion}'
-var functionAppSettings = concat([
-  {
-    name: 'AzureWebJobsStorage'
-    value: storageConnectionString
-  }
-  {
-    name: 'FUNCTIONS_EXTENSION_VERSION'
-    value: '~4'
-  }
-  {
-    name: 'FUNCTIONS_WORKER_RUNTIME'
-    value: toLower(runtimeStack)
-  }
-  {
-    name: 'WEBSITE_RUN_FROM_PACKAGE'
-    value: '1'
-  }
-], appSettings)
+@description('App settings as name-value pairs.')
+param appSettings array = []
 
-resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
+@description('Site configuration object.')
+param siteConfig object = {}
+
+@description('Runtime stack.')
+param runtimeStack string = 'python'
+
+@description('Runtime version.')
+param runtimeVersion string = '3.11'
+
+// ============================================================================
+// Variables
+// ============================================================================
+var identityConfig = empty(managedIdentities) ? null : {
+  type: contains(managedIdentities, 'userAssignedResourceIds') ? (contains(managedIdentities, 'systemAssigned') && managedIdentities.systemAssigned ? 'SystemAssigned,UserAssigned' : 'UserAssigned') : 'SystemAssigned'
+  userAssignedIdentities: contains(managedIdentities, 'userAssignedResourceIds') ? reduce(managedIdentities.userAssignedResourceIds, {}, (cur, id) => union(cur, { '${id}': {} })) : null
+}
+
+var storageConnectionString = 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};AccountKey=${listKeys(storageAccountResourceId, '2023-05-01').keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+var linuxFxVersion = '${toUpper(runtimeStack)}|${runtimeVersion}'
+
+var baseSettings = [
+  { name: 'AzureWebJobsStorage', value: storageConnectionString }
+  { name: 'FUNCTIONS_EXTENSION_VERSION', value: '~4' }
+  { name: 'FUNCTIONS_WORKER_RUNTIME', value: toLower(runtimeStack) }
+  { name: 'WEBSITE_RUN_FROM_PACKAGE', value: '1' }
+]
+
+var mergedSettings = concat(baseSettings, appSettings)
+
+var defaultSiteConfig = {
+  linuxFxVersion: linuxFxVersion
+  ftpsState: 'Disabled'
+  minTlsVersion: '1.2'
+  appSettings: mergedSettings
+}
+
+var effectiveSiteConfig = union(defaultSiteConfig, siteConfig)
+
+// ============================================================================
+// Resource Deployment
+// ============================================================================
+resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
   name: name
-  location: solutionLocation
+  location: location
   tags: tags
   kind: 'functionapp,linux'
-  identity: functionAppIdentity
+  identity: identityConfig
   properties: {
-    serverFarmId: serverFarmId
-    siteConfig: {
-      linuxFxVersion: linuxFxVersion
-      ftpsState: 'Disabled'
-      minTlsVersion: '1.2'
-      appSettings: functionAppSettings
-    }
+    serverFarmId: serverFarmResourceId
+    siteConfig: effectiveSiteConfig
     httpsOnly: true
   }
 }
 
-@description('The name of the Function App.')
+// ============================================================================
+// Outputs
+// ============================================================================
+@description('The name of the function app.')
 output name string = functionApp.name
 
-@description('The resource ID of the Function App.')
-output id string = functionApp.id
+@description('The resource ID of the function app.')
+output resourceId string = functionApp.id
 
-@description('The default host name of the Function App.')
+@description('The default hostname of the function app.')
 output defaultHostName string = functionApp.properties.defaultHostName
 
-@description('The principal ID of the system-assigned managed identity, if enabled.')
-output principalId string = contains(identityType, 'SystemAssigned') ? functionApp.identity.principalId : ''
+@description('The principal ID of the system-assigned managed identity.')
+output principalId string = contains(functionApp.identity, 'principalId') ? functionApp.identity.principalId : ''

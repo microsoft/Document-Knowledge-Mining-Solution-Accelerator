@@ -8,7 +8,8 @@
 @description('Solution name suffix used to derive the resource name.')
 param solutionName string
 
-var serverName = 'psql-${solutionName}'
+@description('Name of the PostgreSQL Flexible Server.')
+param name string = 'psql-${solutionName}'
 
 @description('Azure region for the resource.')
 param location string
@@ -78,9 +79,9 @@ param highAvailabilityZone int = -1
 // AVM Module Deployment
 // ============================================================================
 module postgresServer 'br/public:avm/res/db-for-postgre-sql/flexible-server:0.15.4' = {
-  name: take('avm.res.postgre-sql.flexible-server.${serverName}', 64)
+  name: take('avm.res.postgre-sql.flexible-server.${name}', 64)
   params: {
-    name: serverName
+    name: name
     location: location
     tags: tags
     enableTelemetry: enableTelemetry
@@ -112,8 +113,8 @@ module postgresServer 'br/public:avm/res/db-for-postgre-sql/flexible-server:0.15
     ] : []
     privateEndpoints: enablePrivateNetworking ? [
       {
-        name: 'pep-${serverName}'
-        customNetworkInterfaceName: 'nic-${serverName}'
+        name: 'pep-${name}'
+        customNetworkInterfaceName: 'nic-${name}'
         subnetResourceId: privateEndpointSubnetId
         service: 'postgresqlServer'
         privateDnsZoneGroup: {
@@ -138,7 +139,7 @@ module postgresServer 'br/public:avm/res/db-for-postgre-sql/flexible-server:0.15
 // Outputs
 // ============================================================================
 @description('Fully qualified domain name of the PostgreSQL Flexible Server.')
-output serverFqdn string = postgresServer.outputs.?fqdn ?? '${serverName}.postgres.database.azure.com'
+output serverFqdn string = postgresServer.outputs.?fqdn ?? '${name}.postgres.database.azure.com'
 
 @description('Name of the PostgreSQL Flexible Server.')
 output name string = postgresServer.outputs.name

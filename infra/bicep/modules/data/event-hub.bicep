@@ -1,28 +1,36 @@
-targetScope = 'resourceGroup'
+// ============================================================================
+// Module: Azure Event Hub Namespace
+// Description: Creates an Azure Event Hub Namespace with event hubs
+// API: Microsoft.EventHub/namespaces@2024-01-01
+// ============================================================================
 
-@description('The name of the solution, used as the base for resource naming.')
+@description('Solution name used for naming convention.')
 param solutionName string
 
-@description('The Azure region where Event Hub resources will be deployed.')
-param solutionLocation string
+@description('Name of the Event Hub namespace.')
+param name string = 'evhns-${solutionName}'
 
-@description('Tags to apply to the resources.')
+@description('Azure region for the resource.')
+param location string
+
+@description('Tags to apply to the resource.')
 param tags object = {}
 
 @description('The SKU tier for the Event Hub namespace.')
 param sku string = 'Standard'
 
-@description('The throughput unit or processing unit capacity for the Event Hub namespace.')
+@description('The throughput unit or processing unit capacity.')
 param capacity int = 1
 
-@description('The Event Hubs to create in the namespace.')
+@description('Event hubs to create within the namespace.')
 param eventhubs array = []
 
-var name = 'evhns-${solutionName}'
-
+// ============================================================================
+// Resource Deployment
+// ============================================================================
 resource eventHubNamespace 'Microsoft.EventHub/namespaces@2024-01-01' = {
   name: name
-  location: solutionLocation
+  location: location
   tags: tags
   sku: {
     name: sku
@@ -44,11 +52,11 @@ resource eventHubResources 'Microsoft.EventHub/namespaces/eventhubs@2024-01-01' 
   }
 }]
 
+// ============================================================================
+// Outputs
+// ============================================================================
 @description('The name of the Event Hub namespace.')
 output name string = eventHubNamespace.name
 
 @description('The resource ID of the Event Hub namespace.')
-output id string = eventHubNamespace.id
-
-@description('The service bus endpoint of the Event Hub namespace.')
-output serviceBusEndpoint string = eventHubNamespace.properties.serviceBusEndpoint
+output resourceId string = eventHubNamespace.id

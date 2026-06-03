@@ -5,6 +5,9 @@
 @description('Solution name used for naming convention.')
 param solutionName string
 
+@description('Name of the App Configuration store.')
+param name string = 'appcs-${solutionName}'
+
 @description('Azure region for deployment.')
 param location string
 
@@ -46,12 +49,6 @@ param privateEndpointSubnetId string = ''
 param privateDnsZoneResourceIds array = []
 
 // ============================================================================
-// Naming
-// ============================================================================
-
-var configStoreName = 'appcs-${solutionName}'
-
-// ============================================================================
 // App Configuration (AVM)
 // ============================================================================
 
@@ -69,10 +66,10 @@ var privateEndpointConfig = enablePrivateNetworking && !empty(privateEndpointSub
   }
 ] : []
 
-module configStore 'br/public:avm/res/app-configuration/configuration-store:0.9.1' = {
-  name: take('avm.res.appconfiguration.${configStoreName}', 64)
+module configStore 'br/public:avm/res/app-configuration/configuration-store:0.9.2' = {
+  name: take('avm.res.appconfiguration.${name}', 64)
   params: {
-    name: configStoreName
+    name: name
     location: location
     tags: tags
     enableTelemetry: enableTelemetry

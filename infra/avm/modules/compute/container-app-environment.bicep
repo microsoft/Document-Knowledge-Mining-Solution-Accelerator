@@ -1,18 +1,19 @@
 // ============================================================================
 // Module: Azure Container Apps Environment (AVM)
+// AVM Module: avm/res/app/managed-environment:0.13.3
 // ============================================================================
 
 @description('Solution name used for naming convention.')
 param solutionName string
+
+@description('Name of the Container Apps Environment.')
+param name string = 'cae-${solutionName}'
 
 @description('Azure region for deployment.')
 param location string
 
 @description('Resource tags.')
 param tags object = {}
-
-@description('Enable Azure telemetry collection.')
-param enableTelemetry bool = true
 
 @description('Resource ID of the Log Analytics workspace.')
 param logAnalyticsWorkspaceResourceId string
@@ -23,25 +24,24 @@ param infrastructureSubnetId string = ''
 @description('Enable zone redundancy.')
 param zoneRedundant bool = false
 
-// ============================================================================
-// Naming
-// ============================================================================
-
-var environmentName = 'cae-${solutionName}'
+@description('Enable Azure telemetry collection.')
+param enableTelemetry bool = true
 
 // ============================================================================
 // Container Apps Environment (AVM)
 // ============================================================================
-
-module managedEnvironment 'br/public:avm/res/app/managed-environment:0.8.1' = {
-  name: take('avm.res.app.managedenvironment.${environmentName}', 64)
+module managedEnvironment 'br/public:avm/res/app/managed-environment:0.13.3' = {
+  name: take('avm.res.app.managedenvironment.${name}', 64)
   params: {
-    name: environmentName
+    name: name
     location: location
     tags: tags
     enableTelemetry: enableTelemetry
-    logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
-    infrastructureSubnetId: !empty(infrastructureSubnetId) ? infrastructureSubnetId : null
+    appLogsConfiguration: {
+      destination: 'log-analytics'
+      logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
+    }
+    infrastructureSubnetResourceId: !empty(infrastructureSubnetId) ? infrastructureSubnetId : null
     zoneRedundant: zoneRedundant
   }
 }
@@ -49,7 +49,6 @@ module managedEnvironment 'br/public:avm/res/app/managed-environment:0.8.1' = {
 // ============================================================================
 // Outputs
 // ============================================================================
-
 @description('The name of the Container Apps Environment.')
 output name string = managedEnvironment.outputs.name
 

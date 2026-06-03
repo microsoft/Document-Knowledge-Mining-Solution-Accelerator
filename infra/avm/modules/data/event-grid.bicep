@@ -7,7 +7,8 @@
 @description('Solution name suffix used to derive the resource name.')
 param solutionName string
 
-var topicName = 'egt-${solutionName}'
+@description('Name of the Event Grid topic.')
+param name string = 'egt-${solutionName}'
 
 @description('Azure region for the resource.')
 param location string
@@ -17,10 +18,6 @@ param tags object = {}
 
 @description('Optional. Enable/Disable usage telemetry for module.')
 param enableTelemetry bool = true
-
-@description('Input schema for the Event Grid topic.')
-@allowed(['EventGridSchema', 'CustomEventSchema', 'CloudEventSchemaV1_0'])
-param inputSchema string = 'EventGridSchema'
 
 @description('Public network access setting.')
 @allowed(['Enabled', 'Disabled'])
@@ -53,9 +50,9 @@ var privateDnsZoneConfigs = [for (zoneId, i) in privateDnsZoneResourceIds: {
 // AVM Module Deployment
 // ============================================================================
 module eventGridTopic 'br/public:avm/res/event-grid/topic:0.6.1' = {
-  name: take('avm.res.event-grid.topic.${topicName}', 64)
+  name: take('avm.res.event-grid.topic.${name}', 64)
   params: {
-    name: topicName
+    name: name
     location: location
     tags: tags
     enableTelemetry: enableTelemetry
@@ -65,8 +62,8 @@ module eventGridTopic 'br/public:avm/res/event-grid/topic:0.6.1' = {
     eventSubscriptions: eventSubscriptions
     privateEndpoints: enablePrivateNetworking ? [
       {
-        name: 'pep-${topicName}'
-        customNetworkInterfaceName: 'nic-${topicName}'
+        name: 'pep-${name}'
+        customNetworkInterfaceName: 'nic-${name}'
         subnetResourceId: privateEndpointSubnetId
         service: 'topic'
         privateDnsZoneGroup: {
@@ -78,6 +75,14 @@ module eventGridTopic 'br/public:avm/res/event-grid/topic:0.6.1' = {
 }
 
 // ============================================================================
+// Existing resource reference (for endpoint property)
+// ============================================================================
+resource topicRef 'Microsoft.EventGrid/topics@2024-06-01-preview' existing = {
+  name: name
+  dependsOn: [eventGridTopic]
+}
+
+// ============================================================================
 // Outputs
 // ============================================================================
 @description('Name of the Event Grid topic.')
@@ -85,3 +90,6 @@ output name string = eventGridTopic.outputs.name
 
 @description('Resource ID of the Event Grid topic.')
 output resourceId string = eventGridTopic.outputs.resourceId
+
+@description('Endpoint of the Event Grid topic.')
+output endpoint string = topicRef.properties.endpoint
