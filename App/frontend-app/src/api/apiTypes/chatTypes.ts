@@ -31,9 +31,6 @@ export type ChatApiResponse = {
     keywords: string[];
 }
 
-// UI-side wrapper around ChatApiResponse used to track per-message client state
-// (e.g., overlapping-request prevention, error rendering). Server responses do
-// not include these fields; they are populated and consumed by the chat UI only.
 export type ChatUiResponse = ChatApiResponse & {
     requestId?: string;
     pending?: boolean;
