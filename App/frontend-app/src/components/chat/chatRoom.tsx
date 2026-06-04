@@ -66,6 +66,10 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
     const [allChunkTexts] = useState<string[]>([]);
 
     const { conversationAnswers, setConversationAnswers } = useContext(AppContext);
+    const hasPendingRequest = conversationAnswers.some(
+        ([, response]) => response && response.pending === true
+    );
+    const inputDisabled = isLoading || hasPendingRequest;
     const [isSticky, setIsSticky] = useState(false);
     const optionsBottom = useRef<HTMLDivElement>(null);
 
@@ -130,12 +134,16 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
 
         }
 
+        const requestId = uuidv4();
+
         setConversationAnswers((prevAnswers) => [
             ...prevAnswers,
             [question, {
                 answer: t('components.chat.fetching-answer'), suggestingQuestions: [],
                 documentIds: [],
-                keywords: []
+                keywords: [],
+                requestId,
+                pending: true,
             }],
         ]);
 
@@ -180,18 +188,56 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
 
 
 
-                    // Update the conversation with the formatted answer
                     setConversationAnswers((prevAnswers) => {
                         const newAnswers = [...prevAnswers];
-                        newAnswers[newAnswers.length - 1] = [question, { ...response, answer: chatResp }, userTimestamp, answerTimestamp];
+                        const idx = newAnswers.findIndex(
+                            ([, r]) => r && r.requestId === requestId
+                        );
+                        if (idx === -1) {
+                            return prevAnswers;
+                        }
+                        newAnswers[idx] = [
+                            question,
+                            { ...response, answer: chatResp, requestId, pending: false },
+                            userTimestamp,
+                            answerTimestamp,
+                        ];
                         return newAnswers;
                     });
+                } else {
+                    throw new Error("Empty response from chat API");
                 }
             } catch (error) {
                 console.error("Error parsing response body:", error);
+                throw error;
             }
         } catch (error) {
             console.error("Error in makeApiRequest:", error);
+            const answerTimestamp = new Date();
+            setConversationAnswers((prevAnswers) => {
+                const newAnswers = [...prevAnswers];
+                const idx = newAnswers.findIndex(
+                    ([, r]) => r && r.requestId === requestId
+                );
+                if (idx === -1) {
+                    return prevAnswers;
+                }
+                newAnswers[idx] = [
+                    question,
+                    {
+                        answer: t('components.chat.error-fetching-answer'),
+                        suggestingQuestions: [],
+                        documentIds: [],
+                        keywords: [],
+                        requestId,
+                        pending: false,
+                        error: true,
+                    },
+                    userTimestamp,
+                    answerTimestamp,
+                ];
+                return newAnswers;
+            });
         } finally {
             setIsLoading(false);
             setTimeout(() => {
@@ -367,7 +413,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                                     className="mr-auto"
                                     progress={{ value: undefined }}
                                     // key={`${index}-chat`}
-                                    isLoading={index === conversationAnswers.length - 1 && isLoading}
+                                    isLoading={response && response.pending === true}
                                 >
                                     <div
                                         dangerouslySetInnerHTML={{ __html: response.answer }}
@@ -527,9 +573,9 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                     showCount
                     aria-label="Chat input"
                     placeholder={t('components.chat.input-placeholder')}
-                    disabled={isLoading}
+                    disabled={inputDisabled}
                     onSubmit={handleSend}
-                    disableSend = {textAreaValue.trim().length === 0 || isLoading}
+                    disableSend = {textAreaValue.trim().length === 0 || inputDisabled}
                     contentAfter={undefined}
                 />
             </div>

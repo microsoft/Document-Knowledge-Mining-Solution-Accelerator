@@ -29,6 +29,9 @@ export type ChatApiResponse = {
     documentIds: string[];
     suggestingQuestions: string[];
     keywords: string[];
+    requestId?: string;
+    pending?: boolean;
+    error?: boolean;
 }
 
 export type Reference = {
