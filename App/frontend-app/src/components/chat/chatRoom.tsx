@@ -205,7 +205,11 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                         return newAnswers;
                     });
                 } else {
-                    throw new Error("Empty response from chat API");
+                    throw new Error(
+                        `Empty response from chat API (received: ${
+                            response === undefined ? "undefined" : JSON.stringify(response)
+                        })`
+                    );
                 }
             } catch (error) {
                 console.error("Error parsing response body:", error);
@@ -413,7 +417,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                                     className="mr-auto"
                                     progress={{ value: undefined }}
                                     // key={`${index}-chat`}
-                                    isLoading={response && response.pending === true}
+                                    isLoading={!!response?.pending}
                                 >
                                     <div
                                         dangerouslySetInnerHTML={{ __html: response.answer }}
@@ -463,9 +467,9 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                                             {response.suggestingQuestions.map((followUp, index) => (
                                                 <Suggestion
                                                     key={index}
-                                                    className={`!mr-2 !mt-2 !text-base ${isLoading ? "pointer-events-none text-gray-400" : ""}`}
+                                                    className={`!mr-2 !mt-2 !text-base ${inputDisabled ? "pointer-events-none text-gray-400" : ""}`}
                                                     onClick={() => {
-                                                        if (!isLoading) {
+                                                        if (!inputDisabled) {
                                                             handleFollowUpQuestion(followUp);
                                                         }
                                                     }}
