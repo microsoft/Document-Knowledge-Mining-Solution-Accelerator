@@ -31,6 +31,12 @@ export type ChatApiResponse = {
     keywords: string[];
 }
 
+export type ChatUiResponse = ChatApiResponse & {
+    requestId?: string;
+    pending?: boolean;
+    error?: boolean;
+}
+
 export type Reference = {
     title: string;
     parent_id: string;

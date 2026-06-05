@@ -1,15 +1,10 @@
-import React, { forwardRef, useImperativeHandle, ChangeEvent, KeyboardEvent, useRef, useState } from "react";
+import React, { forwardRef, useImperativeHandle, ChangeEvent, KeyboardEvent, useState } from "react";
 import { Input } from "@fluentui/react-input";
 import { useTranslation } from "react-i18next";
-import { Button, InputOnChangeData, Tooltip, useId } from "@fluentui/react-components";
+import { InputOnChangeData, Tooltip, useId } from "@fluentui/react-components";
 import { useDebouncedCallback } from "use-debounce";
-import {
-    Keyboard24Regular,
-    SearchVisual24Regular,
-    Search24Regular
-} from "@fluentui/react-icons";
+import { Search24Regular } from "@fluentui/react-icons";
 import "./searchInput.scss";
-import { UploadMultipleFiles } from "../../api/storageService";
 
 export interface SearchBoxHandle {
     setValue(decodedQuery: string): unknown;
@@ -25,45 +20,6 @@ interface SearchBoxProps {
     onSearchChanged: (searchValue: string) => void;
     onKeyDown?: (event: KeyboardEvent<HTMLInputElement>) => void;  // Include onKeyDown as a prop
 }
-
-const UploadButton = () => {
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const uploadDocuments = async () => {
-        if (fileInputRef.current?.files?.length) {
-            const files = Array.from(fileInputRef.current.files);
-            const formData = new FormData();
-
-            files.forEach((file, index) => {
-                formData.append(`file[${index}]`, file);
-            });
-
-            try {
-                const response = await UploadMultipleFiles(files);
-                if (!response) {
-                    throw new Error("Error uploading files");
-                }
-
-                alert("Files uploaded successfully");
-            } catch (error) {
-                console.error("Error:", error);
-                alert("Error uploading files");
-            }
-        }
-    };
-
-    return (
-        <>
-            {/* <input type="file" ref={fileInputRef} style={{ display: "none" }} onChange={uploadDocuments} multiple />
-            <Button
-                className="upload_button"
-                icon={<ArrowUpload24Filled />}
-                appearance="subtle"
-                onClick={handleClick}
-            /> */}
-        </>
-    );
-};
 
 export const SearchBox = forwardRef<SearchBoxHandle, SearchBoxProps>((
     { className, labelClassName, inputClassName, initialValue = "", placeholder, onSearchChanged, onKeyDown },
@@ -124,7 +80,6 @@ export const SearchBox = forwardRef<SearchBoxHandle, SearchBoxProps>((
                             {/* <KeyBoardButton />
                             <MicButton />
                             <SearchVisualButton /> */}
-                            <UploadButton />
                         </div>
                     }
                     size="large"

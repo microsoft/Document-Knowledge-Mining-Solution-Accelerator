@@ -9,7 +9,6 @@ import {
     DialogSurface,
     DialogTitle,
     Tag,
-    makeStyles,
 } from "@fluentui/react-components";
 import { DocDialog } from "../documentViewer/documentViewer";
 import { Textarea } from "@fluentai/textarea";
@@ -19,7 +18,7 @@ import { ChatAdd24Regular } from "@fluentui/react-icons";
 import styles from "./chatRoom.module.scss";
 import { CopilotProvider, Suggestion } from "@fluentai/react-copilot";
 //import { getDocument } from "../../api/documentsService";
-import { Completion, PostFeedback } from "../../api/chatService";
+import { Completion } from "../../api/chatService";
 import { FeedbackForm } from "./FeedbackForm";
 import { Document } from "../../api/apiTypes/documentResults";
 import { AppContext } from "../../AppContext";
@@ -28,12 +27,6 @@ import ReactMarkdown from "react-markdown";
 import { renderToStaticMarkup } from "react-dom/server";
 import { marked } from 'marked';
 const DefaultChatModel = "chat_4o";
-
-const useStyles = makeStyles({
-    tooltipContent: {
-        maxWidth: "500px",
-    },
-});
 
 interface ChatRoomProps {
     searchResultDocuments: Document[];
@@ -52,7 +45,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
     const [disableSources, setDisableSources] = useState<boolean>(false);
     const [model, setModel] = useState<string>("chat_35");
     const [source, setSource] = useState<string>("rag");
-    const [temperature, setTemperature] = useState<number>(0.8);
+    const [temperature] = useState<number>(0.8);
     const [maxTokens] = useState<number>(750);
     const [selectedDocument, setSelectedDocument] = useState<Document[]>(chatWithDocument);
     const [button, setButton] = useState<string>("");
@@ -73,6 +66,10 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
     const [allChunkTexts] = useState<string[]>([]);
 
     const { conversationAnswers, setConversationAnswers } = useContext(AppContext);
+    const hasPendingRequest = conversationAnswers.some(
+        ([, response]) => response && response.pending === true
+    );
+    const inputDisabled = isLoading || hasPendingRequest;
     const [isSticky, setIsSticky] = useState(false);
     const optionsBottom = useRef<HTMLDivElement>(null);
 
@@ -136,38 +133,17 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
             currentSessionId = newSessionId; // Immediately use the new session ID in this function
 
         }
-        const markdownToHtmlString = (markdown: string) => {
-            return renderToStaticMarkup(<ReactMarkdown>{markdown}</ReactMarkdown>);
-        };
-        const markdown = `| Data Point | Value | Document Name | Page Number |
-|----------------|-----------|-------------------|------------------|
-| Households with accessibility needs | 23.1 million | Accessibility in Housing Report | Page 1 |
-| Households with mobility-related disabilities | 19% of U.S. households | Accessibility in Housing Report | Page 1 |
-| Households without entry-level bedroom or full bathroom planning to add features | 1% | Accessibility in Housing Report | Page 3 |
-| Households planning to make homes more accessible | 5% | Accessibility in Housing Report | Page 3 |
-| Households with someone using mobility devices | 13% | Accessibility in Housing Report | Page 1 |
-| Households with serious difficulty hearing | 12% | Accessibility in Housing Report | Page 24 |
-| Households with serious difficulty seeing | 12% | Accessibility in Housing Report | Page 24 |
-| Households with difficulty walking or climbing stairs | 12% | Accessibility in Housing Report | Page 24 |
-| Households with difficulty dressing or bathing | 12% | Accessibility in Housing Report | Page 24 |
-| Households with difficulty doing errands alone | 12% | Accessibility in Housing Report | Page 24 |
-| Households with full bathrooms on entry level | 58% | Accessibility in Housing Report | Page 11 |
-| Households with bedrooms on entry level | 46% | Accessibility in Housing Report | Page 11 |
-| Total single-family loans acquired by Fannie Mae in 2021 | $2.6 trillion | Annual Housing Report 2022 | Page 36 |
-| Total single-family loans acquired by Freddie Mac in 2021 | $2.6 trillion | Annual Housing Report 2022 | Page 36 |
-| Percentage of loans with LTV > 95% | 13.5% | Annual Housing Report 2022 | Page 44 |
-| Percentage of loans with LTV <= 60% | 15.6% | Annual Housing Report 2022 | Page 44 |
-| Total NPLs sold by Enterprises through December 2023 | 168,364 | FHFA Non-Performing Loan Sales Report | Page 2 |
-| Average delinquency of NPLs sold | 2.8 years | FHFA Non-Performing Loan Sales Report | Page 2 |
-| Average current mark-to-market LTV ratio of NPLs | 83% | FHFA Non-Performing Loan Sales Report | Page 2 |`;
 
+        const requestId = uuidv4();
 
         setConversationAnswers((prevAnswers) => [
             ...prevAnswers,
             [question, {
                 answer: t('components.chat.fetching-answer'), suggestingQuestions: [],
                 documentIds: [],
-                keywords: []
+                keywords: [],
+                requestId,
+                pending: true,
             }],
         ]);
 
@@ -212,18 +188,60 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
 
 
 
-                    // Update the conversation with the formatted answer
                     setConversationAnswers((prevAnswers) => {
                         const newAnswers = [...prevAnswers];
-                        newAnswers[newAnswers.length - 1] = [question, { ...response, answer: chatResp }, userTimestamp, answerTimestamp];
+                        const idx = newAnswers.findIndex(
+                            ([, r]) => r && r.requestId === requestId
+                        );
+                        if (idx === -1) {
+                            return prevAnswers;
+                        }
+                        newAnswers[idx] = [
+                            question,
+                            { ...response, answer: chatResp, requestId, pending: false },
+                            userTimestamp,
+                            answerTimestamp,
+                        ];
                         return newAnswers;
                     });
+                } else {
+                    throw new Error(
+                        `Empty response from chat API (received: ${
+                            response === undefined ? "undefined" : JSON.stringify(response)
+                        })`
+                    );
                 }
             } catch (error) {
                 console.error("Error parsing response body:", error);
+                throw error;
             }
         } catch (error) {
             console.error("Error in makeApiRequest:", error);
+            const answerTimestamp = new Date();
+            setConversationAnswers((prevAnswers) => {
+                const newAnswers = [...prevAnswers];
+                const idx = newAnswers.findIndex(
+                    ([, r]) => r && r.requestId === requestId
+                );
+                if (idx === -1) {
+                    return prevAnswers;
+                }
+                newAnswers[idx] = [
+                    question,
+                    {
+                        answer: t('components.chat.error-fetching-answer'),
+                        suggestingQuestions: [],
+                        documentIds: [],
+                        keywords: [],
+                        requestId,
+                        pending: false,
+                        error: true,
+                    },
+                    userTimestamp,
+                    answerTimestamp,
+                ];
+                return newAnswers;
+            });
         } finally {
             setIsLoading(false);
             setTimeout(() => {
@@ -284,11 +302,6 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
     //         console.error("Error fetching data: ", error);
     //     }
     // };
-
-    const handleOpenFeedbackForm = (sources: Reference[]) => {
-        setReferencesForFeedbackForm(sources);
-        setIsFeedbackFormOpen(true);
-    };
 
     const handleDialogClose = () => {
         setIsDialogOpen(false);
@@ -404,7 +417,7 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                                     className="mr-auto"
                                     progress={{ value: undefined }}
                                     // key={`${index}-chat`}
-                                    isLoading={index === conversationAnswers.length - 1 && isLoading}
+                                    isLoading={!!response?.pending}
                                 >
                                     <div
                                         dangerouslySetInnerHTML={{ __html: response.answer }}
@@ -454,9 +467,9 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                                             {response.suggestingQuestions.map((followUp, index) => (
                                                 <Suggestion
                                                     key={index}
-                                                    className={`!mr-2 !mt-2 !text-base ${isLoading ? "pointer-events-none text-gray-400" : ""}`}
+                                                    className={`!mr-2 !mt-2 !text-base ${inputDisabled ? "pointer-events-none text-gray-400" : ""}`}
                                                     onClick={() => {
-                                                        if (!isLoading) {
+                                                        if (!inputDisabled) {
                                                             handleFollowUpQuestion(followUp);
                                                         }
                                                     }}
@@ -564,9 +577,9 @@ export function ChatRoom({ searchResultDocuments, selectedDocuments, chatWithDoc
                     showCount
                     aria-label="Chat input"
                     placeholder={t('components.chat.input-placeholder')}
-                    disabled={isLoading}
+                    disabled={inputDisabled}
                     onSubmit={handleSend}
-                    disableSend = {textAreaValue.trim().length === 0 || isLoading}
+                    disableSend = {textAreaValue.trim().length === 0 || inputDisabled}
                     contentAfter={undefined}
                 />
             </div>

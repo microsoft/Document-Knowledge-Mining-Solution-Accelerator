@@ -1,4 +1,4 @@
-﻿using DnsClient.Internal;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.GS.DPS.Images;
 using Microsoft.GS.DPS.Model.KernelMemory;
 using Microsoft.GS.DPS.Storage.Document;
@@ -23,11 +23,12 @@ namespace Microsoft.GS.DPS.API
 {
     public class KernelMemory
     {
-        private MemoryWebClient _kmClient;
-        private DocumentRepository _documentRepository;
-        private DataCacheManager _dataCache;
-        private TagUpdater _tagUpdator;
-        private static string keywordExtractorPrompt = "";
+        private readonly MemoryWebClient _kmClient;
+        private readonly DocumentRepository _documentRepository;
+        private readonly DataCacheManager _dataCache;
+        private readonly TagUpdater _tagUpdator;
+        private readonly ILogger<KernelMemory>? _logger;
+        private static readonly string keywordExtractorPrompt = "";
 
         static KernelMemory()
         {
@@ -35,16 +36,17 @@ namespace Microsoft.GS.DPS.API
             var assemblyLocation = Assembly.GetExecutingAssembly().Location;
             var assemblyDirectory = System.IO.Path.GetDirectoryName(assemblyLocation);
             // binding assembly directory with file path (Prompts/KeywordExtract_SystemPrompt.txt)
-            var systemPromptFilePath = System.IO.Path.Combine(assemblyDirectory, "Prompts", "KeywordExtract_SystemPrompt.txt");
+            var systemPromptFilePath = System.IO.Path.Join(assemblyDirectory, "Prompts", "KeywordExtract_SystemPrompt.txt");
             KernelMemory.keywordExtractorPrompt = System.IO.File.ReadAllText(systemPromptFilePath);
         }
 
-        public KernelMemory(MemoryWebClient kmClient, DocumentRepository documentRepository, DataCacheManager dataCache, TagUpdater tagUpdator)
+        public KernelMemory(MemoryWebClient kmClient, DocumentRepository documentRepository, DataCacheManager dataCache, TagUpdater tagUpdator, ILogger<KernelMemory>? logger = null)
         {
             _kmClient = kmClient;
             _documentRepository = documentRepository;
             _dataCache = dataCache;
             _tagUpdator = tagUpdator;
+            _logger = logger;
         }
 
         public async Task<DocumentImportedResult> ImportDocument(Stream documentStream,
@@ -139,7 +141,8 @@ namespace Microsoft.GS.DPS.API
             var summaryFile = await _kmClient.ExportFileAsync(documentId, summaryFileName);
             var summaryFileStream = await summaryFile.GetStreamAsync();
             // Read Stream to string
-            return await new StreamReader(summaryFileStream).ReadToEndAsync();
+            using var reader = new StreamReader(summaryFileStream);
+            return await reader.ReadToEndAsync();
         }
 
 
@@ -151,7 +154,11 @@ namespace Microsoft.GS.DPS.API
             var keywordFile = await _kmClient.ExportFileAsync(documentId, keywordFileName);
             var keywordFileStream = await keywordFile.GetStreamAsync();
             // Read Stream to string
-            string? keywordContent = await new StreamReader(keywordFileStream).ReadToEndAsync();
+            string? keywordContent;
+            using (var reader = new StreamReader(keywordFileStream))
+            {
+                keywordContent = await reader.ReadToEndAsync();
+            }
 
             if (string.IsNullOrEmpty(keywordContent))
             {
@@ -196,10 +203,18 @@ namespace Microsoft.GS.DPS.API
 
                     return keywordDict;
                 }
-                catch (Exception)
+                catch (JsonException ex)
                 {
+                    _logger?.LogWarning(ex, "Failed to parse keyword JSON for document {DocumentId} ({FileName}); returning empty keyword set.", documentId, fileName);
                     return new Dictionary<string, string>();
                 }
+                #pragma warning disable CA1031 // LLM keyword-extraction output may be malformed; fall back to empty result rather than failing the import
+                catch (Exception ex)
+                {
+                    _logger?.LogWarning(ex, "Failed to extract keywords for document {DocumentId} ({FileName}); returning empty keyword set.", documentId, fileName);
+                    return new Dictionary<string, string>();
+                }
+                #pragma warning restore CA1031
             }
         }
 

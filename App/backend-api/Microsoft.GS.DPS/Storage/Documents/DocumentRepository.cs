@@ -187,9 +187,9 @@ namespace Microsoft.GS.DPS.Storage.Document
 
             if (endDate.HasValue)
             {
-                endDate = endDate?.Date.AddHours(23).AddMinutes(59).AddSeconds(59);
+                var endOfDay = endDate.Value.Date.AddHours(23).AddMinutes(59).AddSeconds(59);
                 var timeFilter = Builders<Entities.Document>.Filter.Gte(x => x.ImportedTime, startDate ?? DateTime.Now) &
-                              Builders<Entities.Document>.Filter.Lte(x => x.ImportedTime, endDate.Value);
+                              Builders<Entities.Document>.Filter.Lte(x => x.ImportedTime, endOfDay);
                 filterDefinition &= timeFilter;
             }
 

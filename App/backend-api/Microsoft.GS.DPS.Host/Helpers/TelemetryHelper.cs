@@ -50,10 +50,12 @@ namespace Microsoft.GS.DPSHost.Helpers
             {
                 _telemetryClient.TrackEvent(eventName, properties, metrics);
             }
+            #pragma warning disable CA1031 // Telemetry must never fail the calling code path
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to track event: {EventName}", eventName);
             }
+            #pragma warning restore CA1031
         }
 
         /// <summary>
@@ -73,10 +75,12 @@ namespace Microsoft.GS.DPSHost.Helpers
             {
                 _telemetryClient.TrackException(exception, properties, metrics);
             }
+            #pragma warning disable CA1031 // Telemetry must never fail the calling code path
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to track exception");
             }
+            #pragma warning restore CA1031
         }
 
         /// <summary>
@@ -96,12 +100,16 @@ namespace Microsoft.GS.DPSHost.Helpers
 
             try
             {
-                _telemetryClient.TrackDependency(dependencyName, commandName, startTime, duration, success);
+                // Overload signature: TrackDependency(dependencyTypeName, target, dependencyName, data, startTime, duration, success)
+                // Map the wrapper's dependencyName -> telemetry dependencyName (and target), and commandName -> data.
+                _telemetryClient.TrackDependency("Other", dependencyName, dependencyName, commandName, startTime, duration, success ? "0" : "1", success);
             }
+            #pragma warning disable CA1031 // Telemetry must never fail the calling code path
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to track dependency: {DependencyName}", dependencyName);
             }
+            #pragma warning restore CA1031
         }
 
         /// <summary>
@@ -143,10 +151,12 @@ namespace Microsoft.GS.DPSHost.Helpers
             {
                 Activity.Current?.SetTag(key, value);
             }
+            #pragma warning disable CA1031 // Telemetry must never fail the calling code path
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to set activity tag: {Key}", key);
             }
+            #pragma warning restore CA1031
         }
 
         /// <summary>
@@ -163,10 +173,12 @@ namespace Microsoft.GS.DPSHost.Helpers
             {
                 _telemetryClient.Flush();
             }
+            #pragma warning disable CA1031 // Telemetry must never fail the calling code path
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to flush telemetry client");
             }
+            #pragma warning restore CA1031
         }
     }
 }

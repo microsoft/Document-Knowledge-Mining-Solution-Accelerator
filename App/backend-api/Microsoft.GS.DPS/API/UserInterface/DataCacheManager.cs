@@ -53,12 +53,9 @@ namespace Microsoft.GS.DPS.API.UserInterface
 
                     var values = keywordDict.Value.Split(',').Select(v => v.Trim()).ToArray();
 
-                    foreach (var value in values)
+                    foreach (var value in values.Where(v => !consolidatedKeywords[keywordDict.Key].Contains(v)))
                     {
-                        if (!consolidatedKeywords[keywordDict.Key].Contains(value))
-                        {
-                            consolidatedKeywords[keywordDict.Key].Add(value);
-                        }
+                        consolidatedKeywords[keywordDict.Key].Add(value);
                     }
 
                     consolidatedKeywords[keywordDict.Key] = consolidatedKeywords[keywordDict.Key].OrderBy(v => v).ToList();
