@@ -105,22 +105,10 @@ var solutionSuffix = toLower(trim(replace(
 
 var solutionLocation = empty(location) ? resourceGroup().location : location
 
-// HA region pair for Cosmos DB (when enableRedundancy is true).
-var cosmosDbZoneRedundantHaRegionPairs = {
-  australiaeast: 'uksouth'
-  centralus: 'eastus2'
-  eastasia: 'southeastasia'
-  eastus: 'centralus'
-  eastus2: 'centralus'
-  japaneast: 'australiaeast'
-  northeurope: 'westeurope'
-  southeastasia: 'eastasia'
-  uksouth: 'westeurope'
-  westeurope: 'northeurope'
-}
-var cosmosDbHaLocation = cosmosDbZoneRedundantHaRegionPairs[resourceGroup().location]
-
 var useExistingLogAnalytics = !empty(existingLogAnalyticsWorkspaceId)
+var existingLawSubscriptionId = useExistingLogAnalytics ? split(existingLogAnalyticsWorkspaceId, '/')[2] : subscription().subscriptionId
+var existingLawResourceGroupName = useExistingLogAnalytics ? split(existingLogAnalyticsWorkspaceId, '/')[4] : resourceGroup().name
+var existingLawName = useExistingLogAnalytics ? split(existingLogAnalyticsWorkspaceId, '/')[8] : ''
 
 var gptModelDeployment = {
   modelName: gptModelName
@@ -135,33 +123,6 @@ var embeddingModelDeployment = {
   deploymentVersion: embeddingModelVersion
   deploymentCapacity: embeddingDeploymentCapacity
 }
-
-var openAiDeployments = [
-  {
-    name: gptModelDeployment.deploymentName
-    model: {
-      format: 'OpenAI'
-      name: gptModelDeployment.modelName
-      version: gptModelDeployment.deploymentVersion
-    }
-    sku: {
-      name: deploymentType
-      capacity: gptModelDeployment.deploymentCapacity
-    }
-  }
-  {
-    name: embeddingModelDeployment.deploymentName
-    model: {
-      format: 'OpenAI'
-      name: embeddingModelDeployment.modelName
-      version: embeddingModelDeployment.deploymentVersion
-    }
-    sku: {
-      name: deploymentType
-      capacity: embeddingModelDeployment.deploymentCapacity
-    }
-  }
-]
 
 // Resource names.
 var logAnalyticsWorkspaceName = 'log-${solutionSuffix}'
@@ -198,10 +159,11 @@ resource resourceGroupTags 'Microsoft.Resources/tags@2023-07-01' = {
 // Identity
 // ============================================================================ //
 
-module userAssignedIdentity './modules/identity/user-assigned-identity.bicep' = {
+module userAssignedIdentity './modules/identity/managed-identity.bicep' = {
   name: take('mod.identity.${userAssignedIdentityName}', 64)
   params: {
-    solutionSuffix: solutionSuffix
+    solutionName: solutionSuffix
+    identityName: userAssignedIdentityName
     location: solutionLocation
     tags: tags
   }
@@ -211,27 +173,33 @@ module userAssignedIdentity './modules/identity/user-assigned-identity.bicep' = 
 // Monitoring
 // ============================================================================ //
 
-module logAnalyticsWorkspace './modules/monitoring/log-analytics.bicep' = if (enableMonitoring || useExistingLogAnalytics) {
+module logAnalyticsWorkspace './modules/monitoring/log-analytics.bicep' = if (enableMonitoring && !useExistingLogAnalytics) {
   name: take('mod.monitoring.law.${logAnalyticsWorkspaceName}', 64)
   params: {
-    solutionSuffix: solutionSuffix
+    solutionName: solutionSuffix
+    name: logAnalyticsWorkspaceName
     location: solutionLocation
     tags: tags
-    existingLogAnalyticsWorkspaceId: existingLogAnalyticsWorkspaceId
   }
 }
 
-var logAnalyticsWorkspaceResourceId = (enableMonitoring || useExistingLogAnalytics)
-  ? logAnalyticsWorkspace!.outputs.resourceId
-  : ''
+resource existingLogAnalytics 'Microsoft.OperationalInsights/workspaces@2025-02-01' existing = if (useExistingLogAnalytics) {
+  name: existingLawName
+  scope: resourceGroup(existingLawSubscriptionId, existingLawResourceGroupName)
+}
+
+var logAnalyticsWorkspaceResourceId = useExistingLogAnalytics
+  ? existingLogAnalytics.id
+  : (enableMonitoring ? logAnalyticsWorkspace!.outputs.resourceId : '')
 
 module applicationInsights './modules/monitoring/app-insights.bicep' = if (enableMonitoring) {
   name: take('mod.monitoring.appi.${applicationInsightsName}', 64)
   params: {
-    solutionSuffix: solutionSuffix
+    solutionName: solutionSuffix
+    name: applicationInsightsName
     location: solutionLocation
     tags: tags
-    logAnalyticsWorkspaceId: logAnalyticsWorkspaceResourceId
+    workspaceResourceId: logAnalyticsWorkspaceResourceId
   }
 }
 
@@ -242,91 +210,233 @@ module applicationInsights './modules/monitoring/app-insights.bicep' = if (enabl
 module storageAccount './modules/data/storage-account.bicep' = {
   name: take('mod.data.st.${storageAccountName}', 64)
   params: {
+    solutionName: solutionSuffix
     #disable-next-line BCP334
     name: storageAccountName
     location: solutionLocation
     tags: tags
-    storageBlobDataContributorPrincipalId: userAssignedIdentity.outputs.principalId
   }
 }
 
-module cosmosDb './modules/data/cosmos-db.bicep' = {
+resource storageBlobDataContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, storageAccountName, userAssignedIdentityName, 'Storage Blob Data Contributor')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
+    )
+    principalId: userAssignedIdentity.outputs.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+module cosmosDb './modules/data/cosmos-db-mongo.bicep' = {
   name: take('mod.data.cosmos.${cosmosDbAccountName}', 64)
   params: {
+    solutionName: solutionSuffix
     name: cosmosDbAccountName
     location: solutionLocation
     tags: tags
-    zoneRedundant: enableRedundancy
-    enableAutomaticFailover: enableRedundancy
-    haLocation: enableRedundancy ? cosmosDbHaLocation : ''
+    databaseName: 'DPS'
+    collections: [
+      { name: 'ChatHistory' }
+      { name: 'Documents' }
+    ]
   }
+}
+
+// Toolkit's cosmos-db-mongo output is credential-less. Use listConnectionStrings()
+// on the deployed account to get the real connection string with embedded key
+// (matches pre-toolkit DKM behavior; same pattern used for existingLogAnalytics + aksClusterExisting).
+resource cosmosDbExisting 'Microsoft.DocumentDB/databaseAccounts@2025-10-15' existing = {
+  name: cosmosDbAccountName
+  dependsOn: [cosmosDb]
 }
 
 // ============================================================================ //
 // AI (OpenAI + Document Intelligence + AI Search)
 // ============================================================================ //
 
-module openAi './modules/ai/openai.bicep' = {
+module openAi './modules/ai/ai-services.bicep' = {
   name: take('mod.ai.openai.${openAiAccountName}', 64)
   params: {
+    solutionName: solutionSuffix
+    namePrefix: 'oai'
     name: openAiAccountName
+    kind: 'OpenAI'
     location: azureAiServiceLocation
     tags: tags
-    userAssignedPrincipalId: userAssignedIdentity.outputs.principalId
-    deployments: openAiDeployments
   }
 }
 
-module documentIntelligence './modules/ai/document-intelligence.bicep' = {
+resource openAiContributorToUai 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, openAiAccountName, userAssignedIdentityName, 'Cognitive Services OpenAI Contributor')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      'a001fd3d-188f-4b5d-821b-7da978bf7442'
+    )
+    principalId: userAssignedIdentity.outputs.principalId
+    principalType: 'ServicePrincipal'
+  }
+  dependsOn: [openAi]
+}
+
+resource openAiUserToUai 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, openAiAccountName, userAssignedIdentityName, 'Cognitive Services OpenAI User')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
+    )
+    principalId: userAssignedIdentity.outputs.principalId
+    principalType: 'ServicePrincipal'
+  }
+  dependsOn: [openAi]
+}
+
+// Model deployments — serialize via dependsOn to avoid CognitiveServices throttling.
+module gptDeployment './modules/ai/ai-foundry-model-deployment.bicep' = {
+  name: take('mod.ai.dep.gpt-${solutionSuffix}', 64)
+  params: {
+    aiServicesAccountName: openAi.outputs.name
+    deploymentName: gptModelDeployment.deploymentName
+    modelName: gptModelDeployment.modelName
+    modelVersion: gptModelDeployment.deploymentVersion
+    skuName: deploymentType
+    skuCapacity: gptModelDeployment.deploymentCapacity
+  }
+}
+
+module embeddingDeployment './modules/ai/ai-foundry-model-deployment.bicep' = {
+  name: take('mod.ai.dep.embed-${solutionSuffix}', 64)
+  params: {
+    aiServicesAccountName: openAi.outputs.name
+    deploymentName: embeddingModelDeployment.deploymentName
+    modelName: embeddingModelDeployment.modelName
+    modelVersion: embeddingModelDeployment.deploymentVersion
+    skuName: deploymentType
+    skuCapacity: embeddingModelDeployment.deploymentCapacity
+  }
+  dependsOn: [gptDeployment]
+}
+
+module documentIntelligence './modules/ai/ai-services.bicep' = {
   name: take('mod.ai.di.${docIntelAccountName}', 64)
   params: {
+    solutionName: solutionSuffix
+    namePrefix: 'di'
     name: docIntelAccountName
+    kind: 'FormRecognizer'
     location: solutionLocation
     tags: tags
-    userAssignedPrincipalId: userAssignedIdentity.outputs.principalId
   }
+}
+
+resource docIntelUserToUai 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, docIntelAccountName, userAssignedIdentityName, 'Cognitive Services User')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      'a97b65f3-24c7-4388-baec-2e87135dc908'
+    )
+    principalId: userAssignedIdentity.outputs.principalId
+    principalType: 'ServicePrincipal'
+  }
+  dependsOn: [documentIntelligence]
 }
 
 module aiSearch './modules/ai/ai-search.bicep' = {
   name: take('mod.ai.srch.${aiSearchName}', 64)
   params: {
+    solutionName: solutionSuffix
     name: aiSearchName
     location: solutionLocation
     tags: tags
     skuName: enableScalability ? 'standard' : 'basic'
-    userAssignedIdentityResourceId: userAssignedIdentity.outputs.resourceId
-    userAssignedPrincipalId: userAssignedIdentity.outputs.principalId
-    logAnalyticsWorkspaceId: enableMonitoring ? logAnalyticsWorkspaceResourceId : ''
   }
+}
+
+resource searchIndexDataContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, aiSearchName, userAssignedIdentityName, 'Search Index Data Contributor')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      '8ebe5a00-799e-43f5-93ac-243d3dce84a7'
+    )
+    principalId: userAssignedIdentity.outputs.principalId
+    principalType: 'ServicePrincipal'
+  }
+  dependsOn: [aiSearch]
 }
 
 // ============================================================================ //
 // Compute (AKS + ACR)
 // ============================================================================ //
 
-module aks './modules/compute/aks.bicep' = {
+module aks './modules/compute/kubernetes.bicep' = {
   name: take('mod.compute.aks.${aksClusterName}', 64)
   params: {
+    solutionName: solutionSuffix
     name: aksClusterName
     location: solutionLocation
     tags: tags
-    logAnalyticsWorkspaceId: enableMonitoring ? logAnalyticsWorkspaceResourceId : ''
-    contributorPrincipalId: userAssignedIdentity.outputs.principalId
+    logAnalyticsWorkspaceResourceId: enableMonitoring ? logAnalyticsWorkspaceResourceId : ''
   }
+}
+
+// Toolkit's kubernetes wrapper does not surface the kubelet/system-assigned
+// identity principal IDs. Read them via an existing-resource reference so
+// downstream consumers (ACR AcrPull, output AZURE_AKS_MI_ID) keep working.
+resource aksClusterExisting 'Microsoft.ContainerService/managedClusters@2025-03-01' existing = {
+  name: aksClusterName
+  dependsOn: [aks]
+}
+
+resource aksContributorToUai 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, aksClusterName, userAssignedIdentityName, 'Contributor')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      'b24988ac-6180-42a0-ab88-20f7382dd24c'
+    )
+    principalId: userAssignedIdentity.outputs.principalId
+    principalType: 'ServicePrincipal'
+  }
+  dependsOn: [aks]
 }
 
 module containerRegistry './modules/compute/container-registry.bicep' = {
   name: take('mod.compute.acr.${containerRegistryName}', 64)
   params: {
+    solutionName: solutionSuffix
     #disable-next-line BCP334
     name: containerRegistryName
     location: solutionLocation
     tags: tags
-    skuName: 'Standard'
+    sku: 'Premium'
     publicNetworkAccess: 'Enabled'
-    zoneRedundancy: 'Disabled'
-    acrPullPrincipalId: aks.outputs.kubeletIdentityPrincipalId
   }
+}
+
+resource acrPullToAks 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, containerRegistryName, aksClusterName, 'AcrPull')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      '7f951dda-4ed3-4680-a7ca-43fe172d538d'
+    )
+    principalId: aksClusterExisting.properties.identityProfile.kubeletidentity.objectId
+    principalType: 'ServicePrincipal'
+  }
+  dependsOn: [containerRegistry]
 }
 
 // ============================================================================ //
@@ -345,7 +455,7 @@ var keyValues = [
   { name: 'Application:Services:PersistentStorage:CosmosMongo:Collections:ChatHistory:Database', value: 'DPS' }
   { name: 'Application:Services:PersistentStorage:CosmosMongo:Collections:DocumentManager:Collection', value: 'Documents' }
   { name: 'Application:Services:PersistentStorage:CosmosMongo:Collections:DocumentManager:Database', value: 'DPS' }
-  { name: 'Application:Services:PersistentStorage:CosmosMongo:ConnectionString', value: cosmosDb.outputs.primaryConnectionString }
+  { name: 'Application:Services:PersistentStorage:CosmosMongo:ConnectionString', value: cosmosDbExisting.listConnectionStrings().connectionStrings[0].connectionString }
   { name: 'Application:Services:AzureAISearch:Endpoint', value: aiSearch.outputs.endpoint }
   { name: 'KernelMemory:Services:AzureAIDocIntel:Auth', value: 'AzureIdentity' }
   { name: 'KernelMemory:Services:AzureAIDocIntel:Endpoint', value: documentIntelligence.outputs.endpoint }
@@ -367,12 +477,27 @@ var keyValues = [
 module appConfiguration './modules/data/app-configuration.bicep' = {
   name: take('mod.data.appcs.${appConfigName}', 64)
   params: {
+    solutionName: solutionSuffix
     name: appConfigName
     location: solutionLocation
     tags: tags
-    appConfigDataReaderPrincipalId: userAssignedIdentity.outputs.principalId
+    disableLocalAuth: false
     keyValues: keyValues
   }
+}
+
+resource appConfigDataReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, appConfigName, userAssignedIdentityName, 'App Configuration Data Reader')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      '516239f1-63e1-4d78-a4de-a74fb236a071'
+    )
+    principalId: userAssignedIdentity.outputs.principalId
+    principalType: 'ServicePrincipal'
+  }
+  dependsOn: [appConfiguration]
 }
 
 // ============================================================================ //
@@ -419,7 +544,7 @@ output AZURE_SEARCH_SERVICE_NAME string = aiSearch.outputs.name
 output AZURE_AKS_NAME string = aks.outputs.name
 
 @description('Contains Azure AKS Managed Identity Principal ID.')
-output AZURE_AKS_MI_ID string = aks.outputs.systemAssignedIdentityPrincipalId
+output AZURE_AKS_MI_ID string = aksClusterExisting.identity.principalId
 
 @description('Contains Azure Container Registry Name.')
 output AZURE_CONTAINER_REGISTRY_NAME string = containerRegistry.outputs.name
