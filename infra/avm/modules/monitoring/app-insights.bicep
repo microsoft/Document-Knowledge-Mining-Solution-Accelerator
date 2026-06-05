@@ -35,6 +35,9 @@ param flowType string = 'Bluefield'
 @description('Optional. Enable/Disable usage telemetry for module.')
 param enableTelemetry bool = true
 
+@description('Kind of Application Insights resource.')
+param kind string = 'web'
+
 // ============================================================================
 // AVM Module Deployment
 // ============================================================================
@@ -45,7 +48,7 @@ module appInsights 'br/public:avm/res/insights/component:0.7.1' = {
     location: location
     tags: tags
     workspaceResourceId: workspaceResourceId
-    kind: 'web'
+    kind: kind
     applicationType: applicationType
     enableTelemetry: enableTelemetry
     retentionInDays: retentionInDays

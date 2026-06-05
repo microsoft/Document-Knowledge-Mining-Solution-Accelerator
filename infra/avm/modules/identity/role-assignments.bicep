@@ -99,7 +99,7 @@ resource cosmosContributorRoleDefinition 'Microsoft.DocumentDB/databaseAccounts/
 
 // AI Search → Cognitive Services OpenAI User on AI Foundry (new project, same RG)
 resource assignOpenAIRoleToAISearch 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!useExistingAIProject && !empty(aiSearchPrincipalId) && !empty(aiFoundryResourceId)) {
-  name: guid(resourceGroup().id, aiFoundryAccount.id, roleDefinitions.cognitiveServicesOpenAIUser, 'search-openai')
+  name: guid(aiFoundryAccount.id, aiSearchPrincipalId, roleDefinitions.cognitiveServicesOpenAIUser)
   scope: aiFoundryAccount
   properties: {
     principalId: aiSearchPrincipalId
@@ -115,14 +115,14 @@ module assignOpenAIToSearchExisting './cross-scope-role-assignment.bicep' = if (
   params: {
     principalId: aiSearchPrincipalId
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleDefinitions.cognitiveServicesOpenAIUser)
-    roleAssignmentName: guid(solutionName, 'search-openai', existingAIFoundryName, roleDefinitions.cognitiveServicesOpenAIUser)
+    roleAssignmentName: guid(existingAIFoundryName, aiSearchPrincipalId, roleDefinitions.cognitiveServicesOpenAIUser)
     aiFoundryName: existingAIFoundryName
   }
 }
 
 // Backend App Service → Foundry User on AI Foundry (new project, same RG)
 resource backendAppAiUserAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!useExistingAIProject && !empty(aiFoundryResourceId) && !empty(backendAppServicePrincipalId)) {
-  name: guid(resourceGroup().id, backendAppServicePrincipalId, roleDefinitions.azureAiUser, 'backend-ai-services')
+  name: guid(aiFoundryAccount.id, backendAppServicePrincipalId, roleDefinitions.azureAiUser)
   scope: aiFoundryAccount
   properties: {
     principalId: backendAppServicePrincipalId
@@ -138,7 +138,7 @@ module backendAppAiUserExisting './cross-scope-role-assignment.bicep' = if (useE
   params: {
     principalId: backendAppServicePrincipalId
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleDefinitions.azureAiUser)
-    roleAssignmentName: guid(solutionName, 'backend-aiuser', existingAIFoundryName, roleDefinitions.azureAiUser)
+    roleAssignmentName: guid(existingAIFoundryName, backendAppServicePrincipalId, roleDefinitions.azureAiUser)
     aiFoundryName: existingAIFoundryName
   }
 }
@@ -150,7 +150,7 @@ module backendAppAiUserExisting './cross-scope-role-assignment.bicep' = if (useE
 
 // AI Project → Search Index Data Reader on AI Search (new project)
 resource projectSearchReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(aiSearchResourceId) && !empty(aiProjectPrincipalId)) {
-  name: guid(resourceGroup().id, aiProjectPrincipalId, roleDefinitions.searchIndexDataReader, 'project-search')
+  name: guid(aiSearchService.id, aiProjectPrincipalId, roleDefinitions.searchIndexDataReader)
   scope: aiSearchService
   properties: {
     principalId: aiProjectPrincipalId
@@ -161,7 +161,7 @@ resource projectSearchReader 'Microsoft.Authorization/roleAssignments@2022-04-01
 
 // AI Project → Search Service Contributor on AI Search (new project)
 resource projectSearchContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(aiSearchResourceId) && !empty(aiProjectPrincipalId)) {
-  name: guid(resourceGroup().id, aiProjectPrincipalId, roleDefinitions.searchServiceContributor, 'project-search')
+  name: guid(aiSearchService.id, aiProjectPrincipalId, roleDefinitions.searchServiceContributor)
   scope: aiSearchService
   properties: {
     principalId: aiProjectPrincipalId
@@ -172,7 +172,7 @@ resource projectSearchContributor 'Microsoft.Authorization/roleAssignments@2022-
 
 // Existing AI Project → Search Index Data Reader on AI Search
 resource existingProjectSearchReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (useExistingAIProject && !empty(aiSearchResourceId) && !empty(existingAiProjectPrincipalId)) {
-  name: guid(resourceGroup().id, existingAiProjectPrincipalId, roleDefinitions.searchIndexDataReader, 'existing-project-search')
+  name: guid(aiSearchService.id, 'existing', existingAiProjectPrincipalId, roleDefinitions.searchIndexDataReader)
   scope: aiSearchService
   properties: {
     principalId: existingAiProjectPrincipalId
@@ -183,7 +183,7 @@ resource existingProjectSearchReader 'Microsoft.Authorization/roleAssignments@20
 
 // Existing AI Project → Search Service Contributor on AI Search
 resource existingProjectSearchContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (useExistingAIProject && !empty(aiSearchResourceId) && !empty(existingAiProjectPrincipalId)) {
-  name: guid(resourceGroup().id, existingAiProjectPrincipalId, roleDefinitions.searchServiceContributor, 'existing-project-search')
+  name: guid(aiSearchService.id, 'existing', existingAiProjectPrincipalId, roleDefinitions.searchServiceContributor)
   scope: aiSearchService
   properties: {
     principalId: existingAiProjectPrincipalId
@@ -194,7 +194,7 @@ resource existingProjectSearchContributor 'Microsoft.Authorization/roleAssignmen
 
 // Backend App Service → Search Index Data Reader on AI Search
 resource backendAppSearchReaderAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(aiSearchResourceId) && !empty(backendAppServicePrincipalId)) {
-  name: guid(resourceGroup().id, backendAppServicePrincipalId, roleDefinitions.searchIndexDataReader, 'backend-search')
+  name: guid(aiSearchService.id, backendAppServicePrincipalId, roleDefinitions.searchIndexDataReader)
   scope: aiSearchService
   properties: {
     principalId: backendAppServicePrincipalId
@@ -210,7 +210,7 @@ resource backendAppSearchReaderAssignment 'Microsoft.Authorization/roleAssignmen
 
 // AI Project → Storage Blob Data Contributor (new project)
 resource projectStorageContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(storageAccountResourceId) && !empty(aiProjectPrincipalId)) {
-  name: guid(resourceGroup().id, aiProjectPrincipalId, roleDefinitions.storageBlobDataContributor, 'project-storage')
+  name: guid(storageAccount.id, aiProjectPrincipalId, roleDefinitions.storageBlobDataContributor)
   scope: storageAccount
   properties: {
     principalId: aiProjectPrincipalId
@@ -221,7 +221,7 @@ resource projectStorageContributor 'Microsoft.Authorization/roleAssignments@2022
 
 // AI Project → Storage Blob Data Reader (new project)
 resource projectStorageReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(storageAccountResourceId) && !empty(aiProjectPrincipalId)) {
-  name: guid(resourceGroup().id, aiProjectPrincipalId, roleDefinitions.storageBlobDataReader, 'project-storage')
+  name: guid(storageAccount.id, aiProjectPrincipalId, roleDefinitions.storageBlobDataReader)
   scope: storageAccount
   properties: {
     principalId: aiProjectPrincipalId
@@ -232,7 +232,7 @@ resource projectStorageReader 'Microsoft.Authorization/roleAssignments@2022-04-0
 
 // Existing AI Project → Storage Blob Data Contributor
 resource existingProjectStorageContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (useExistingAIProject && !empty(storageAccountResourceId) && !empty(existingAiProjectPrincipalId)) {
-  name: guid(resourceGroup().id, existingAiProjectPrincipalId, roleDefinitions.storageBlobDataContributor, 'existing-project-storage')
+  name: guid(storageAccount.id, 'existing', existingAiProjectPrincipalId, roleDefinitions.storageBlobDataContributor)
   scope: storageAccount
   properties: {
     principalId: existingAiProjectPrincipalId
@@ -243,7 +243,7 @@ resource existingProjectStorageContributor 'Microsoft.Authorization/roleAssignme
 
 // Existing AI Project → Storage Blob Data Reader
 resource existingProjectStorageReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (useExistingAIProject && !empty(storageAccountResourceId) && !empty(existingAiProjectPrincipalId)) {
-  name: guid(resourceGroup().id, existingAiProjectPrincipalId, roleDefinitions.storageBlobDataReader, 'existing-project-storage')
+  name: guid(storageAccount.id, 'existing', existingAiProjectPrincipalId, roleDefinitions.storageBlobDataReader)
   scope: storageAccount
   properties: {
     principalId: existingAiProjectPrincipalId
@@ -254,7 +254,7 @@ resource existingProjectStorageReader 'Microsoft.Authorization/roleAssignments@2
 
 // AI Search → Storage Blob Data Reader
 resource searchStorageReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(storageAccountResourceId) && !empty(aiSearchPrincipalId)) {
-  name: guid(resourceGroup().id, aiSearchPrincipalId, roleDefinitions.storageBlobDataReader, 'search-storage')
+  name: guid(storageAccount.id, aiSearchPrincipalId, roleDefinitions.storageBlobDataReader)
   scope: storageAccount
   properties: {
     principalId: aiSearchPrincipalId
