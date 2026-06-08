@@ -1,12 +1,12 @@
 import { ReactNode, createContext, useState } from 'react';
-import { ChatApiResponse } from './api/apiTypes/chatTypes';
+import { ChatUiResponse } from './api/apiTypes/chatTypes';
 
 export interface IAppContext {
-    conversationAnswers: [prompt: string, response: ChatApiResponse, userTimestamp?: Date, answerTimestamp?: Date][];
+    conversationAnswers: [prompt: string, response: ChatUiResponse, userTimestamp?: Date, answerTimestamp?: Date][];
     setConversationAnswers: (
         value: (
-            prevState: [prompt: string, response: ChatApiResponse, userTimestamp?: Date, answerTimestamp?: Date][]
-        ) => [prompt: string, response: ChatApiResponse, userTimestamp?: Date, answerTimestamp?: Date][]
+            prevState: [prompt: string, response: ChatUiResponse, userTimestamp?: Date, answerTimestamp?: Date][]
+        ) => [prompt: string, response: ChatUiResponse, userTimestamp?: Date, answerTimestamp?: Date][]
     ) => void;
     query: string;
     setQuery: (value: string) => void;
@@ -17,7 +17,7 @@ export interface IAppContext {
 export const AppContext = createContext({} as IAppContext);
 
 export const AppContextProvider = ({ children }: { children?: ReactNode }) => {
-    const [conversationAnswers, setConversationAnswers] = useState<[prompt: string, response: ChatApiResponse, userTimestamp?: Date, answerTimestamp?: Date][]>([]);
+    const [conversationAnswers, setConversationAnswers] = useState<[prompt: string, response: ChatUiResponse, userTimestamp?: Date, answerTimestamp?: Date][]>([]);
     const [query, setQuery] = useState<string>("");
     const [filters, setFilters] = useState<{ [key: string]: string[] }>({}); // Change this line
 

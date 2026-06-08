@@ -7,7 +7,7 @@ import { Document } from "../../api/apiTypes/documentResults";
 import { Button } from "@fluentui/react-components";
 import { ChatAdd24Regular } from "@fluentui/react-icons";
 import { Textarea } from "@fluentai/textarea";
-import { ChatApiResponse, ChatOptions, ChatRequest, History } from "../../api/apiTypes/chatTypes";
+import { ChatApiResponse, ChatRequest } from "../../api/apiTypes/chatTypes";
 import { Completion } from "../../api/chatService";
 import styles from "./sidecar.module.scss";
 import { useTranslation } from "react-i18next";
@@ -30,13 +30,11 @@ export function SidecarCopilot({
     
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const { conversationAnswers, setConversationAnswers } = useContext(AppContext);
-    const [model, setModel] = useState<string>("chat_35");
-    const [source, setSource] = useState<string>("rag");
-    const [button, setButton] = useState<string>("");
-    const [temperature] = useState<number>(0.8);
-    const [maxTokens] = useState<number>(750);
+    const [, setModel] = useState<string>("chat_35");
+    const [, setSource] = useState<string>("rag");
+    const [, setButton] = useState<string>("");
     const [disableSources, setDisableSources] = useState<boolean>(false);
-    const [selectedDocument, setSelectedDocument] = useState<Document[]>([]);
+    const [, setSelectedDocument] = useState<Document[]>([]);
 
     useEffect(() => {
         setSelectedDocument(chatWithDocument);
@@ -107,19 +105,6 @@ export function SidecarCopilot({
             }, 0);
         }
     };
-
-    const history: History = conversationAnswers
-        .map(([prompt, response, userTimestamp, answerTimestamp]) => {
-            if (response) {
-                return [
-                    { role: "user", content: prompt, datetime: userTimestamp },
-                    { role: "assistant", content: response.answer, datetime: answerTimestamp },
-                ];
-            } else {
-                return [];
-            }
-        })
-        .flat();
 
     const handleModelChange = (model: string) => {
         setModel(model);

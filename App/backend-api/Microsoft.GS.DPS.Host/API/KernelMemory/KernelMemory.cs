@@ -49,6 +49,12 @@ namespace Microsoft.GS.DPSHost.API
                 
                 try
                 {
+                    if (file == null)
+                    {
+                        logger.LogWarning("[{RequestId}] No file provided in request", requestId);
+                        return Results.BadRequest(new DocumentImportedResult() { DocumentId = string.Empty });
+                    }
+
                     var fileStream = file.OpenReadStream();
                     //Set Stream Position to 0
                     fileStream.Seek(0, SeekOrigin.Begin);
@@ -457,8 +463,6 @@ namespace Microsoft.GS.DPSHost.API
 
                 //Creating While Loop with 10 mins timeout
                 var timeout = DateTime.UtcNow.AddMinutes(10);
-                var completeFlag = false;
-
                 var status = await kmClient.GetDocumentStatusAsync(documentId);
 
                 while (DateTime.UtcNow < timeout)
@@ -474,7 +478,6 @@ namespace Microsoft.GS.DPSHost.API
 
                     if (status.RemainingSteps.Count == 0)
                     {
-                        completeFlag = true;
                         break;
                     }
                     var totalSteps = status.Steps.Count;

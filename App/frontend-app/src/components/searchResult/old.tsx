@@ -5,7 +5,6 @@ import { getFileTypeIconProps } from "@fluentui/react-file-type-icons";
 import { DocDialog } from "../documentViewer/documentViewer";
 import { useEffect, useState } from "react";
 import { Document, Tokens } from "../../api/apiTypes/documentResults";
-import { downloadFile } from "../../api/storageService";
 
 interface SearchResultCardProps {
     document: Document;
