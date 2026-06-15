@@ -105,6 +105,11 @@ var solutionSuffix = toLower(trim(replace(
 
 var solutionLocation = empty(location) ? resourceGroup().location : location
 
+// Deployer (azd-running user or CI service principal) — granted AcrPush so
+// the post-deploy `az acr login` + `docker push` step works out-of-the-box.
+var deployerInfo = deployer()
+var deployingUserPrincipalId = deployerInfo.objectId
+
 var useExistingLogAnalytics = !empty(existingLogAnalyticsWorkspaceId)
 var existingLawSubscriptionId = useExistingLogAnalytics ? split(existingLogAnalyticsWorkspaceId, '/')[2] : subscription().subscriptionId
 var existingLawResourceGroupName = useExistingLogAnalytics ? split(existingLogAnalyticsWorkspaceId, '/')[4] : resourceGroup().name
@@ -141,7 +146,7 @@ var aksClusterName = 'aks-${solutionSuffix}'
 // Resource Group Tags
 // ============================================================================ //
 
-resource resourceGroupTags 'Microsoft.Resources/tags@2023-07-01' = {
+resource resourceGroupTags 'Microsoft.Resources/tags@2024-11-01' = {
   name: 'default'
   properties: {
     tags: {
@@ -218,19 +223,6 @@ module storageAccount './modules/data/storage-account.bicep' = {
   }
 }
 
-resource storageBlobDataContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, storageAccountName, userAssignedIdentityName, 'Storage Blob Data Contributor')
-  scope: resourceGroup()
-  properties: {
-    roleDefinitionId: subscriptionResourceId(
-      'Microsoft.Authorization/roleDefinitions',
-      'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
-    )
-    principalId: userAssignedIdentity.outputs.principalId
-    principalType: 'ServicePrincipal'
-  }
-}
-
 module cosmosDb './modules/data/cosmos-db-mongo.bicep' = {
   name: take('mod.data.cosmos.${cosmosDbAccountName}', 64)
   params: {
@@ -268,34 +260,6 @@ module openAi './modules/ai/ai-services.bicep' = {
     location: azureAiServiceLocation
     tags: tags
   }
-}
-
-resource openAiContributorToUai 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, openAiAccountName, userAssignedIdentityName, 'Cognitive Services OpenAI Contributor')
-  scope: resourceGroup()
-  properties: {
-    roleDefinitionId: subscriptionResourceId(
-      'Microsoft.Authorization/roleDefinitions',
-      'a001fd3d-188f-4b5d-821b-7da978bf7442'
-    )
-    principalId: userAssignedIdentity.outputs.principalId
-    principalType: 'ServicePrincipal'
-  }
-  dependsOn: [openAi]
-}
-
-resource openAiUserToUai 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, openAiAccountName, userAssignedIdentityName, 'Cognitive Services OpenAI User')
-  scope: resourceGroup()
-  properties: {
-    roleDefinitionId: subscriptionResourceId(
-      'Microsoft.Authorization/roleDefinitions',
-      '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
-    )
-    principalId: userAssignedIdentity.outputs.principalId
-    principalType: 'ServicePrincipal'
-  }
-  dependsOn: [openAi]
 }
 
 // Model deployments — serialize via dependsOn to avoid CognitiveServices throttling.
@@ -336,20 +300,9 @@ module documentIntelligence './modules/ai/ai-services.bicep' = {
   }
 }
 
-resource docIntelUserToUai 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, docIntelAccountName, userAssignedIdentityName, 'Cognitive Services User')
-  scope: resourceGroup()
-  properties: {
-    roleDefinitionId: subscriptionResourceId(
-      'Microsoft.Authorization/roleDefinitions',
-      'a97b65f3-24c7-4388-baec-2e87135dc908'
-    )
-    principalId: userAssignedIdentity.outputs.principalId
-    principalType: 'ServicePrincipal'
-  }
-  dependsOn: [documentIntelligence]
-}
-
+// ============================================================================ //
+// AI Search
+// ============================================================================ //
 module aiSearch './modules/ai/ai-search.bicep' = {
   name: take('mod.ai.srch.${aiSearchName}', 64)
   params: {
@@ -359,20 +312,6 @@ module aiSearch './modules/ai/ai-search.bicep' = {
     tags: tags
     skuName: enableScalability ? 'standard' : 'basic'
   }
-}
-
-resource searchIndexDataContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, aiSearchName, userAssignedIdentityName, 'Search Index Data Contributor')
-  scope: resourceGroup()
-  properties: {
-    roleDefinitionId: subscriptionResourceId(
-      'Microsoft.Authorization/roleDefinitions',
-      '8ebe5a00-799e-43f5-93ac-243d3dce84a7'
-    )
-    principalId: userAssignedIdentity.outputs.principalId
-    principalType: 'ServicePrincipal'
-  }
-  dependsOn: [aiSearch]
 }
 
 // ============================================================================ //
@@ -398,20 +337,6 @@ resource aksClusterExisting 'Microsoft.ContainerService/managedClusters@2025-03-
   dependsOn: [aks]
 }
 
-resource aksContributorToUai 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, aksClusterName, userAssignedIdentityName, 'Contributor')
-  scope: resourceGroup()
-  properties: {
-    roleDefinitionId: subscriptionResourceId(
-      'Microsoft.Authorization/roleDefinitions',
-      'b24988ac-6180-42a0-ab88-20f7382dd24c'
-    )
-    principalId: userAssignedIdentity.outputs.principalId
-    principalType: 'ServicePrincipal'
-  }
-  dependsOn: [aks]
-}
-
 module containerRegistry './modules/compute/container-registry.bicep' = {
   name: take('mod.compute.acr.${containerRegistryName}', 64)
   params: {
@@ -423,20 +348,6 @@ module containerRegistry './modules/compute/container-registry.bicep' = {
     sku: 'Premium'
     publicNetworkAccess: 'Enabled'
   }
-}
-
-resource acrPullToAks 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, containerRegistryName, aksClusterName, 'AcrPull')
-  scope: resourceGroup()
-  properties: {
-    roleDefinitionId: subscriptionResourceId(
-      'Microsoft.Authorization/roleDefinitions',
-      '7f951dda-4ed3-4680-a7ca-43fe172d538d'
-    )
-    principalId: aksClusterExisting.properties.identityProfile.kubeletidentity.objectId
-    principalType: 'ServicePrincipal'
-  }
-  dependsOn: [containerRegistry]
 }
 
 // ============================================================================ //
@@ -486,18 +397,38 @@ module appConfiguration './modules/data/app-configuration.bicep' = {
   }
 }
 
-resource appConfigDataReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(resourceGroup().id, appConfigName, userAssignedIdentityName, 'App Configuration Data Reader')
-  scope: resourceGroup()
-  properties: {
-    roleDefinitionId: subscriptionResourceId(
-      'Microsoft.Authorization/roleDefinitions',
-      '516239f1-63e1-4d78-a4de-a74fb236a071'
-    )
-    principalId: userAssignedIdentity.outputs.principalId
-    principalType: 'ServicePrincipal'
+// ============================================================================ //
+// Centralized Role Assignments (consolidated DKM workload RBAC)
+// Single module replaces 8 inline `Microsoft.Authorization/roleAssignments`
+// blocks. GUID names are stable (same inputs → same names) so existing
+// deployments will see NO RBAC churn after this refactor.
+// ============================================================================ //
+
+module roleAssignments './modules/identity/role-assignments.bicep' = {
+  name: take('mod.identity.roleassignments.${solutionSuffix}', 64)
+  params: {
+    solutionName: solutionSuffix
+    userAssignedIdentityPrincipalId: userAssignedIdentity.outputs.principalId
+    userAssignedIdentityName: userAssignedIdentityName
+    aksKubeletPrincipalId: aksClusterExisting.properties.identityProfile.kubeletidentity.objectId
+    storageAccountName: storageAccountName
+    openAiAccountName: openAiAccountName
+    docIntelAccountName: docIntelAccountName
+    aiSearchName: aiSearchName
+    aksClusterName: aksClusterName
+    containerRegistryName: containerRegistryName
+    appConfigName: appConfigName
+    deployerPrincipalId: deployingUserPrincipalId
   }
-  dependsOn: [appConfiguration]
+  dependsOn: [
+    storageAccount
+    openAi
+    documentIntelligence
+    aiSearch
+    aks
+    containerRegistry
+    appConfiguration
+  ]
 }
 
 // ============================================================================ //

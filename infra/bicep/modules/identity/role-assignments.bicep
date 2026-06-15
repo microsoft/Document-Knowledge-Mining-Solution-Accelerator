@@ -110,6 +110,7 @@ var roleDefinitions = {
   storageBlobDataReader: '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1'
   contributor: 'b24988ac-6180-42a0-ab88-20f7382dd24c'
   acrPull: '7f951dda-4ed3-4680-a7ca-43fe172d538d'
+  acrPush: '8311e382-0749-4cb8-b61a-304f252e45ec'
   appConfigDataReader: '516239f1-63e1-4d78-a4de-a74fb236a071'
 }
 
@@ -437,5 +438,18 @@ resource dkmUaiAppConfigDataReader 'Microsoft.Authorization/roleAssignments@2022
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleDefinitions.appConfigDataReader)
     principalId: userAssignedIdentityPrincipalId
     principalType: 'ServicePrincipal'
+  }
+}
+
+// Deployer (azd user / CI SP) → AcrPush (RG scope, salted with container registry name + deployer principal)
+// Lets the principal running `azd up` push images during the post-deploy
+// docker build/push step without manual `az role assignment create`.
+resource dkmDeployerAcrPush 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(deployerPrincipalId) && !empty(containerRegistryName)) {
+  name: guid(resourceGroup().id, containerRegistryName, deployerPrincipalId, 'AcrPush')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleDefinitions.acrPush)
+    principalId: deployerPrincipalId
+    principalType: deployerPrincipalType
   }
 }

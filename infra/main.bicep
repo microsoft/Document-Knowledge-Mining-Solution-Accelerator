@@ -35,7 +35,7 @@ param location string = ''
 
 @maxLength(5)
 @description('Optional. A unique token for the solution. Used to ensure resource names are unique for global resources.')
-param solutionUniqueToken string = substring(uniqueString(subscription().id, resourceGroup().name, solutionName), 0, 5)
+param solutionUniqueText string = substring(uniqueString(subscription().id, resourceGroup().name, solutionName), 0, 5)
 
 // ============================================================================
 // Parameters — AI / Model configuration
@@ -137,6 +137,9 @@ param enableScalability bool = false
 var isAvm = deploymentFlavor == 'avm' || deploymentFlavor == 'avm-waf'
 var isBicep = deploymentFlavor == 'bicep'
 
+// Falls back to RG location when caller leaves `location` empty (azd default).
+var effectiveLocation = !empty(location) ? location : resourceGroup().location
+
 // ============================================================================
 // Module: AVM Deployment (non-WAF and WAF)
 // Activated when deploymentFlavor = 'avm' or 'avm-waf'
@@ -149,8 +152,8 @@ module avmDeployment './avm/main.bicep' = if (isAvm) {
   name: take('mod.flavor.avm.${solutionName}', 64)
   params: {
     solutionName: solutionName
-    location: location
-    solutionUniqueToken: solutionUniqueToken
+    location: effectiveLocation
+    solutionUniqueText: solutionUniqueText
     deploymentType: deploymentType
     gptModelName: gptModelName
     gptModelVersion: gptModelVersion
@@ -181,8 +184,8 @@ module bicepDeployment './bicep/main.bicep' = if (isBicep) {
   name: take('mod.flavor.bicep.${solutionName}', 64)
   params: {
     solutionName: solutionName
-    location: location
-    solutionUniqueToken: solutionUniqueToken
+    location: effectiveLocation
+    solutionUniqueToken: solutionUniqueText
     deploymentType: deploymentType
     gptModelName: gptModelName
     gptModelVersion: gptModelVersion
