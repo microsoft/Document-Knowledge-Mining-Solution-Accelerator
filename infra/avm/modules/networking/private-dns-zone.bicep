@@ -17,16 +17,20 @@ param enableTelemetry bool = true
 @description('Virtual network links to associate with the DNS zone.')
 param virtualNetworkLinks array = []
 
+@description('Optional. Array of A records.')
+param a array = []
+
 // ============================================================================
 // AVM Module Deployment
 // ============================================================================
 module privateDnsZone 'br/public:avm/res/network/private-dns-zone:0.8.1' = {
-  name: take('avm.res.network.private-dns-zone.${name}', 64)
+  name: take('avm.res.network.private-dns-zone.${split(name, '.')[1]}', 64)
   params: {
     name: name
     tags: tags
     enableTelemetry: enableTelemetry
     virtualNetworkLinks: virtualNetworkLinks
+    a: a
   }
 }
 
