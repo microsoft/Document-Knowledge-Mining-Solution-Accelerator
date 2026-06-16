@@ -31,7 +31,7 @@ infra/
 │       ├── ai/                 # openai, document-intelligence, ai-search
 │       ├── compute/            # aks, container-registry, virtual-machine (jumpbox)
 │       ├── data/               # storage-account, cosmos-db, app-configuration
-│       ├── identity/           # user-assigned-identity
+│       ├── identity/           # (reserved — SAI migration removed workload UAI)
 │       ├── monitoring/         # log-analytics, app-insights
 │       └── networking/         # virtual-network, private-dns-zone, private-endpoint, bastion-host
 ├── bicep/
@@ -105,7 +105,7 @@ azd env set DEPLOYMENT_FLAVOR avm
 azd env set DEPLOYMENT_FLAVOR bicep
 ```
 
-> **Note:** the `deploymentFlavor` parameter is not currently bound in `main.parameters.json`. To use a non-default flavor, either add a binding to the parameters file or pass `-p deploymentFlavor=bicep` on the `az deployment group create` command line.
+> **Note:** `deploymentFlavor` is bound in `main.parameters.json` via `${DEPLOYMENT_FLAVOR=bicep}` (defaults to `bicep` if unset). Override with `azd env set DEPLOYMENT_FLAVOR avm` or pass `-p deploymentFlavor=avm` on the `az deployment group create` command line.
 
 ---
 
@@ -138,7 +138,7 @@ The router accepts four independent toggles. Set any combination to mix features
 
 | Param | Default | Effect when `true` |
 |-------|:---:|---|
-| `enablePrivateNetworking` | `false` | Deploy VNet + subnets + private endpoints + Bastion + jumpbox VM. Disables public access on Storage, Cosmos, OpenAI, DocIntel, AI Search, AppConfig. |
+| `enablePrivateNetworking` | `false` | Deploy VNet + subnets + private endpoints + Bastion + jumpbox VM. **Note:** `publicNetworkAccess` remains `Enabled` on all resources because AKS pods cannot reliably resolve private DNS zones in shared subscriptions. Security is enforced via RBAC (System-Assigned Identity) + connection-string auth (Cosmos). Private endpoints provide optimized in-VNet routing where DNS resolution succeeds. |
 | `enableMonitoring`        | `false` | Deploy Log Analytics + Application Insights; wire diagnostic settings on bastion, AKS, AI Search, jumpbox. |
 | `enableRedundancy`        | `false` | Enable zone-redundancy and HA failover (e.g., Cosmos secondary region pair). |
 | `enableScalability`       | `false` | Use larger SKUs (e.g., AI Search `standard` instead of `basic`). |
@@ -160,6 +160,43 @@ bash infra/scripts/build/build-bicep.sh
 ```
 
 The script compiles all three entrypoints (`main.bicep`, `avm/main.bicep`, `bicep/main.bicep`) and writes the resulting `main.json` next to each source. Requires the `az` CLI with the `bicep` extension installed.
+
+---
+
+## Identity & authentication
+
+The DKM accelerator uses **System-Assigned Managed Identities (SAI)** for all runtime authentication:
+
+| Component | Identity | How pods authenticate |
+|-----------|----------|----------------------|
+| AKS workload pods | VMSS System-Assigned Identity | `DefaultAzureCredential` → IMDS (no `AZURE_CLIENT_ID` needed) |
+| AKS kubelet | Kubelet UAI (auto-created by AKS) | ACR image pulls only |
+| Deployer (you) | Azure AD User | `azd` / `az` CLI + PS1 docker push (AcrPush role) |
+
+RBAC roles are assigned by `Deployment/resourcedeployment.ps1` post-provision to the VMSS SAI. The 7 required data-plane roles are:
+
+1. App Configuration Data Reader (RG scope)
+2. Storage Blob Data Contributor (Storage account)
+3. Storage Queue Data Contributor (Storage account)
+4. Cognitive Services OpenAI User (OpenAI account)
+5. Search Index Data Contributor (AI Search)
+6. Search Service Contributor (AI Search)
+7. Cognitive Services User (Document Intelligence account)
+
+> **Note:** Cosmos DB uses connection-string auth (not RBAC). The connection string is stored in App Configuration at deploy time.
+
+---
+
+## Known limitations (AKS + Private Endpoints)
+
+When `enablePrivateNetworking=true`, the AVM flavor deploys VNet, subnets, and private endpoints. However, AKS pods may not resolve private DNS zones correctly in all environments (e.g., CSA-CTO shared subscriptions where APIM hub intercepts DNS). To ensure reliable end-to-end connectivity:
+
+1. **Public access remains enabled** on all resources — pods connect via public endpoints.
+2. **Cosmos DB PE is intentionally disabled** — Cosmos enforces PE-only access when a PE exists, but AKS pods resolve the FQDN to the public IP (no A record in private DNS zone), causing `403 blocked by network firewall`.
+3. **Security is not compromised** — all access is gated by RBAC (SAI) or connection-string secrets stored in App Configuration (never exposed publicly).
+4. **Private endpoints still provide value** — optimized routing for traffic that does resolve via private DNS (e.g., VNet-integrated services, jumpbox).
+
+This matches the pattern used by the [Agentic SA reference repo](https://github.com/microsoft/agentic-applications-for-unified-data-foundation-solution-accelerator/tree/psl/infra-restructure-new), which also keeps `publicNetworkAccess: Enabled` on AI Search and AI Foundry for similar DNS resolution limitations.
 
 ---
 
