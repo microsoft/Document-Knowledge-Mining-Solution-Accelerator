@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.43.8.12551",
-      "templateHash": "14382261072321156606"
+      "templateHash": "17683002524337677848"
     }
   },
   "parameters": {
@@ -184,7 +184,6 @@
     },
     "logAnalyticsWorkspaceName": "[format('log-{0}', variables('solutionSuffix'))]",
     "applicationInsightsName": "[format('appi-{0}', variables('solutionSuffix'))]",
-    "userAssignedIdentityName": "[format('id-{0}', variables('solutionSuffix'))]",
     "openAiAccountName": "[format('oai-{0}', variables('solutionSuffix'))]",
     "docIntelAccountName": "[format('di-{0}', variables('solutionSuffix'))]",
     "aiSearchName": "[format('srch-{0}', variables('solutionSuffix'))]",
@@ -229,109 +228,6 @@
       "dependsOn": [
         "aks"
       ]
-    },
-    "userAssignedIdentity": {
-      "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2025-04-01",
-      "name": "[take(format('mod.identity.{0}', variables('userAssignedIdentityName')), 64)]",
-      "properties": {
-        "expressionEvaluationOptions": {
-          "scope": "inner"
-        },
-        "mode": "Incremental",
-        "parameters": {
-          "solutionName": {
-            "value": "[variables('solutionSuffix')]"
-          },
-          "identityName": {
-            "value": "[variables('userAssignedIdentityName')]"
-          },
-          "location": {
-            "value": "[variables('solutionLocation')]"
-          },
-          "tags": {
-            "value": "[parameters('tags')]"
-          }
-        },
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "metadata": {
-            "_generator": {
-              "name": "bicep",
-              "version": "0.43.8.12551",
-              "templateHash": "8284042434160589947"
-            }
-          },
-          "parameters": {
-            "solutionName": {
-              "type": "string",
-              "metadata": {
-                "description": "Solution name used for resource naming."
-              }
-            },
-            "identityName": {
-              "type": "string",
-              "defaultValue": "[format('id-{0}', parameters('solutionName'))]",
-              "metadata": {
-                "description": "Name of the managed identity."
-              }
-            },
-            "location": {
-              "type": "string",
-              "metadata": {
-                "description": "Azure region for the resource."
-              }
-            },
-            "tags": {
-              "type": "object",
-              "defaultValue": {},
-              "metadata": {
-                "description": "Tags to apply to the resource."
-              }
-            }
-          },
-          "resources": [
-            {
-              "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
-              "apiVersion": "2023-01-31",
-              "name": "[parameters('identityName')]",
-              "location": "[parameters('location')]",
-              "tags": "[parameters('tags')]"
-            }
-          ],
-          "outputs": {
-            "resourceId": {
-              "type": "string",
-              "metadata": {
-                "description": "Resource ID of the managed identity."
-              },
-              "value": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('identityName'))]"
-            },
-            "principalId": {
-              "type": "string",
-              "metadata": {
-                "description": "Principal ID (object ID) of the managed identity."
-              },
-              "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('identityName')), '2023-01-31').principalId]"
-            },
-            "clientId": {
-              "type": "string",
-              "metadata": {
-                "description": "Client ID of the managed identity."
-              },
-              "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('identityName')), '2023-01-31').clientId]"
-            },
-            "name": {
-              "type": "string",
-              "metadata": {
-                "description": "Name of the managed identity."
-              },
-              "value": "[parameters('identityName')]"
-            }
-          }
-        }
-      }
     },
     "logAnalyticsWorkspace": {
       "condition": "[and(parameters('enableMonitoring'), not(variables('useExistingLogAnalytics')))]",
@@ -2763,12 +2659,6 @@
           "solutionName": {
             "value": "[variables('solutionSuffix')]"
           },
-          "userAssignedIdentityPrincipalId": {
-            "value": "[reference('userAssignedIdentity').outputs.principalId.value]"
-          },
-          "userAssignedIdentityName": {
-            "value": "[variables('userAssignedIdentityName')]"
-          },
           "aksKubeletPrincipalId": {
             "value": "[reference('aksClusterExisting').identityProfile.kubeletidentity.objectId]"
           },
@@ -2804,7 +2694,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "8188413169773419774"
+              "templateHash": "3736767141481420155"
             }
           },
           "parameters": {
@@ -2981,6 +2871,7 @@
               "searchServiceContributor": "7ca78c08-252a-4471-8644-bb5ff32d4ba0",
               "storageBlobDataContributor": "ba92f5b4-2d11-453d-a403-e96b0029c9fe",
               "storageBlobDataReader": "2a2b9908-6ea1-4ae2-8e65-a410df84e7d1",
+              "storageQueueDataContributor": "974c5e8b-45b9-4653-ba55-5f855dd0fb88",
               "contributor": "b24988ac-6180-42a0-ab88-20f7382dd24c",
               "acrPull": "7f951dda-4ed3-4680-a7ca-43fe172d538d",
               "acrPush": "8311e382-0749-4cb8-b61a-304f252e45ec",
@@ -3156,72 +3047,6 @@
               }
             },
             {
-              "condition": "[and(not(empty(parameters('userAssignedIdentityPrincipalId'))), not(empty(parameters('storageAccountName'))))]",
-              "type": "Microsoft.Authorization/roleAssignments",
-              "apiVersion": "2022-04-01",
-              "name": "[guid(resourceGroup().id, parameters('storageAccountName'), parameters('userAssignedIdentityName'), 'Storage Blob Data Contributor')]",
-              "properties": {
-                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roleDefinitions').storageBlobDataContributor)]",
-                "principalId": "[parameters('userAssignedIdentityPrincipalId')]",
-                "principalType": "ServicePrincipal"
-              }
-            },
-            {
-              "condition": "[and(not(empty(parameters('userAssignedIdentityPrincipalId'))), not(empty(parameters('openAiAccountName'))))]",
-              "type": "Microsoft.Authorization/roleAssignments",
-              "apiVersion": "2022-04-01",
-              "name": "[guid(resourceGroup().id, parameters('openAiAccountName'), parameters('userAssignedIdentityName'), 'Cognitive Services OpenAI Contributor')]",
-              "properties": {
-                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roleDefinitions').cognitiveServicesOpenAIContributor)]",
-                "principalId": "[parameters('userAssignedIdentityPrincipalId')]",
-                "principalType": "ServicePrincipal"
-              }
-            },
-            {
-              "condition": "[and(not(empty(parameters('userAssignedIdentityPrincipalId'))), not(empty(parameters('openAiAccountName'))))]",
-              "type": "Microsoft.Authorization/roleAssignments",
-              "apiVersion": "2022-04-01",
-              "name": "[guid(resourceGroup().id, parameters('openAiAccountName'), parameters('userAssignedIdentityName'), 'Cognitive Services OpenAI User')]",
-              "properties": {
-                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roleDefinitions').cognitiveServicesOpenAIUser)]",
-                "principalId": "[parameters('userAssignedIdentityPrincipalId')]",
-                "principalType": "ServicePrincipal"
-              }
-            },
-            {
-              "condition": "[and(not(empty(parameters('userAssignedIdentityPrincipalId'))), not(empty(parameters('docIntelAccountName'))))]",
-              "type": "Microsoft.Authorization/roleAssignments",
-              "apiVersion": "2022-04-01",
-              "name": "[guid(resourceGroup().id, parameters('docIntelAccountName'), parameters('userAssignedIdentityName'), 'Cognitive Services User')]",
-              "properties": {
-                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roleDefinitions').cognitiveServicesUser)]",
-                "principalId": "[parameters('userAssignedIdentityPrincipalId')]",
-                "principalType": "ServicePrincipal"
-              }
-            },
-            {
-              "condition": "[and(not(empty(parameters('userAssignedIdentityPrincipalId'))), not(empty(parameters('aiSearchName'))))]",
-              "type": "Microsoft.Authorization/roleAssignments",
-              "apiVersion": "2022-04-01",
-              "name": "[guid(resourceGroup().id, parameters('aiSearchName'), parameters('userAssignedIdentityName'), 'Search Index Data Contributor')]",
-              "properties": {
-                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roleDefinitions').searchIndexDataContributor)]",
-                "principalId": "[parameters('userAssignedIdentityPrincipalId')]",
-                "principalType": "ServicePrincipal"
-              }
-            },
-            {
-              "condition": "[and(not(empty(parameters('userAssignedIdentityPrincipalId'))), not(empty(parameters('aksClusterName'))))]",
-              "type": "Microsoft.Authorization/roleAssignments",
-              "apiVersion": "2022-04-01",
-              "name": "[guid(resourceGroup().id, parameters('aksClusterName'), parameters('userAssignedIdentityName'), 'Contributor')]",
-              "properties": {
-                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roleDefinitions').contributor)]",
-                "principalId": "[parameters('userAssignedIdentityPrincipalId')]",
-                "principalType": "ServicePrincipal"
-              }
-            },
-            {
               "condition": "[and(not(empty(parameters('aksKubeletPrincipalId'))), not(empty(parameters('containerRegistryName'))))]",
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
@@ -3229,17 +3054,6 @@
               "properties": {
                 "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roleDefinitions').acrPull)]",
                 "principalId": "[parameters('aksKubeletPrincipalId')]",
-                "principalType": "ServicePrincipal"
-              }
-            },
-            {
-              "condition": "[and(not(empty(parameters('userAssignedIdentityPrincipalId'))), not(empty(parameters('appConfigName'))))]",
-              "type": "Microsoft.Authorization/roleAssignments",
-              "apiVersion": "2022-04-01",
-              "name": "[guid(resourceGroup().id, parameters('appConfigName'), parameters('userAssignedIdentityName'), 'App Configuration Data Reader')]",
-              "properties": {
-                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roleDefinitions').appConfigDataReader)]",
-                "principalId": "[parameters('userAssignedIdentityPrincipalId')]",
                 "principalType": "ServicePrincipal"
               }
             },
@@ -3443,8 +3257,7 @@
         "containerRegistry",
         "documentIntelligence",
         "openAi",
-        "storageAccount",
-        "userAssignedIdentity"
+        "storageAccount"
       ]
     }
   },

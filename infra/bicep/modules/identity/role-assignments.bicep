@@ -108,6 +108,7 @@ var roleDefinitions = {
   searchServiceContributor: '7ca78c08-252a-4471-8644-bb5ff32d4ba0'
   storageBlobDataContributor: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
   storageBlobDataReader: '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1'
+  storageQueueDataContributor: '974c5e8b-45b9-4653-ba55-5f855dd0fb88'
   contributor: 'b24988ac-6180-42a0-ab88-20f7382dd24c'
   acrPull: '7f951dda-4ed3-4680-a7ca-43fe172d538d'
   acrPush: '8311e382-0749-4cb8-b61a-304f252e45ec'
@@ -345,14 +346,23 @@ resource deployerStorageBlobContributor 'Microsoft.Authorization/roleAssignments
 // 00_build_solution.py to avoid conflicts when the deployer already has the roles.
 
 // ============================================================================
-// 6. DKM WORKLOAD IDENTITY ROLE ASSIGNMENTS
-//    Workload UAI + AKS kubelet identity → DKM-specific resources (RG scope)
-//    GUID names use (resourceGroup().id, <resourceName>, userAssignedIdentityName, '<RoleDisplayName>')
-//    to preserve stable names from the pre-refactor inline pattern (no RBAC
-//    churn on re-deploy). All blocks are guarded by !empty() so the module is
-//    a safe no-op when DKM params aren't passed (forward-compat).
+// 6. DKM WORKLOAD IDENTITY ROLE ASSIGNMENTS  (SAI migration)
+//    Pre-migration: a standalone workload UAI (id-<solutionSuffix>) was granted
+//    all data-plane roles. Post-migration: the AKS kubelet system-assigned
+//    identity (auto-created by Microsoft.ContainerService/managedClusters) is
+//    the runtime identity pods consume via DefaultAzureCredential → IMDS, so
+//    all data-plane RBAC is now granted to that principal.
+//
+//    GUID names use (resourceGroup().id, <resourceName>, aksClusterName,
+//    '<RoleDisplayName>') — aksClusterName is the stable salt across redeploys.
+//    All blocks remain guarded by !empty() so the module is a safe no-op when
+//    DKM params aren't passed (forward-compat).
+//
+//    The original dkmUai* blocks are commented (not deleted) for diff clarity
+//    and to keep the byte-locked module folder pattern intact.
 // ============================================================================
 
+/* DKM SAI migration: workload UAI removed — kubelet identity is now the grantee.
 // UAI → Storage Blob Data Contributor (RG scope)
 resource dkmUaiStorageBlobDataContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(userAssignedIdentityPrincipalId) && !empty(storageAccountName)) {
   name: guid(resourceGroup().id, storageAccountName, userAssignedIdentityName, 'Storage Blob Data Contributor')
@@ -418,6 +428,7 @@ resource dkmUaiAksContributor 'Microsoft.Authorization/roleAssignments@2022-04-0
     principalType: 'ServicePrincipal'
   }
 }
+*/
 
 // AKS kubelet identity → AcrPull (RG scope, salted with container registry + AKS cluster names)
 resource dkmAksKubeletAcrPull 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(aksKubeletPrincipalId) && !empty(containerRegistryName)) {
@@ -430,6 +441,89 @@ resource dkmAksKubeletAcrPull 'Microsoft.Authorization/roleAssignments@2022-04-0
   }
 }
 
+// ----------------------------------------------------------------------------
+// DKM SAI migration: AKS kubelet identity → data-plane RBAC
+// ----------------------------------------------------------------------------
+// REVERTED: Pods running with bare `new DefaultAzureCredential()` cannot use
+// the kubelet UAI via IMDS when multiple UAIs are attached to the VMSS (IMDS
+// returns HTTP 400 "Multiple user assigned identities exist"). The actual
+// runtime identity is the VMSS SystemAssigned identity bootstrapped by
+// Deployment/resourcedeployment.ps1 (post-deploy step). The kubelet RBAC
+// grants below are preserved (commented) for reference / future re-enable if
+// the workload migrates to Workload Identity or sets AZURE_CLIENT_ID.
+/*
+resource dkmAksKubeletStorageBlobDataContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(aksKubeletPrincipalId) && !empty(storageAccountName)) {
+  name: guid(resourceGroup().id, storageAccountName, aksClusterName, 'Storage Blob Data Contributor')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleDefinitions.storageBlobDataContributor)
+    principalId: aksKubeletPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource dkmAksKubeletStorageQueueDataContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(aksKubeletPrincipalId) && !empty(storageAccountName)) {
+  name: guid(resourceGroup().id, storageAccountName, aksClusterName, 'Storage Queue Data Contributor')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleDefinitions.storageQueueDataContributor)
+    principalId: aksKubeletPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource dkmAksKubeletOpenAiUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(aksKubeletPrincipalId) && !empty(openAiAccountName)) {
+  name: guid(resourceGroup().id, openAiAccountName, aksClusterName, 'Cognitive Services OpenAI User')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleDefinitions.cognitiveServicesOpenAIUser)
+    principalId: aksKubeletPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource dkmAksKubeletDocIntelUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(aksKubeletPrincipalId) && !empty(docIntelAccountName)) {
+  name: guid(resourceGroup().id, docIntelAccountName, aksClusterName, 'Cognitive Services User')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleDefinitions.cognitiveServicesUser)
+    principalId: aksKubeletPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource dkmAksKubeletSearchIndexDataContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(aksKubeletPrincipalId) && !empty(aiSearchName)) {
+  name: guid(resourceGroup().id, aiSearchName, aksClusterName, 'Search Index Data Contributor')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleDefinitions.searchIndexDataContributor)
+    principalId: aksKubeletPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource dkmAksKubeletSearchServiceContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(aksKubeletPrincipalId) && !empty(aiSearchName)) {
+  name: guid(resourceGroup().id, aiSearchName, aksClusterName, 'Search Service Contributor')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleDefinitions.searchServiceContributor)
+    principalId: aksKubeletPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource dkmAksKubeletAppConfigDataReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(aksKubeletPrincipalId) && !empty(appConfigName)) {
+  name: guid(resourceGroup().id, appConfigName, aksClusterName, 'App Configuration Data Reader')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleDefinitions.appConfigDataReader)
+    principalId: aksKubeletPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+}
+*/
+
+/* DKM SAI migration: workload UAI removed — kubelet identity replaces it above.
 // UAI → App Configuration Data Reader (RG scope)
 resource dkmUaiAppConfigDataReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(userAssignedIdentityPrincipalId) && !empty(appConfigName)) {
   name: guid(resourceGroup().id, appConfigName, userAssignedIdentityName, 'App Configuration Data Reader')
@@ -440,6 +534,7 @@ resource dkmUaiAppConfigDataReader 'Microsoft.Authorization/roleAssignments@2022
     principalType: 'ServicePrincipal'
   }
 }
+*/
 
 // Deployer (azd user / CI SP) → AcrPush (RG scope, salted with container registry name + deployer principal)
 // Lets the principal running `azd up` push images during the post-deploy

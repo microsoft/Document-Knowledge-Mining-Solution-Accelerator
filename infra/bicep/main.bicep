@@ -132,7 +132,10 @@ var embeddingModelDeployment = {
 // Resource names.
 var logAnalyticsWorkspaceName = 'log-${solutionSuffix}'
 var applicationInsightsName = 'appi-${solutionSuffix}'
-var userAssignedIdentityName = 'id-${solutionSuffix}'
+// DKM SAI migration: workload UAI removed. AKS kubelet identity (auto-created
+// by Microsoft.ContainerService/managedClusters) is now the runtime identity
+// that pods consume via DefaultAzureCredential -> IMDS.
+// var userAssignedIdentityName = 'id-${solutionSuffix}'
 var openAiAccountName = 'oai-${solutionSuffix}'
 var docIntelAccountName = 'di-${solutionSuffix}'
 var aiSearchName = 'srch-${solutionSuffix}'
@@ -161,18 +164,22 @@ resource resourceGroupTags 'Microsoft.Resources/tags@2024-11-01' = {
 }
 
 // ============================================================================ //
-// Identity
+// Identity — DKM SAI migration
 // ============================================================================ //
-
-module userAssignedIdentity './modules/identity/managed-identity.bicep' = {
-  name: take('mod.identity.${userAssignedIdentityName}', 64)
-  params: {
-    solutionName: solutionSuffix
-    identityName: userAssignedIdentityName
-    location: solutionLocation
-    tags: tags
-  }
-}
+// Pods authenticate to Azure via the AKS kubelet system-assigned managed
+// identity (created automatically by AKS). The standalone workload UAI is
+// removed. All RBAC previously granted to that UAI is reassigned to the
+// kubelet principalId in role-assignments.bicep.
+//
+// module userAssignedIdentity './modules/identity/managed-identity.bicep' = {
+//   name: take('mod.identity.${userAssignedIdentityName}', 64)
+//   params: {
+//     solutionName: solutionSuffix
+//     identityName: userAssignedIdentityName
+//     location: solutionLocation
+//     tags: tags
+//   }
+// }
 
 // ============================================================================ //
 // Monitoring
@@ -408,8 +415,10 @@ module roleAssignments './modules/identity/role-assignments.bicep' = {
   name: take('mod.identity.roleassignments.${solutionSuffix}', 64)
   params: {
     solutionName: solutionSuffix
-    userAssignedIdentityPrincipalId: userAssignedIdentity.outputs.principalId
-    userAssignedIdentityName: userAssignedIdentityName
+    // DKM SAI migration: workload UAI removed; data-plane RBAC now targets
+    // AKS kubelet identity (see role-assignments.bicep dkmAksKubelet* blocks).
+    // userAssignedIdentityPrincipalId: userAssignedIdentity.outputs.principalId
+    // userAssignedIdentityName: userAssignedIdentityName
     aksKubeletPrincipalId: aksClusterExisting.properties.identityProfile.kubeletidentity.objectId
     storageAccountName: storageAccountName
     openAiAccountName: openAiAccountName

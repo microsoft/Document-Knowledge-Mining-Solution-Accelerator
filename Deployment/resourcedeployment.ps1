@@ -782,7 +782,12 @@ try {
     # Validate if vmss Name is null or empty
     ValidateVariableIsNullOrEmpty -variableValue $vmssName -variableName "VMSS name"    
         
-    # Create System Assigned Managed Identity
+    # Create System Assigned Managed Identity on the AKS nodepool VMSS.
+    # NOTE: Pods using bare `new DefaultAzureCredential()` need a VMSS SystemAssigned
+    # identity (or Workload Identity / explicit AZURE_CLIENT_ID) to authenticate via
+    # IMDS. When only multiple UAIs are attached, IMDS returns 400 "Multiple user
+    # assigned identities exist". The Bicep templates intentionally do NOT attach a
+    # workload UAI anymore; the VMSS SAI bootstrapped below is the runtime identity.
     $systemAssignedIdentity = $(az vmss identity assign --resource-group $vmssResourceGroupName --name $vmssName --query systemAssignedIdentity --output tsv)
 
     # Validate if System Assigned Identity is null or empty
