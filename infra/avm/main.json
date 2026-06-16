@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.43.8.12551",
-      "templateHash": "4671568706678504676"
+      "templateHash": "18377253501944308525"
     }
   },
   "parameters": {
@@ -303,15 +303,6 @@
         "cosmosDbModule"
       ]
     },
-    "aksClusterExisting": {
-      "existing": true,
-      "type": "Microsoft.ContainerService/managedClusters",
-      "apiVersion": "2025-03-01",
-      "name": "[variables('aksName')]",
-      "dependsOn": [
-        "aks"
-      ]
-    },
     "log_analytics": {
       "condition": "[and(parameters('enableMonitoring'), not(variables('useExistingLogAnalytics')))]",
       "type": "Microsoft.Resources/deployments",
@@ -338,8 +329,12 @@
           "retentionInDays": {
             "value": 365
           },
-          "publicNetworkAccessForIngestion": "[if(parameters('enablePrivateNetworking'), createObject('value', 'Disabled'), createObject('value', 'Enabled'))]",
-          "publicNetworkAccessForQuery": "[if(parameters('enablePrivateNetworking'), createObject('value', 'Disabled'), createObject('value', 'Enabled'))]",
+          "publicNetworkAccessForIngestion": {
+            "value": "Enabled"
+          },
+          "publicNetworkAccessForQuery": {
+            "value": "Enabled"
+          },
           "enableReplication": {
             "value": "[and(parameters('enableRedundancy'), not(empty(variables('replicaLocation'))))]"
           },
@@ -4578,7 +4573,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "11093540947273411014"
+              "templateHash": "13660885246025283651"
             }
           },
           "definitions": {
@@ -4771,6 +4766,36 @@
                   ],
                   "networkSecurityGroup": {
                     "name": "nsg-backend",
+                    "securityRules": [
+                      {
+                        "name": "deny-hop-outbound",
+                        "properties": {
+                          "access": "Deny",
+                          "destinationAddressPrefix": "*",
+                          "destinationPortRanges": [
+                            "22",
+                            "3389"
+                          ],
+                          "direction": "Outbound",
+                          "priority": 200,
+                          "protocol": "Tcp",
+                          "sourceAddressPrefix": "VirtualNetwork",
+                          "sourcePortRange": "*"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "containers",
+                  "addressPrefixes": [
+                    "10.0.2.0/23"
+                  ],
+                  "delegation": "Microsoft.App/environments",
+                  "privateEndpointNetworkPolicies": "Enabled",
+                  "privateLinkServiceNetworkPolicies": "Enabled",
+                  "networkSecurityGroup": {
+                    "name": "nsg-containers",
                     "securityRules": [
                       {
                         "name": "deny-hop-outbound",
@@ -7350,6 +7375,10 @@
             "backendSubnetResourceId": {
               "type": "string",
               "value": "[if(contains(map(parameters('subnets'), lambda('subnet', lambdaVariables('subnet').name)), 'backend'), reference('virtualNetwork').outputs.subnetResourceIds.value[indexOf(map(parameters('subnets'), lambda('subnet', lambdaVariables('subnet').name)), 'backend')], '')]"
+            },
+            "containerSubnetResourceId": {
+              "type": "string",
+              "value": "[if(contains(map(parameters('subnets'), lambda('subnet', lambdaVariables('subnet').name)), 'containers'), reference('virtualNetwork').outputs.subnetResourceIds.value[indexOf(map(parameters('subnets'), lambda('subnet', lambdaVariables('subnet').name)), 'containers')], '')]"
             },
             "webserverfarmSubnetResourceId": {
               "type": "string",
@@ -24626,613 +24655,6 @@
         "virtualNetwork"
       ]
     },
-    "userAssignedIdentity": {
-      "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2025-04-01",
-      "name": "[take(format('module.managed-identity.{0}', parameters('solutionName')), 64)]",
-      "properties": {
-        "expressionEvaluationOptions": {
-          "scope": "inner"
-        },
-        "mode": "Incremental",
-        "parameters": {
-          "solutionName": {
-            "value": "[variables('solutionSuffix')]"
-          },
-          "location": {
-            "value": "[parameters('location')]"
-          },
-          "tags": {
-            "value": "[parameters('tags')]"
-          },
-          "enableTelemetry": {
-            "value": "[parameters('enableTelemetry')]"
-          }
-        },
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "metadata": {
-            "_generator": {
-              "name": "bicep",
-              "version": "0.43.8.12551",
-              "templateHash": "11897968377228993882"
-            }
-          },
-          "parameters": {
-            "solutionName": {
-              "type": "string",
-              "metadata": {
-                "description": "Solution name used for resource naming."
-              }
-            },
-            "identityName": {
-              "type": "string",
-              "defaultValue": "[format('id-{0}', parameters('solutionName'))]",
-              "metadata": {
-                "description": "Name of the managed identity."
-              }
-            },
-            "location": {
-              "type": "string",
-              "metadata": {
-                "description": "Azure region for the resource."
-              }
-            },
-            "tags": {
-              "type": "object",
-              "defaultValue": {},
-              "metadata": {
-                "description": "Tags to apply to the resource."
-              }
-            },
-            "enableTelemetry": {
-              "type": "bool",
-              "defaultValue": true,
-              "metadata": {
-                "description": "Optional. Enable/Disable usage telemetry for module."
-              }
-            }
-          },
-          "resources": [
-            {
-              "type": "Microsoft.Resources/deployments",
-              "apiVersion": "2025-04-01",
-              "name": "[take(format('avm.res.managed-identity.user-assigned-identity.{0}', parameters('identityName')), 64)]",
-              "properties": {
-                "expressionEvaluationOptions": {
-                  "scope": "inner"
-                },
-                "mode": "Incremental",
-                "parameters": {
-                  "name": {
-                    "value": "[parameters('identityName')]"
-                  },
-                  "location": {
-                    "value": "[parameters('location')]"
-                  },
-                  "tags": {
-                    "value": "[parameters('tags')]"
-                  },
-                  "enableTelemetry": {
-                    "value": "[parameters('enableTelemetry')]"
-                  }
-                },
-                "template": {
-                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-                  "languageVersion": "2.0",
-                  "contentVersion": "1.0.0.0",
-                  "metadata": {
-                    "_generator": {
-                      "name": "bicep",
-                      "version": "0.39.26.7824",
-                      "templateHash": "7591858083424858339"
-                    },
-                    "name": "User Assigned Identities",
-                    "description": "This module deploys a User Assigned Identity."
-                  },
-                  "definitions": {
-                    "federatedIdentityCredentialType": {
-                      "type": "object",
-                      "properties": {
-                        "name": {
-                          "type": "string",
-                          "metadata": {
-                            "description": "Required. The name of the federated identity credential."
-                          }
-                        },
-                        "audiences": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          },
-                          "metadata": {
-                            "description": "Required. The list of audiences that can appear in the issued token."
-                          }
-                        },
-                        "issuer": {
-                          "type": "string",
-                          "metadata": {
-                            "description": "Required. The URL of the issuer to be trusted."
-                          }
-                        },
-                        "subject": {
-                          "type": "string",
-                          "metadata": {
-                            "description": "Required. The identifier of the external identity."
-                          }
-                        }
-                      },
-                      "metadata": {
-                        "__bicep_export!": true,
-                        "description": "The type for the federated identity credential."
-                      }
-                    },
-                    "lockType": {
-                      "type": "object",
-                      "properties": {
-                        "name": {
-                          "type": "string",
-                          "nullable": true,
-                          "metadata": {
-                            "description": "Optional. Specify the name of lock."
-                          }
-                        },
-                        "kind": {
-                          "type": "string",
-                          "allowedValues": [
-                            "CanNotDelete",
-                            "None",
-                            "ReadOnly"
-                          ],
-                          "nullable": true,
-                          "metadata": {
-                            "description": "Optional. Specify the type of lock."
-                          }
-                        },
-                        "notes": {
-                          "type": "string",
-                          "nullable": true,
-                          "metadata": {
-                            "description": "Optional. Specify the notes of the lock."
-                          }
-                        }
-                      },
-                      "metadata": {
-                        "description": "An AVM-aligned type for a lock.",
-                        "__bicep_imported_from!": {
-                          "sourceTemplate": "br:mcr.microsoft.com/bicep/avm/utl/types/avm-common-types:0.6.0"
-                        }
-                      }
-                    },
-                    "roleAssignmentType": {
-                      "type": "object",
-                      "properties": {
-                        "name": {
-                          "type": "string",
-                          "nullable": true,
-                          "metadata": {
-                            "description": "Optional. The name (as GUID) of the role assignment. If not provided, a GUID will be generated."
-                          }
-                        },
-                        "roleDefinitionIdOrName": {
-                          "type": "string",
-                          "metadata": {
-                            "description": "Required. The role to assign. You can provide either the display name of the role definition, the role definition GUID, or its fully qualified ID in the following format: '/providers/Microsoft.Authorization/roleDefinitions/c2f4ef07-c644-48eb-af81-4b1b4947fb11'."
-                          }
-                        },
-                        "principalId": {
-                          "type": "string",
-                          "metadata": {
-                            "description": "Required. The principal ID of the principal (user/group/identity) to assign the role to."
-                          }
-                        },
-                        "principalType": {
-                          "type": "string",
-                          "allowedValues": [
-                            "Device",
-                            "ForeignGroup",
-                            "Group",
-                            "ServicePrincipal",
-                            "User"
-                          ],
-                          "nullable": true,
-                          "metadata": {
-                            "description": "Optional. The principal type of the assigned principal ID."
-                          }
-                        },
-                        "description": {
-                          "type": "string",
-                          "nullable": true,
-                          "metadata": {
-                            "description": "Optional. The description of the role assignment."
-                          }
-                        },
-                        "condition": {
-                          "type": "string",
-                          "nullable": true,
-                          "metadata": {
-                            "description": "Optional. The conditions on the role assignment. This limits the resources it can be assigned to. e.g.: @Resource[Microsoft.Storage/storageAccounts/blobServices/containers:ContainerName] StringEqualsIgnoreCase \"foo_storage_container\"."
-                          }
-                        },
-                        "conditionVersion": {
-                          "type": "string",
-                          "allowedValues": [
-                            "2.0"
-                          ],
-                          "nullable": true,
-                          "metadata": {
-                            "description": "Optional. Version of the condition."
-                          }
-                        },
-                        "delegatedManagedIdentityResourceId": {
-                          "type": "string",
-                          "nullable": true,
-                          "metadata": {
-                            "description": "Optional. The Resource Id of the delegated managed identity resource."
-                          }
-                        }
-                      },
-                      "metadata": {
-                        "description": "An AVM-aligned type for a role assignment.",
-                        "__bicep_imported_from!": {
-                          "sourceTemplate": "br:mcr.microsoft.com/bicep/avm/utl/types/avm-common-types:0.5.1"
-                        }
-                      }
-                    }
-                  },
-                  "parameters": {
-                    "name": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "Required. Name of the User Assigned Identity."
-                      }
-                    },
-                    "location": {
-                      "type": "string",
-                      "defaultValue": "[resourceGroup().location]",
-                      "metadata": {
-                        "description": "Optional. Location for all resources."
-                      }
-                    },
-                    "federatedIdentityCredentials": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/definitions/federatedIdentityCredentialType"
-                      },
-                      "nullable": true,
-                      "metadata": {
-                        "description": "Optional. The federated identity credentials list to indicate which token from the external IdP should be trusted by your application. Federated identity credentials are supported on applications only. A maximum of 20 federated identity credentials can be added per application object."
-                      }
-                    },
-                    "lock": {
-                      "$ref": "#/definitions/lockType",
-                      "nullable": true,
-                      "metadata": {
-                        "description": "Optional. The lock settings of the service."
-                      }
-                    },
-                    "roleAssignments": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/definitions/roleAssignmentType"
-                      },
-                      "nullable": true,
-                      "metadata": {
-                        "description": "Optional. Array of role assignments to create."
-                      }
-                    },
-                    "tags": {
-                      "type": "object",
-                      "metadata": {
-                        "__bicep_resource_derived_type!": {
-                          "source": "Microsoft.ManagedIdentity/userAssignedIdentities@2024-11-30#properties/tags"
-                        },
-                        "description": "Optional. Tags of the resource."
-                      },
-                      "nullable": true
-                    },
-                    "enableTelemetry": {
-                      "type": "bool",
-                      "defaultValue": true,
-                      "metadata": {
-                        "description": "Optional. Enable/Disable usage telemetry for module."
-                      }
-                    },
-                    "isolationScope": {
-                      "type": "string",
-                      "nullable": true,
-                      "allowedValues": [
-                        "None",
-                        "Regional"
-                      ],
-                      "metadata": {
-                        "description": "Optional. Enum to configure regional restrictions on identity assignment, as necessary. Allowed values: \"None\", \"Regional\"."
-                      }
-                    }
-                  },
-                  "variables": {
-                    "copy": [
-                      {
-                        "name": "formattedRoleAssignments",
-                        "count": "[length(coalesce(parameters('roleAssignments'), createArray()))]",
-                        "input": "[union(coalesce(parameters('roleAssignments'), createArray())[copyIndex('formattedRoleAssignments')], createObject('roleDefinitionId', coalesce(tryGet(variables('builtInRoleNames'), coalesce(parameters('roleAssignments'), createArray())[copyIndex('formattedRoleAssignments')].roleDefinitionIdOrName), if(contains(coalesce(parameters('roleAssignments'), createArray())[copyIndex('formattedRoleAssignments')].roleDefinitionIdOrName, '/providers/Microsoft.Authorization/roleDefinitions/'), coalesce(parameters('roleAssignments'), createArray())[copyIndex('formattedRoleAssignments')].roleDefinitionIdOrName, subscriptionResourceId('Microsoft.Authorization/roleDefinitions', coalesce(parameters('roleAssignments'), createArray())[copyIndex('formattedRoleAssignments')].roleDefinitionIdOrName)))))]"
-                      }
-                    ],
-                    "builtInRoleNames": {
-                      "Contributor": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]",
-                      "Managed Identity Contributor": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'e40ec5ca-96e0-45a2-b4ff-59039f2c2b59')]",
-                      "Managed Identity Operator": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'f1a07417-d97a-45cb-824c-7a7467783830')]",
-                      "Owner": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '8e3af657-a8ff-443c-a75c-2fe8c4bcb635')]",
-                      "Reader": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'acdd72a7-3385-48ef-bd42-f606fba81ae7')]",
-                      "Role Based Access Control Administrator": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'f58310d9-a9f6-439a-9e8d-f62e7b41a168')]",
-                      "User Access Administrator": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '18d7d88d-d35e-4fb5-a5c3-7773c20a72d9')]"
-                    }
-                  },
-                  "resources": {
-                    "avmTelemetry": {
-                      "condition": "[parameters('enableTelemetry')]",
-                      "type": "Microsoft.Resources/deployments",
-                      "apiVersion": "2024-03-01",
-                      "name": "[format('46d3xbcp.res.managedidentity-userassignedidentity.{0}.{1}', replace('0.5.0', '.', '-'), substring(uniqueString(deployment().name, parameters('location')), 0, 4))]",
-                      "properties": {
-                        "mode": "Incremental",
-                        "template": {
-                          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-                          "contentVersion": "1.0.0.0",
-                          "resources": [],
-                          "outputs": {
-                            "telemetry": {
-                              "type": "String",
-                              "value": "For more information, see https://aka.ms/avm/TelemetryInfo"
-                            }
-                          }
-                        }
-                      }
-                    },
-                    "userAssignedIdentity": {
-                      "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
-                      "apiVersion": "2024-11-30",
-                      "name": "[parameters('name')]",
-                      "location": "[parameters('location')]",
-                      "tags": "[parameters('tags')]",
-                      "properties": "[if(not(equals(parameters('isolationScope'), null())), createObject('isolationScope', parameters('isolationScope')), createObject())]"
-                    },
-                    "userAssignedIdentity_lock": {
-                      "condition": "[and(not(empty(coalesce(parameters('lock'), createObject()))), not(equals(tryGet(parameters('lock'), 'kind'), 'None')))]",
-                      "type": "Microsoft.Authorization/locks",
-                      "apiVersion": "2020-05-01",
-                      "scope": "[format('Microsoft.ManagedIdentity/userAssignedIdentities/{0}', parameters('name'))]",
-                      "name": "[coalesce(tryGet(parameters('lock'), 'name'), format('lock-{0}', parameters('name')))]",
-                      "properties": {
-                        "level": "[coalesce(tryGet(parameters('lock'), 'kind'), '')]",
-                        "notes": "[coalesce(tryGet(parameters('lock'), 'notes'), if(equals(tryGet(parameters('lock'), 'kind'), 'CanNotDelete'), 'Cannot delete resource or child resources.', 'Cannot delete or modify the resource or child resources.'))]"
-                      },
-                      "dependsOn": [
-                        "userAssignedIdentity"
-                      ]
-                    },
-                    "userAssignedIdentity_roleAssignments": {
-                      "copy": {
-                        "name": "userAssignedIdentity_roleAssignments",
-                        "count": "[length(coalesce(variables('formattedRoleAssignments'), createArray()))]"
-                      },
-                      "type": "Microsoft.Authorization/roleAssignments",
-                      "apiVersion": "2022-04-01",
-                      "scope": "[format('Microsoft.ManagedIdentity/userAssignedIdentities/{0}', parameters('name'))]",
-                      "name": "[coalesce(tryGet(coalesce(variables('formattedRoleAssignments'), createArray())[copyIndex()], 'name'), guid(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), coalesce(variables('formattedRoleAssignments'), createArray())[copyIndex()].principalId, coalesce(variables('formattedRoleAssignments'), createArray())[copyIndex()].roleDefinitionId))]",
-                      "properties": {
-                        "roleDefinitionId": "[coalesce(variables('formattedRoleAssignments'), createArray())[copyIndex()].roleDefinitionId]",
-                        "principalId": "[coalesce(variables('formattedRoleAssignments'), createArray())[copyIndex()].principalId]",
-                        "description": "[tryGet(coalesce(variables('formattedRoleAssignments'), createArray())[copyIndex()], 'description')]",
-                        "principalType": "[tryGet(coalesce(variables('formattedRoleAssignments'), createArray())[copyIndex()], 'principalType')]",
-                        "condition": "[tryGet(coalesce(variables('formattedRoleAssignments'), createArray())[copyIndex()], 'condition')]",
-                        "conditionVersion": "[if(not(empty(tryGet(coalesce(variables('formattedRoleAssignments'), createArray())[copyIndex()], 'condition'))), coalesce(tryGet(coalesce(variables('formattedRoleAssignments'), createArray())[copyIndex()], 'conditionVersion'), '2.0'), null())]",
-                        "delegatedManagedIdentityResourceId": "[tryGet(coalesce(variables('formattedRoleAssignments'), createArray())[copyIndex()], 'delegatedManagedIdentityResourceId')]"
-                      },
-                      "dependsOn": [
-                        "userAssignedIdentity"
-                      ]
-                    },
-                    "userAssignedIdentity_federatedIdentityCredentials": {
-                      "copy": {
-                        "name": "userAssignedIdentity_federatedIdentityCredentials",
-                        "count": "[length(coalesce(parameters('federatedIdentityCredentials'), createArray()))]",
-                        "mode": "serial",
-                        "batchSize": 1
-                      },
-                      "type": "Microsoft.Resources/deployments",
-                      "apiVersion": "2025-04-01",
-                      "name": "[format('{0}-UserMSI-FederatedIdentityCred-{1}', uniqueString(subscription().id, resourceGroup().id, parameters('location')), copyIndex())]",
-                      "properties": {
-                        "expressionEvaluationOptions": {
-                          "scope": "inner"
-                        },
-                        "mode": "Incremental",
-                        "parameters": {
-                          "name": {
-                            "value": "[coalesce(parameters('federatedIdentityCredentials'), createArray())[copyIndex()].name]"
-                          },
-                          "userAssignedIdentityName": {
-                            "value": "[parameters('name')]"
-                          },
-                          "audiences": {
-                            "value": "[coalesce(parameters('federatedIdentityCredentials'), createArray())[copyIndex()].audiences]"
-                          },
-                          "issuer": {
-                            "value": "[coalesce(parameters('federatedIdentityCredentials'), createArray())[copyIndex()].issuer]"
-                          },
-                          "subject": {
-                            "value": "[coalesce(parameters('federatedIdentityCredentials'), createArray())[copyIndex()].subject]"
-                          }
-                        },
-                        "template": {
-                          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-                          "contentVersion": "1.0.0.0",
-                          "metadata": {
-                            "_generator": {
-                              "name": "bicep",
-                              "version": "0.39.26.7824",
-                              "templateHash": "1387931959101373036"
-                            },
-                            "name": "User Assigned Identity Federated Identity Credential",
-                            "description": "This module deploys a User Assigned Identity Federated Identity Credential."
-                          },
-                          "parameters": {
-                            "userAssignedIdentityName": {
-                              "type": "string",
-                              "metadata": {
-                                "description": "Conditional. The name of the parent user assigned identity. Required if the template is used in a standalone deployment."
-                              }
-                            },
-                            "name": {
-                              "type": "string",
-                              "metadata": {
-                                "description": "Required. The name of the secret."
-                              }
-                            },
-                            "audiences": {
-                              "type": "array",
-                              "metadata": {
-                                "description": "Required. The list of audiences that can appear in the issued token. Should be set to api://AzureADTokenExchange for Azure AD. It says what Microsoft identity platform should accept in the aud claim in the incoming token. This value represents Azure AD in your external identity provider and has no fixed value across identity providers - you might need to create a new application registration in your IdP to serve as the audience of this token."
-                              }
-                            },
-                            "issuer": {
-                              "type": "string",
-                              "metadata": {
-                                "description": "Required. The URL of the issuer to be trusted. Must match the issuer claim of the external token being exchanged."
-                              }
-                            },
-                            "subject": {
-                              "type": "string",
-                              "metadata": {
-                                "description": "Required. The identifier of the external software workload within the external identity provider. Like the audience value, it has no fixed format, as each IdP uses their own - sometimes a GUID, sometimes a colon delimited identifier, sometimes arbitrary strings. The value here must match the sub claim within the token presented to Azure AD."
-                              }
-                            }
-                          },
-                          "resources": [
-                            {
-                              "type": "Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials",
-                              "apiVersion": "2024-11-30",
-                              "name": "[format('{0}/{1}', parameters('userAssignedIdentityName'), parameters('name'))]",
-                              "properties": {
-                                "audiences": "[parameters('audiences')]",
-                                "issuer": "[parameters('issuer')]",
-                                "subject": "[parameters('subject')]"
-                              }
-                            }
-                          ],
-                          "outputs": {
-                            "name": {
-                              "type": "string",
-                              "metadata": {
-                                "description": "The name of the federated identity credential."
-                              },
-                              "value": "[parameters('name')]"
-                            },
-                            "resourceId": {
-                              "type": "string",
-                              "metadata": {
-                                "description": "The resource ID of the federated identity credential."
-                              },
-                              "value": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials', parameters('userAssignedIdentityName'), parameters('name'))]"
-                            },
-                            "resourceGroupName": {
-                              "type": "string",
-                              "metadata": {
-                                "description": "The name of the resource group the federated identity credential was created in."
-                              },
-                              "value": "[resourceGroup().name]"
-                            }
-                          }
-                        }
-                      },
-                      "dependsOn": [
-                        "userAssignedIdentity"
-                      ]
-                    }
-                  },
-                  "outputs": {
-                    "name": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "The name of the user assigned identity."
-                      },
-                      "value": "[parameters('name')]"
-                    },
-                    "resourceId": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "The resource ID of the user assigned identity."
-                      },
-                      "value": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name'))]"
-                    },
-                    "principalId": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "The principal ID (object ID) of the user assigned identity."
-                      },
-                      "value": "[reference('userAssignedIdentity').principalId]"
-                    },
-                    "clientId": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "The client ID (application ID) of the user assigned identity."
-                      },
-                      "value": "[reference('userAssignedIdentity').clientId]"
-                    },
-                    "resourceGroupName": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "The resource group the user assigned identity was deployed into."
-                      },
-                      "value": "[resourceGroup().name]"
-                    },
-                    "location": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "The location the resource was deployed into."
-                      },
-                      "value": "[reference('userAssignedIdentity', '2024-11-30', 'full').location]"
-                    }
-                  }
-                }
-              }
-            }
-          ],
-          "outputs": {
-            "resourceId": {
-              "type": "string",
-              "metadata": {
-                "description": "Resource ID of the managed identity."
-              },
-              "value": "[reference(resourceId('Microsoft.Resources/deployments', take(format('avm.res.managed-identity.user-assigned-identity.{0}', parameters('identityName')), 64)), '2025-04-01').outputs.resourceId.value]"
-            },
-            "principalId": {
-              "type": "string",
-              "metadata": {
-                "description": "Principal ID of the managed identity."
-              },
-              "value": "[reference(resourceId('Microsoft.Resources/deployments', take(format('avm.res.managed-identity.user-assigned-identity.{0}', parameters('identityName')), 64)), '2025-04-01').outputs.principalId.value]"
-            },
-            "clientId": {
-              "type": "string",
-              "metadata": {
-                "description": "Client ID of the managed identity."
-              },
-              "value": "[reference(resourceId('Microsoft.Resources/deployments', take(format('avm.res.managed-identity.user-assigned-identity.{0}', parameters('identityName')), 64)), '2025-04-01').outputs.clientId.value]"
-            },
-            "name": {
-              "type": "string",
-              "metadata": {
-                "description": "Name of the managed identity."
-              },
-              "value": "[reference(resourceId('Microsoft.Resources/deployments', take(format('avm.res.managed-identity.user-assigned-identity.{0}', parameters('identityName')), 64)), '2025-04-01').outputs.name.value]"
-            }
-          }
-        }
-      }
-    },
     "openAi": {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
@@ -25261,7 +24683,9 @@
           "enableTelemetry": {
             "value": "[parameters('enableTelemetry')]"
           },
-          "publicNetworkAccess": "[if(parameters('enablePrivateNetworking'), createObject('value', 'Disabled'), createObject('value', 'Enabled'))]",
+          "publicNetworkAccess": {
+            "value": "Enabled"
+          },
           "diagnosticSettings": "[if(parameters('enableMonitoring'), createObject('value', createArray(createObject('workspaceResourceId', if(variables('useExistingLogAnalytics'), extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('existingLogAnalyticsWorkspaceId'), '/')[2], split(parameters('existingLogAnalyticsWorkspaceId'), '/')[4]), 'Microsoft.OperationalInsights/workspaces', split(parameters('existingLogAnalyticsWorkspaceId'), '/')[8]), if(parameters('enableMonitoring'), reference('log_analytics').outputs.resourceId.value, ''))))), createObject('value', createArray()))]",
           "enablePrivateNetworking": {
             "value": "[parameters('enablePrivateNetworking')]"
@@ -25269,18 +24693,7 @@
           "privateEndpointSubnetId": "[if(parameters('enablePrivateNetworking'), createObject('value', reference('virtualNetwork').outputs.backendSubnetResourceId.value), createObject('value', ''))]",
           "privateDnsZoneResourceIds": "[if(parameters('enablePrivateNetworking'), createObject('value', createArray(reference(format('privateDnsZoneDeployments[{0}]', variables('dnsZoneIndex').openAI)).outputs.resourceId.value, reference(format('privateDnsZoneDeployments[{0}]', variables('dnsZoneIndex').cognitiveServices)).outputs.resourceId.value)), createObject('value', createArray()))]",
           "roleAssignments": {
-            "value": [
-              {
-                "roleDefinitionIdOrName": "a001fd3d-188f-4b5d-821b-7da978bf7442",
-                "principalId": "[reference('userAssignedIdentity').outputs.principalId.value]",
-                "principalType": "ServicePrincipal"
-              },
-              {
-                "roleDefinitionIdOrName": "5e0bd9bd-7b93-4f28-af87-19fc36ad61bd",
-                "principalId": "[reference('userAssignedIdentity').outputs.principalId.value]",
-                "principalType": "ServicePrincipal"
-              }
-            ]
+            "value": []
           }
         },
         "template": {
@@ -27972,9 +27385,8 @@
       },
       "dependsOn": [
         "log_analytics",
-        "[format('privateDnsZoneDeployments[{0}]', variables('dnsZoneIndex').cognitiveServices)]",
         "[format('privateDnsZoneDeployments[{0}]', variables('dnsZoneIndex').openAI)]",
-        "userAssignedIdentity",
+        "[format('privateDnsZoneDeployments[{0}]', variables('dnsZoneIndex').cognitiveServices)]",
         "virtualNetwork"
       ]
     },
@@ -28006,7 +27418,9 @@
           "enableTelemetry": {
             "value": "[parameters('enableTelemetry')]"
           },
-          "publicNetworkAccess": "[if(parameters('enablePrivateNetworking'), createObject('value', 'Disabled'), createObject('value', 'Enabled'))]",
+          "publicNetworkAccess": {
+            "value": "Enabled"
+          },
           "diagnosticSettings": "[if(parameters('enableMonitoring'), createObject('value', createArray(createObject('workspaceResourceId', if(variables('useExistingLogAnalytics'), extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('existingLogAnalyticsWorkspaceId'), '/')[2], split(parameters('existingLogAnalyticsWorkspaceId'), '/')[4]), 'Microsoft.OperationalInsights/workspaces', split(parameters('existingLogAnalyticsWorkspaceId'), '/')[8]), if(parameters('enableMonitoring'), reference('log_analytics').outputs.resourceId.value, ''))))), createObject('value', createArray()))]",
           "enablePrivateNetworking": {
             "value": "[parameters('enablePrivateNetworking')]"
@@ -28014,13 +27428,7 @@
           "privateEndpointSubnetId": "[if(parameters('enablePrivateNetworking'), createObject('value', reference('virtualNetwork').outputs.backendSubnetResourceId.value), createObject('value', ''))]",
           "privateDnsZoneResourceIds": "[if(parameters('enablePrivateNetworking'), createObject('value', createArray(reference(format('privateDnsZoneDeployments[{0}]', variables('dnsZoneIndex').cognitiveServices)).outputs.resourceId.value)), createObject('value', createArray()))]",
           "roleAssignments": {
-            "value": [
-              {
-                "roleDefinitionIdOrName": "a97b65f3-24c7-4388-baec-2e87135dc908",
-                "principalId": "[reference('userAssignedIdentity').outputs.principalId.value]",
-                "principalType": "ServicePrincipal"
-              }
-            ]
+            "value": []
           }
         },
         "template": {
@@ -30713,7 +30121,6 @@
       "dependsOn": [
         "log_analytics",
         "[format('privateDnsZoneDeployments[{0}]', variables('dnsZoneIndex').cognitiveServices)]",
-        "userAssignedIdentity",
         "virtualNetwork"
       ]
     },
@@ -30884,16 +30291,12 @@
           "skuName": "[if(parameters('enableScalability'), createObject('value', 'standard'), createObject('value', 'basic'))]",
           "replicaCount": "[if(parameters('enableRedundancy'), createObject('value', 3), createObject('value', 1))]",
           "partitionCount": "[if(parameters('enableScalability'), createObject('value', 2), createObject('value', 1))]",
-          "publicNetworkAccess": "[if(parameters('enablePrivateNetworking'), createObject('value', 'Disabled'), createObject('value', 'Enabled'))]",
+          "publicNetworkAccess": {
+            "value": "Enabled"
+          },
           "diagnosticSettings": "[if(parameters('enableMonitoring'), createObject('value', createArray(createObject('workspaceResourceId', if(variables('useExistingLogAnalytics'), extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('existingLogAnalyticsWorkspaceId'), '/')[2], split(parameters('existingLogAnalyticsWorkspaceId'), '/')[4]), 'Microsoft.OperationalInsights/workspaces', split(parameters('existingLogAnalyticsWorkspaceId'), '/')[8]), if(parameters('enableMonitoring'), reference('log_analytics').outputs.resourceId.value, ''))))), createObject('value', createArray()))]",
           "roleAssignments": {
-            "value": [
-              {
-                "roleDefinitionIdOrName": "8ebe5a00-799e-43f5-93ac-243d3dce84a7",
-                "principalId": "[reference('userAssignedIdentity').outputs.principalId.value]",
-                "principalType": "ServicePrincipal"
-              }
-            ]
+            "value": []
           },
           "privateEndpoints": "[if(parameters('enablePrivateNetworking'), createObject('value', createArray(createObject('name', format('pep-srch-{0}', variables('solutionSuffix')), 'customNetworkInterfaceName', format('nic-srch-{0}', variables('solutionSuffix')), 'subnetResourceId', reference('virtualNetwork').outputs.backendSubnetResourceId.value, 'service', 'searchService', 'privateDnsZoneGroup', createObject('privateDnsZoneGroupConfigs', createArray(createObject('name', 'config-search', 'privateDnsZoneResourceId', reference(format('privateDnsZoneDeployments[{0}]', variables('dnsZoneIndex').search)).outputs.resourceId.value)))))), createObject('value', createArray()))]"
         },
@@ -30905,7 +30308,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "4176074721755032967"
+              "templateHash": "16365701579699591512"
             }
           },
           "parameters": {
@@ -30994,6 +30397,20 @@
               "defaultValue": true,
               "metadata": {
                 "description": "Whether to disable local authentication."
+              }
+            },
+            "authOptions": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Optional. Authentication options for the search service (e.g., aadOrApiKey)."
+              }
+            },
+            "networkRuleSet": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Optional. Network rule set for the search service (e.g., bypass: AzureServices)."
               }
             },
             "managedIdentityType": {
@@ -31086,9 +30503,11 @@
                   "semanticSearch": {
                     "value": "[parameters('semanticSearch')]"
                   },
+                  "authOptions": "[if(not(empty(parameters('authOptions'))), createObject('value', parameters('authOptions')), createObject('value', null()))]",
                   "disableLocalAuth": {
                     "value": "[parameters('disableLocalAuth')]"
                   },
+                  "networkRuleSet": "[if(not(empty(parameters('networkRuleSet'))), createObject('value', parameters('networkRuleSet')), createObject('value', null()))]",
                   "publicNetworkAccess": {
                     "value": "[parameters('publicNetworkAccess')]"
                   },
@@ -33175,7 +32594,6 @@
       "dependsOn": [
         "log_analytics",
         "[format('privateDnsZoneDeployments[{0}]', variables('dnsZoneIndex').search)]",
-        "userAssignedIdentity",
         "virtualNetwork"
       ]
     },
@@ -33201,8 +32619,15 @@
           "enableTelemetry": {
             "value": "[parameters('enableTelemetry')]"
           },
-          "publicNetworkAccess": "[if(parameters('enablePrivateNetworking'), createObject('value', 'Disabled'), createObject('value', 'Enabled'))]",
-          "networkAcls": "[if(parameters('enablePrivateNetworking'), createObject('value', createObject('defaultAction', 'Deny', 'bypass', 'AzureServices')), createObject('value', createObject('defaultAction', 'Allow', 'bypass', 'AzureServices')))]",
+          "publicNetworkAccess": {
+            "value": "Enabled"
+          },
+          "networkAcls": {
+            "value": {
+              "defaultAction": "Allow",
+              "bypass": "AzureServices"
+            }
+          },
           "diagnosticSettings": "[if(parameters('enableMonitoring'), createObject('value', createArray(createObject('workspaceResourceId', if(variables('useExistingLogAnalytics'), extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('existingLogAnalyticsWorkspaceId'), '/')[2], split(parameters('existingLogAnalyticsWorkspaceId'), '/')[4]), 'Microsoft.OperationalInsights/workspaces', split(parameters('existingLogAnalyticsWorkspaceId'), '/')[8]), if(parameters('enableMonitoring'), reference('log_analytics').outputs.resourceId.value, ''))))), createObject('value', createArray()))]",
           "containers": {
             "value": [
@@ -33217,13 +32642,7 @@
             ]
           },
           "roleAssignments": {
-            "value": [
-              {
-                "roleDefinitionIdOrName": "ba92f5b4-2d11-453d-a403-e96b0029c9fe",
-                "principalId": "[reference('userAssignedIdentity').outputs.principalId.value]",
-                "principalType": "ServicePrincipal"
-              }
-            ]
+            "value": []
           },
           "enablePrivateNetworking": {
             "value": "[parameters('enablePrivateNetworking')]"
@@ -41618,7 +41037,6 @@
       "dependsOn": [
         "log_analytics",
         "[format('privateDnsZoneDeployments[{0}]', variables('dnsZoneIndex').blob)]",
-        "userAssignedIdentity",
         "virtualNetwork"
       ]
     },
@@ -41684,7 +41102,9 @@
               }
             ]
           },
-          "publicNetworkAccess": "[if(parameters('enablePrivateNetworking'), createObject('value', 'Disabled'), createObject('value', 'Enabled'))]",
+          "publicNetworkAccess": {
+            "value": "Enabled"
+          },
           "diagnosticSettings": "[if(parameters('enableMonitoring'), createObject('value', createArray(createObject('workspaceResourceId', if(variables('useExistingLogAnalytics'), extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('existingLogAnalyticsWorkspaceId'), '/')[2], split(parameters('existingLogAnalyticsWorkspaceId'), '/')[4]), 'Microsoft.OperationalInsights/workspaces', split(parameters('existingLogAnalyticsWorkspaceId'), '/')[8]), if(parameters('enableMonitoring'), reference('log_analytics').outputs.resourceId.value, ''))))), createObject('value', createArray()))]",
           "zoneRedundant": {
             "value": "[parameters('enableRedundancy')]"
@@ -41696,10 +41116,14 @@
             "value": "[variables('cosmosDbHaLocation')]"
           },
           "enablePrivateNetworking": {
-            "value": "[parameters('enablePrivateNetworking')]"
+            "value": false
           },
-          "privateEndpointSubnetId": "[if(parameters('enablePrivateNetworking'), createObject('value', reference('virtualNetwork').outputs.backendSubnetResourceId.value), createObject('value', ''))]",
-          "privateDnsZoneResourceIds": "[if(parameters('enablePrivateNetworking'), createObject('value', createArray(reference(format('privateDnsZoneDeployments[{0}]', variables('dnsZoneIndex').cosmosDb)).outputs.resourceId.value)), createObject('value', createArray()))]"
+          "privateEndpointSubnetId": {
+            "value": ""
+          },
+          "privateDnsZoneResourceIds": {
+            "value": []
+          }
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -41709,7 +41133,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "16277058371499154016"
+              "templateHash": "7164288589507221445"
             }
           },
           "parameters": {
@@ -41911,7 +41335,7 @@
                   "diagnosticSettings": "[if(not(empty(parameters('diagnosticSettings'))), createObject('value', parameters('diagnosticSettings')), createObject('value', createArray()))]",
                   "networkRestrictions": {
                     "value": {
-                      "networkAclBypass": "None",
+                      "networkAclBypass": "AzureServices",
                       "publicNetworkAccess": "[parameters('publicNetworkAccess')]"
                     }
                   },
@@ -47875,9 +47299,7 @@
         }
       },
       "dependsOn": [
-        "log_analytics",
-        "[format('privateDnsZoneDeployments[{0}]', variables('dnsZoneIndex').cosmosDb)]",
-        "virtualNetwork"
+        "log_analytics"
       ]
     },
     "aks": {
@@ -47908,13 +47330,7 @@
           "logAnalyticsWorkspaceResourceId": "[if(parameters('enableMonitoring'), if(variables('useExistingLogAnalytics'), createObject('value', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('existingLogAnalyticsWorkspaceId'), '/')[2], split(parameters('existingLogAnalyticsWorkspaceId'), '/')[4]), 'Microsoft.OperationalInsights/workspaces', split(parameters('existingLogAnalyticsWorkspaceId'), '/')[8])), if(parameters('enableMonitoring'), createObject('value', reference('log_analytics').outputs.resourceId.value), createObject('value', ''))), createObject('value', ''))]",
           "diagnosticSettings": "[if(parameters('enableMonitoring'), createObject('value', createArray(createObject('workspaceResourceId', if(variables('useExistingLogAnalytics'), extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('existingLogAnalyticsWorkspaceId'), '/')[2], split(parameters('existingLogAnalyticsWorkspaceId'), '/')[4]), 'Microsoft.OperationalInsights/workspaces', split(parameters('existingLogAnalyticsWorkspaceId'), '/')[8]), if(parameters('enableMonitoring'), reference('log_analytics').outputs.resourceId.value, ''))))), createObject('value', createArray()))]",
           "roleAssignments": {
-            "value": [
-              {
-                "roleDefinitionIdOrName": "b24988ac-6180-42a0-ab88-20f7382dd24c",
-                "principalId": "[reference('userAssignedIdentity').outputs.principalId.value]",
-                "principalType": "ServicePrincipal"
-              }
-            ]
+            "value": []
           }
         },
         "template": {
@@ -47924,7 +47340,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "11663383571691112047"
+              "templateHash": "13469764367313175405"
             }
           },
           "parameters": {
@@ -51752,13 +51168,26 @@
                 "description": "FQDN of the AKS cluster."
               },
               "value": "[coalesce(tryGet(tryGet(reference(resourceId('Microsoft.Resources/deployments', take(format('avm.res.container-service.managed-cluster.{0}', parameters('name')), 64)), '2025-04-01').outputs, 'fqdn'), 'value'), '')]"
+            },
+            "kubeletIdentityObjectId": {
+              "type": "string",
+              "metadata": {
+                "description": "Object ID of the AKS kubelet system-assigned managed identity (used by pods at runtime via IMDS)."
+              },
+              "value": "[coalesce(tryGet(tryGet(reference(resourceId('Microsoft.Resources/deployments', take(format('avm.res.container-service.managed-cluster.{0}', parameters('name')), 64)), '2025-04-01').outputs, 'kubeletIdentityObjectId'), 'value'), '')]"
+            },
+            "systemAssignedMIPrincipalId": {
+              "type": "string",
+              "metadata": {
+                "description": "Principal ID of the AKS control-plane system-assigned managed identity."
+              },
+              "value": "[coalesce(tryGet(tryGet(reference(resourceId('Microsoft.Resources/deployments', take(format('avm.res.container-service.managed-cluster.{0}', parameters('name')), 64)), '2025-04-01').outputs, 'systemAssignedMIPrincipalId'), 'value'), '')]"
             }
           }
         }
       },
       "dependsOn": [
-        "log_analytics",
-        "userAssignedIdentity"
+        "log_analytics"
       ]
     },
     "containerRegistry": {
@@ -51787,9 +51216,12 @@
           "publicNetworkAccess": {
             "value": "Enabled"
           },
+          "networkRuleSetDefaultAction": {
+            "value": "Allow"
+          },
           "acrPullPrincipalIds": {
             "value": [
-              "[reference('aksClusterExisting').identityProfile.kubeletidentity.objectId]"
+              "[reference('aks').outputs.kubeletIdentityObjectId.value]"
             ]
           },
           "acrPushPrincipalIds": {
@@ -51813,7 +51245,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "18308456124890702188"
+              "templateHash": "14512792872571129321"
             }
           },
           "parameters": {
@@ -51927,6 +51359,17 @@
                 "description": "Private DNS zone resource IDs for private endpoint."
               }
             },
+            "networkRuleSetDefaultAction": {
+              "type": "string",
+              "defaultValue": "Allow",
+              "allowedValues": [
+                "Allow",
+                "Deny"
+              ],
+              "metadata": {
+                "description": "Default action for the network rule set. Use Allow when no private endpoint is in place; Deny for private-only."
+              }
+            },
             "enableTelemetry": {
               "type": "bool",
               "defaultValue": true,
@@ -51966,7 +51409,7 @@
             ],
             "acrPullRoleId": "7f951dda-4ed3-4680-a7ca-43fe172d538d",
             "acrPushRoleId": "8311e382-0749-4cb8-b61a-304f252e45ec",
-            "roleAssignments": "[concat(variables('pullRoleAssignments'), variables('pushRoleAssignments'))]",
+            "roleAssignments": "[concat(if(not(empty(parameters('acrPullPrincipalIds'))), variables('pullRoleAssignments'), createArray()), if(not(empty(parameters('acrPushPrincipalIds'))), variables('pushRoleAssignments'), createArray()))]",
             "privateEndpointConfig": "[if(and(parameters('enablePrivateNetworking'), not(empty(parameters('privateEndpointSubnetId')))), createArray(createObject('subnetResourceId', parameters('privateEndpointSubnetId'), 'privateDnsZoneGroup', if(not(empty(parameters('privateDnsZoneResourceIds'))), createObject('privateDnsZoneGroupConfigs', variables('dnsZoneConfigs')), null()))), createArray())]"
           },
           "resources": [
@@ -52007,6 +51450,9 @@
                   "roleAssignments": "[if(not(empty(variables('roleAssignments'))), createObject('value', variables('roleAssignments')), createObject('value', createArray()))]",
                   "privateEndpoints": {
                     "value": "[variables('privateEndpointConfig')]"
+                  },
+                  "networkRuleSetDefaultAction": {
+                    "value": "[parameters('networkRuleSetDefaultAction')]"
                   }
                 },
                 "template": {
@@ -55843,7 +55289,7 @@
         }
       },
       "dependsOn": [
-        "aksClusterExisting",
+        "aks",
         "[format('privateDnsZoneDeployments[{0}]', variables('dnsZoneIndex').containerRegistry)]",
         "virtualNetwork"
       ]
@@ -55871,7 +55317,7 @@
             "value": "[parameters('enableTelemetry')]"
           },
           "disableLocalAuth": {
-            "value": "[parameters('enablePrivateNetworking')]"
+            "value": false
           },
           "keyValues": {
             "value": [
@@ -55978,19 +55424,16 @@
             ]
           },
           "roleAssignments": {
-            "value": [
-              {
-                "roleDefinitionIdOrName": "516239f1-63e1-4d78-a4de-a74fb236a071",
-                "principalId": "[reference('userAssignedIdentity').outputs.principalId.value]",
-                "principalType": "ServicePrincipal"
-              }
-            ]
+            "value": []
           },
           "enablePrivateNetworking": {
             "value": "[parameters('enablePrivateNetworking')]"
           },
           "privateEndpointSubnetId": "[if(parameters('enablePrivateNetworking'), createObject('value', reference('virtualNetwork').outputs.backendSubnetResourceId.value), createObject('value', ''))]",
-          "privateDnsZoneResourceIds": "[if(parameters('enablePrivateNetworking'), createObject('value', createArray(reference(format('privateDnsZoneDeployments[{0}]', variables('dnsZoneIndex').appConfig)).outputs.resourceId.value)), createObject('value', createArray()))]"
+          "privateDnsZoneResourceIds": "[if(parameters('enablePrivateNetworking'), createObject('value', createArray(reference(format('privateDnsZoneDeployments[{0}]', variables('dnsZoneIndex').appConfig)).outputs.resourceId.value)), createObject('value', createArray()))]",
+          "publicNetworkAccess": {
+            "value": "Enabled"
+          }
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -55999,7 +55442,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "13324563650584483949"
+              "templateHash": "13450156954279146455"
             }
           },
           "parameters": {
@@ -56109,6 +55552,13 @@
               "metadata": {
                 "description": "Private DNS zone resource IDs."
               }
+            },
+            "publicNetworkAccess": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. Public network access override. Set to Enabled to allow ARM keyValues writes during deploy."
+              }
             }
           },
           "variables": {
@@ -56164,7 +55614,8 @@
                   "keyValues": "[if(not(empty(parameters('keyValues'))), createObject('value', parameters('keyValues')), createObject('value', createArray()))]",
                   "privateEndpoints": {
                     "value": "[variables('privateEndpointConfig')]"
-                  }
+                  },
+                  "publicNetworkAccess": "[if(not(empty(parameters('publicNetworkAccess'))), createObject('value', parameters('publicNetworkAccess')), createObject('value', null()))]"
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -58388,7 +57839,6 @@
         "openAi",
         "[format('privateDnsZoneDeployments[{0}]', variables('dnsZoneIndex').appConfig)]",
         "storage_account",
-        "userAssignedIdentity",
         "virtualNetwork"
       ]
     }
@@ -58497,7 +57947,7 @@
       "metadata": {
         "description": "Contains Azure AKS Managed Identity Principal ID."
       },
-      "value": "[reference('aksClusterExisting', '2025-03-01', 'full').identity.principalId]"
+      "value": "[reference('aks').outputs.systemAssignedMIPrincipalId.value]"
     },
     "AZURE_CONTAINER_REGISTRY_NAME": {
       "type": "string",

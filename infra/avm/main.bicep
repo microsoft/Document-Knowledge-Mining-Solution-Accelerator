@@ -137,6 +137,18 @@ var solutionSuffix = toLower(trim(replace(replace(replace(replace(replace(replac
 var aksName = 'aks-${solutionSuffix}'
 var cosmosName = 'cosmos-${solutionSuffix}'
 
+// DKM SAI migration: compile-time resource-name vars previously used as GUID
+// salts in the kubelet RBAC role assignments at the end of this file. Those
+// RBAC blocks are now commented out (pods authenticate via VMSS SystemAssigned
+// identity bootstrapped by Deployment/resourcedeployment.ps1, NOT via the
+// kubelet UAI). Vars preserved for easy re-enable if the workload ever moves
+// to Workload Identity or AZURE_CLIENT_ID injection.
+// var openAiAccountName = 'oai-${solutionSuffix}'
+// var docIntelAccountName = 'di-${solutionSuffix}'
+// var aiSearchName = 'srch-${solutionSuffix}'
+// var storageAccountName = take('st${solutionSuffix}', 24)
+// var appConfigName = 'appcs-${solutionSuffix}'
+
 var deployerInfo = deployer()
 var deployingUserPrincipalId = deployerInfo.objectId
 var createdBy = contains(deployerInfo, 'userPrincipalName') ? split(deployerInfo.userPrincipalName, '@')[0] : deployerInfo.objectId
@@ -257,8 +269,8 @@ module log_analytics './modules/monitoring/log-analytics.bicep' = if (enableMoni
     tags: tags
     enableTelemetry: enableTelemetry
     retentionInDays: 365
-    publicNetworkAccessForIngestion: enablePrivateNetworking ? 'Disabled' : 'Enabled'
-    publicNetworkAccessForQuery: enablePrivateNetworking ? 'Disabled' : 'Enabled'
+    publicNetworkAccessForIngestion: 'Enabled'
+    publicNetworkAccessForQuery: 'Enabled'
     enableReplication: enableRedundancy && !empty(replicaLocation)
     replicationLocation: enableRedundancy ? replicaLocation : ''
     dailyQuotaGb: enableRedundancy ? '150' : ''
@@ -439,16 +451,22 @@ module privateDnsZoneDeployments './modules/networking/private-dns-zone.bicep' =
 // ============================================================================
 // Module: Identity (User-Assigned Managed Identity for AKS workload)
 // ============================================================================
-
-module userAssignedIdentity './modules/identity/managed-identity.bicep' = {
-  name: take('module.managed-identity.${solutionName}', 64)
-  params: {
-    solutionName: solutionSuffix
-    location: location
-    tags: tags
-    enableTelemetry: enableTelemetry
-  }
-}
+// DKM SAI migration: workload UAI removed. AKS kubelet system-assigned
+// identity (auto-created by Microsoft.ContainerService/managedClusters) is
+// now the runtime identity pods consume via DefaultAzureCredential → IMDS.
+// All RBAC previously granted to this UAI is reassigned to the kubelet
+// principalId via standalone role-assignment resources at the bottom of
+// this file (search "DKM SAI migration: kubelet RBAC").
+//
+// module userAssignedIdentity './modules/identity/managed-identity.bicep' = {
+//   name: take('module.managed-identity.${solutionName}', 64)
+//   params: {
+//     solutionName: solutionSuffix
+//     location: location
+//     tags: tags
+//     enableTelemetry: enableTelemetry
+//   }
+// }
 
 // ============================================================================
 // Module: AI Services (OpenAI + Document Intelligence + model deployments)
@@ -463,7 +481,7 @@ module openAi './modules/ai/ai-services.bicep' = {
     location: azureAiServiceLocation
     tags: tags
     enableTelemetry: enableTelemetry
-    publicNetworkAccess: enablePrivateNetworking ? 'Disabled' : 'Enabled'
+    publicNetworkAccess: 'Enabled' // WAF: keep public for ARM writes + pod access; RBAC gates auth
     diagnosticSettings: monitoringDiagnosticSettings
     enablePrivateNetworking: enablePrivateNetworking
     privateEndpointSubnetId: enablePrivateNetworking ? virtualNetwork!.outputs.backendSubnetResourceId : ''
@@ -472,16 +490,17 @@ module openAi './modules/ai/ai-services.bicep' = {
       privateDnsZoneDeployments[dnsZoneIndex.cognitiveServices]!.outputs.resourceId
     ] : []
     roleAssignments: [
-      {
-        roleDefinitionIdOrName: 'a001fd3d-188f-4b5d-821b-7da978bf7442' // Cognitive Services OpenAI Contributor
-        principalId: userAssignedIdentity.outputs.principalId
-        principalType: 'ServicePrincipal'
-      }
-      {
-        roleDefinitionIdOrName: '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd' // Cognitive Services OpenAI User
-        principalId: userAssignedIdentity.outputs.principalId
-        principalType: 'ServicePrincipal'
-      }
+      // DKM SAI migration: UAI grants removed. Kubelet RBAC defined at end of file.
+      // {
+      //   roleDefinitionIdOrName: 'a001fd3d-188f-4b5d-821b-7da978bf7442' // Cognitive Services OpenAI Contributor
+      //   principalId: userAssignedIdentity.outputs.principalId
+      //   principalType: 'ServicePrincipal'
+      // }
+      // {
+      //   roleDefinitionIdOrName: '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd' // Cognitive Services OpenAI User
+      //   principalId: userAssignedIdentity.outputs.principalId
+      //   principalType: 'ServicePrincipal'
+      // }
     ]
   }
 }
@@ -495,7 +514,7 @@ module documentIntelligence './modules/ai/ai-services.bicep' = {
     location: location
     tags: tags
     enableTelemetry: enableTelemetry
-    publicNetworkAccess: enablePrivateNetworking ? 'Disabled' : 'Enabled'
+    publicNetworkAccess: 'Enabled' // WAF: keep public for ARM writes + pod access; RBAC gates auth
     diagnosticSettings: monitoringDiagnosticSettings
     enablePrivateNetworking: enablePrivateNetworking
     privateEndpointSubnetId: enablePrivateNetworking ? virtualNetwork!.outputs.backendSubnetResourceId : ''
@@ -503,11 +522,12 @@ module documentIntelligence './modules/ai/ai-services.bicep' = {
       privateDnsZoneDeployments[dnsZoneIndex.cognitiveServices]!.outputs.resourceId
     ] : []
     roleAssignments: [
-      {
-        roleDefinitionIdOrName: 'a97b65f3-24c7-4388-baec-2e87135dc908' // Cognitive Services User
-        principalId: userAssignedIdentity.outputs.principalId
-        principalType: 'ServicePrincipal'
-      }
+      // DKM SAI migration: UAI grant removed. Kubelet RBAC defined at end of file.
+      // {
+      //   roleDefinitionIdOrName: 'a97b65f3-24c7-4388-baec-2e87135dc908' // Cognitive Services User
+      //   principalId: userAssignedIdentity.outputs.principalId
+      //   principalType: 'ServicePrincipal'
+      // }
     ]
   }
 }
@@ -538,14 +558,15 @@ module ai_search './modules/ai/ai-search.bicep' = {
     skuName: enableScalability ? 'standard' : 'basic'
     replicaCount: enableRedundancy ? 3 : 1
     partitionCount: enableScalability ? 2 : 1
-    publicNetworkAccess: enablePrivateNetworking ? 'Disabled' : 'Enabled'
+    publicNetworkAccess: 'Enabled' // WAF: keep public for pod access; RBAC gates auth
     diagnosticSettings: monitoringDiagnosticSettings
     roleAssignments: [
-      {
-        roleDefinitionIdOrName: '8ebe5a00-799e-43f5-93ac-243d3dce84a7' // Search Index Data Contributor
-        principalId: userAssignedIdentity.outputs.principalId
-        principalType: 'ServicePrincipal'
-      }
+      // DKM SAI migration: UAI grant removed. Kubelet RBAC defined at end of file.
+      // {
+      //   roleDefinitionIdOrName: '8ebe5a00-799e-43f5-93ac-243d3dce84a7' // Search Index Data Contributor
+      //   principalId: userAssignedIdentity.outputs.principalId
+      //   principalType: 'ServicePrincipal'
+      // }
     ]
     privateEndpoints: enablePrivateNetworking ? [
       {
@@ -577,21 +598,20 @@ module storage_account './modules/data/storage-account.bicep' = {
     location: location
     tags: tags
     enableTelemetry: enableTelemetry
-    publicNetworkAccess: enablePrivateNetworking ? 'Disabled' : 'Enabled'
-    networkAcls: enablePrivateNetworking
-      ? { defaultAction: 'Deny', bypass: 'AzureServices' }
-      : { defaultAction: 'Allow', bypass: 'AzureServices' }
+    publicNetworkAccess: 'Enabled' // WAF: keep public for pod queue/blob access; RBAC gates auth
+    networkAcls: { defaultAction: 'Allow', bypass: 'AzureServices' }
     diagnosticSettings: monitoringDiagnosticSettings
     containers: [
       { name: 'default', publicAccess: 'None' }
       { name: 'smemory', publicAccess: 'None' }
     ]
     roleAssignments: [
-      {
-        roleDefinitionIdOrName: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
-        principalId: userAssignedIdentity.outputs.principalId
-        principalType: 'ServicePrincipal'
-      }
+      // DKM SAI migration: UAI grant removed. Kubelet RBAC defined at end of file.
+      // {
+      //   roleDefinitionIdOrName: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
+      //   principalId: userAssignedIdentity.outputs.principalId
+      //   principalType: 'ServicePrincipal'
+      // }
     ]
     enablePrivateNetworking: enablePrivateNetworking
     privateEndpointSubnetId: enablePrivateNetworking ? virtualNetwork!.outputs.backendSubnetResourceId : ''
@@ -626,16 +646,17 @@ module cosmosDbModule './modules/data/cosmos-db-mongo.bicep' = {
         shardKey: { _id: 'Hash' }
       }
     ]
-    publicNetworkAccess: enablePrivateNetworking ? 'Disabled' : 'Enabled'
+    publicNetworkAccess: 'Enabled' // WAF: keep public for pod access; RBAC gates auth
     diagnosticSettings: monitoringDiagnosticSettings
     zoneRedundant: enableRedundancy
     enableAutomaticFailover: enableRedundancy
     haLocation: cosmosDbHaLocation
-    enablePrivateNetworking: enablePrivateNetworking
-    privateEndpointSubnetId: enablePrivateNetworking ? virtualNetwork!.outputs.backendSubnetResourceId : ''
-    privateDnsZoneResourceIds: enablePrivateNetworking ? [
-      privateDnsZoneDeployments[dnsZoneIndex.cosmosDb]!.outputs.resourceId
-    ] : []
+    // WAF: Cosmos PE disabled — when PE exists, Cosmos enforces PE-only access but AKS pods
+    // resolve via public DNS (PE DNS zone has no A record for the account), causing "blocked
+    // by network firewall". Keep public access + RBAC for security. Matches Agentic SA pattern.
+    enablePrivateNetworking: false
+    privateEndpointSubnetId: ''
+    privateDnsZoneResourceIds: []
   }
 }
 
@@ -662,22 +683,28 @@ module aks './modules/compute/kubernetes.bicep' = {
     logAnalyticsWorkspaceResourceId: enableMonitoring ? logAnalyticsWorkspaceResourceId : ''
     diagnosticSettings: monitoringDiagnosticSettings
     roleAssignments: [
-      {
-        roleDefinitionIdOrName: 'b24988ac-6180-42a0-ab88-20f7382dd24c' // Contributor
-        principalId: userAssignedIdentity.outputs.principalId
-        principalType: 'ServicePrincipal'
-      }
+      // DKM SAI migration: UAI grant removed (intentionally NOT replaced with
+      // kubelet Contributor on AKS — that would let pods modify the cluster
+      // itself, a privilege escalation). Kubelet least-privilege data-plane
+      // grants are defined at end of file.
+      // {
+      //   roleDefinitionIdOrName: 'b24988ac-6180-42a0-ab88-20f7382dd24c' // Contributor
+      //   principalId: userAssignedIdentity.outputs.principalId
+      //   principalType: 'ServicePrincipal'
+      // }
     ]
   }
 }
 
-// Toolkit's kubernetes wrapper does not surface the kubelet/system-assigned
-// identity principal IDs. Read them via an existing-resource reference so
-// downstream consumers (ACR AcrPull, AZURE_AKS_MI_ID output) keep working.
-resource aksClusterExisting 'Microsoft.ContainerService/managedClusters@2025-03-01' existing = {
-  name: aksName
-  dependsOn: [aks]
-}
+// DKM SAI migration: workload identity outputs (kubelet objectId + control-plane
+// systemAssignedMIPrincipalId) are now surfaced directly by our AKS wrapper
+// (./modules/compute/kubernetes.bicep). The existing-resource workaround that
+// previously dug into raw ARM properties is no longer needed.
+//
+// resource aksClusterExisting 'Microsoft.ContainerService/managedClusters@2025-03-01' existing = {
+//   name: aksName
+//   dependsOn: [aks]
+// }
 
 module containerRegistry './modules/compute/container-registry.bicep' = {
   name: take('module.container-registry.${solutionName}', 64)
@@ -688,8 +715,11 @@ module containerRegistry './modules/compute/container-registry.bicep' = {
     enableTelemetry: enableTelemetry
     sku: enablePrivateNetworking ? 'Premium' : 'Premium'
     publicNetworkAccess: 'Enabled'
+    // Keep ACR firewall open: Docker push from laptop (PS1) + AKS kubelet pull both need public access.
+    // PE still exists for optimized in-VNet pulls. Matches Agentic SA reference pattern.
+    networkRuleSetDefaultAction: 'Allow'
     acrPullPrincipalIds: [
-      aksClusterExisting.properties.identityProfile.kubeletidentity.objectId
+      aks.outputs.kubeletIdentityObjectId
     ]
     acrPushPrincipalIds: [
       deployingUserPrincipalId
@@ -745,22 +775,120 @@ module appConfiguration './modules/data/app-configuration.bicep' = {
     location: location
     tags: tags
     enableTelemetry: enableTelemetry
-    disableLocalAuth: enablePrivateNetworking
+    disableLocalAuth: false // ARM needs local auth to write keyValues during deploy (matches Agentic SA pattern)
     keyValues: keyValues
     roleAssignments: [
-      {
-        roleDefinitionIdOrName: '516239f1-63e1-4d78-a4de-a74fb236a071' // App Configuration Data Reader
-        principalId: userAssignedIdentity.outputs.principalId
-        principalType: 'ServicePrincipal'
-      }
+      // DKM SAI migration: UAI grant removed. Kubelet RBAC defined at end of file.
     ]
     enablePrivateNetworking: enablePrivateNetworking
     privateEndpointSubnetId: enablePrivateNetworking ? virtualNetwork!.outputs.backendSubnetResourceId : ''
     privateDnsZoneResourceIds: enablePrivateNetworking ? [
       privateDnsZoneDeployments[dnsZoneIndex.appConfig]!.outputs.resourceId
     ] : []
+    // Keep public access for ARM keyValues writes. PE still used by pods at runtime.
+    publicNetworkAccess: 'Enabled'
   }
 }
+
+// ============================================================================
+// DKM SAI migration: kubelet RBAC
+// ============================================================================
+// All data-plane grants previously held by the standalone workload UAI
+// (now removed) are reassigned here to the AKS kubelet system-assigned
+// identity. Pods consume this identity at runtime via DefaultAzureCredential
+// → IMDS (172.17.0.1 / 169.254.169.254) — no clientId in code, no
+// azure.workload.identity/use annotation on pods.
+//
+// Grants are RG-scoped standalone roleAssignments (not inline on each AVM
+// module's roleAssignments[]) so that Storage / OpenAI / DI / Search /
+// AppConfig do NOT get forced to wait for AKS to provision (~10 min cost).
+// Bicep infers dependsOn from .outputs.name references on each target
+// module + aks.outputs.kubeletIdentityObjectId.
+//
+// GUID salt matches infra/bicep/modules/identity/role-assignments.bicep so
+// both flavors converge on identical assignment names.
+
+// ============================================================================
+// DKM SAI migration: AKS kubelet identity → data-plane RBAC
+// ============================================================================
+// REVERTED: Pods running with bare `new DefaultAzureCredential()` cannot use
+// the kubelet UAI via IMDS when multiple UAIs are attached to the VMSS (IMDS
+// returns HTTP 400 "Multiple user assigned identities exist"). The actual
+// runtime identity is the VMSS SystemAssigned identity bootstrapped by
+// Deployment/resourcedeployment.ps1 (post-deploy step). The kubelet RBAC
+// grants below are preserved (commented) for reference / future re-enable if
+// the workload migrates to Workload Identity or sets AZURE_CLIENT_ID.
+/*
+resource dkmAksKubeletStorageBlobDataContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, storageAccountName, aksName, 'Storage Blob Data Contributor')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
+    principalId: aks.outputs.kubeletIdentityObjectId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource dkmAksKubeletStorageQueueDataContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, storageAccountName, aksName, 'Storage Queue Data Contributor')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '974c5e8b-45b9-4653-ba55-5f855dd0fb88')
+    principalId: aks.outputs.kubeletIdentityObjectId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource dkmAksKubeletOpenAiUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, openAiAccountName, aksName, 'Cognitive Services OpenAI User')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd')
+    principalId: aks.outputs.kubeletIdentityObjectId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource dkmAksKubeletDocIntelUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, docIntelAccountName, aksName, 'Cognitive Services User')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'a97b65f3-24c7-4388-baec-2e87135dc908')
+    principalId: aks.outputs.kubeletIdentityObjectId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource dkmAksKubeletSearchIndexDataContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, aiSearchName, aksName, 'Search Index Data Contributor')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '8ebe5a00-799e-43f5-93ac-243d3dce84a7')
+    principalId: aks.outputs.kubeletIdentityObjectId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource dkmAksKubeletSearchServiceContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, aiSearchName, aksName, 'Search Service Contributor')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7ca78c08-252a-4471-8644-bb5ff32d4ba0')
+    principalId: aks.outputs.kubeletIdentityObjectId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource dkmAksKubeletAppConfigDataReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, appConfigName, aksName, 'App Configuration Data Reader')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '516239f1-63e1-4d78-a4de-a74fb236a071')
+    principalId: aks.outputs.kubeletIdentityObjectId
+    principalType: 'ServicePrincipal'
+  }
+}
+*/
 
 // ============================================================================
 // Outputs (kept name-compatible with infra/main.bicep so azd env vars match)
@@ -809,7 +937,7 @@ output AZURE_SEARCH_SERVICE_NAME string = ai_search.outputs.name
 output AZURE_AKS_NAME string = aks.outputs.name
 
 @description('Contains Azure AKS Managed Identity Principal ID.')
-output AZURE_AKS_MI_ID string = aksClusterExisting.identity.principalId
+output AZURE_AKS_MI_ID string = aks.outputs.systemAssignedMIPrincipalId
 
 @description('Contains Azure Container Registry Name.')
 output AZURE_CONTAINER_REGISTRY_NAME string = containerRegistry.outputs.name
