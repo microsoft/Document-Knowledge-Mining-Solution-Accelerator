@@ -97,15 +97,17 @@ az deployment group create \
 ## Choosing a flavor
 
 ```bash
-# AVM (default — no param needed)
+# AVM (default)
 azd env set DEPLOYMENT_FLAVOR avm
-# or skip; 'avm' is the default
+
+# AVM with WAF (private networking, monitoring, scalability)
+azd env set DEPLOYMENT_FLAVOR avm-waf
 
 # Vanilla Bicep
 azd env set DEPLOYMENT_FLAVOR bicep
 ```
 
-> **Note:** `deploymentFlavor` is bound in `main.parameters.json` via `${DEPLOYMENT_FLAVOR=bicep}` (defaults to `bicep` if unset). Override with `azd env set DEPLOYMENT_FLAVOR avm` or pass `-p deploymentFlavor=avm` on the `az deployment group create` command line.
+> **Note:** `deploymentFlavor` is hardcoded to `avm-waf` in both `main.parameters.json` and `main.waf.parameters.json`. Valid values: `avm`, `avm-waf`, `bicep`. The `avm-waf` flavor enables WAF toggles (private networking, monitoring, scalability) automatically. Override via `azd env set` or `-p deploymentFlavor=<value>` on `az deployment group create`.
 
 ---
 

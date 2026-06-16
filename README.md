@@ -82,14 +82,13 @@ To deploy this solution accelerator, ensure you have access to an [Azure subscri
 
 *Note: Due to model availability within various data center regions, the following services have been hard-coded to specific regions:*
 
-* **Azure Open AI (GPT 4o mini):**<br>
-The solution relies on `GPT-4o mini` and `text-embedding-3-large` models which are all currently available in the 'WestUS3', 'EastUS', 'EastUS2', 'SwedenCentral' region.  
+* **Azure Open AI (GPT-4.1-mini):**<br>
+The solution relies on `GPT-4.1-mini` and `text-embedding-3-large` models. Model and region are configurable via `azd env set` parameters.  
 Please check the
 [model summary table and region availability](https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models#embeddings) if needed.
 
-* **Azure AI Document Intelligence (East US):**<br>
-The solution relies on a `2023-10-31-preview` or later that is currently available in `East US` region.  
-The deployment region for this model is fixed in 'East US'
+* **Azure AI Document Intelligence:**<br>
+The solution relies on Document Intelligence API version `2023-10-31-preview` or later. The deployment region is configurable via the `AZURE_ENV_AI_SERVICE_LOCATION` parameter (defaults to the primary location if unset).
 
 Check the [Azure Products by Region](https://azure.microsoft.com/en-us/explore/global-infrastructure/products-by-region/?products=all&regions=all) page and select a **region** where the following services are available.
 
@@ -110,8 +109,8 @@ _Note: This is not meant to outline all costs as selected SKUs, scaled use, cust
 | [Azure AI Search](https://learn.microsoft.com/en-us/azure/search/) | Processed and extracted document information is added to an Azure AI Search vectorized index. | [Pricing](https://learn.microsoft.com/en-us/azure/search/) |
 | [Azure AI Document Intelligence](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/)| Used during data processing workflow where documents have Optical Character Recognition (OCR) applied to extract data. | [Pricing](https://azure.microsoft.com/en-us/pricing/details/ai-document-intelligence/) |
 | [Azure Container Registry](https://learn.microsoft.com/en-us/azure/container-registry/)| Private registry where the Document Processor, AI Service, and Web App images are built, stored and managed. | [Pricing](https://azure.microsoft.com/pricing/details/container-registry/) |
-| [Azure Kubernetes Service (AKS)](https://learn.microsoft.com/azure/aks/)| The solution is deployed as a managed container app with with high availability, scalability, and region portability. | [Pricing](https://azure.microsoft.com/en-us/pricing/details/kubernetes-service/) |
-| [Azure App Service](https://learn.microsoft.com/en-us/azure/app-service/)| UI web application for the solution built with React and TypeScript. | [Pricing]() |
+| [Azure Kubernetes Service (AKS)](https://learn.microsoft.com/azure/aks/)| Hosts all application containers (frontend, AI service, kernel memory) as a managed Kubernetes cluster with high availability and scalability. | [Pricing](https://azure.microsoft.com/en-us/pricing/details/kubernetes-service/) |
+| [Azure App Configuration](https://learn.microsoft.com/en-us/azure/azure-app-configuration/)| Stores application settings, connection strings, and feature flags consumed by AKS workload pods at runtime. | [Pricing](https://azure.microsoft.com/en-us/pricing/details/app-configuration/) |
 | [Azure Blob Storage](https://learn.microsoft.com/en-us/azure/storage/blobs/)| Storage of document files that are being proessed. | [Pricing](https://azure.microsoft.com/pricing/details/storage/blobs/) |
 | [Azure Queue Storage](https://learn.microsoft.com/en-us/azure/storage/queues/)| Pipeline workflow steps and processing job management. | [Pricing](https://github.com/microsoft/content-processing-solution-accelerator/blob/main) |
 | [Azure Cosmos DB](https://learn.microsoft.com/en-us/azure/cosmos-db/)| Processed document results and chat history storage. | [Pricing](https://azure.microsoft.com/en-us/pricing/details/cosmos-db/autoscale-provisioned/) |
