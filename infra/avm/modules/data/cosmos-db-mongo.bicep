@@ -91,7 +91,7 @@ module cosmosAccount 'br/public:avm/res/document-db/database-account:0.19.0' = {
     ]
     diagnosticSettings: !empty(diagnosticSettings) ? diagnosticSettings : []
     networkRestrictions: {
-      networkAclBypass: 'None'
+      networkAclBypass: 'AzureServices'
       publicNetworkAccess: publicNetworkAccess
     }
     privateEndpoints: enablePrivateNetworking ? [
