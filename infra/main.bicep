@@ -1038,7 +1038,7 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.13.
     roleAssignments: [
       {
         principalId: userAssignedIdentity.outputs.principalId
-        roleDefinitionIdOrName: 'b24988ac-6180-42a0-ab88-d2d7961dee9e' // Contributor
+        roleDefinitionIdOrName: 'b24988ac-6180-42a0-ab88-20f7382dd24c' // Contributor
         principalType: 'ServicePrincipal'
       }
     ]

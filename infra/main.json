@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.43.8.12551",
-      "templateHash": "13132419284784288680"
+      "templateHash": "9930092765515882543"
     }
   },
   "parameters": {
@@ -52398,7 +52398,7 @@
             "value": [
               {
                 "principalId": "[reference('userAssignedIdentity').outputs.principalId.value]",
-                "roleDefinitionIdOrName": "b24988ac-6180-42a0-ab88-d2d7961dee9e",
+                "roleDefinitionIdOrName": "b24988ac-6180-42a0-ab88-20f7382dd24c",
                 "principalType": "ServicePrincipal"
               }
             ]
