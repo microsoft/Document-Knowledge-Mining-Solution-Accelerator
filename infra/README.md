@@ -1,209 +1,157 @@
-# Document Knowledge Mining — Infrastructure
+# Deploying the infrastructure
 
-This folder contains the Bicep/AVM infrastructure for the Document Knowledge Mining (DKM) Solution Accelerator. The structure follows the [`mcaps-microsoft/accelerator-toolkit-core`](https://github.com/mcaps-microsoft/accelerator-toolkit-core) reference pattern: a thin router that delegates to one of two implementation flavors.
+You can deploy the Kernel Memory infrastructure to Azure by clicking the button below. This will create required
+resources. We recommend to create a new resource group for each deployment.
+
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmicrosoft%2Fkernel-memory%2Fmain%2Finfra%2Fmain.json)
+
+<details>
+
+<summary>Tips for customizing the deployment</summary>
+
+Resources are deployed with an opinionated set of configurations. You can modify services on Azure portal or you can
+reuse and customize the Bicep files starting from [infra/main.bicep](main.bicep).
+
+> [!TIP]
+> The `Deploy to Azure` button uses the [infra/main.json](main.json) file, which is a compiled version of
+> [infra/main.bicep](main.bicep). Please note that the `main.json` file is not updated automatically when you
+> make changes to `main.bicep` file.
+>
+> You can use the `az bicep build -f main.bicep` command to compile the Bicep file to a json file.
+>
+> - [Click here](https://learn.microsoft.com/cli/azure/install-azure-cli) for `az` install instructions
+> - [Click here](https://learn.microsoft.com/azure/azure-resource-manager/bicep/bicep-cli) for Bicep CLI commands
+
+</details>
+
+After the deployment is complete, you will see the following resources in your resource group:
+
+- Application Insights
+- Container Apps Environment
+- Log Analytics workspace
+- Search service
+- Container App
+- Managed Identity
+- Storage account
+
+You can start using Kernel Memory immediately after deployment. Use `Application Url` from Container App instance page as Kernel Memory's endpoint. Refer [to this screenshot](./images/ACA-ApplicationUrl.png) if you need help finding Application Url value.
+
+Kernel Memory web service is deployed with `AuthenticationType` set to `APIKey` and default API keys are random GUIDs. Each request requires the `Authorization` HTTP header, passing one of the two keys.
+
+> [!WARNING]
+> It is highly recommended to change the default API keys after deployment. You can do this by updating the
+> `KernelMemory__ServiceAuthorization__AccessKey1` and `KernelMemory__ServiceAuthorization__AccessKey2` > **environment variables** in the Container App.
+>
+> Refer [to this screenshot](./images/ACA-EnvVar.png) or to the documentation
+> page: [Manage environment variables on Azure Container Apps](https://learn.microsoft.com/azure/container-apps/environment-variables?tabs=portal)
+> if you need help finding and changing environment variables.
+
+> [!TIP]
+> The easiest way to start using Kernel Memory API is to use Swagger UI. You can access it by navigating to
+> `{Application Url}/swagger/index.html` in your browser. Replace `km-service-example.example.azurecontainerapps.io`
+> with your Application Url value.
+
+Here is an example of how to create a `MemoryWebClient` instance and start using Kernel Memory web service:
+
+```csharp
+var memory = new MemoryWebClient(
+    "https://km-service-example.example.azurecontainerapps.io",
+    apiKey: "...your WebServiceAuthorizationKey1...");
+```
+
+We recommend reviewing the [examples](https://github.com/microsoft/kernel-memory/tree/main/examples) included in the repository, e.g. starting from
+[001-dotnet-WebClient](https://github.com/microsoft/kernel-memory/tree/main/examples/001-dotnet-WebClient).
 
 ---
 
-## At a glance
+# Infrastructure Modules — Document Knowledge Mining Solution Accelerator
+
+This folder contains the modular Bicep infrastructure for the **Document Knowledge Mining (DKM) Solution Accelerator**.
+
+## Overview
+
+Two flavors are available:
 
 | Flavor | Path | Description |
 |--------|------|-------------|
-| **AVM** | `avm/` | Wrappers around [Azure Verified Modules](https://aka.ms/avm). Default; recommended for production / WAF-aligned deployments. |
-| **Vanilla Bicep** | `bicep/` | Native `Microsoft.*` resources. Lightweight; useful when AVM coverage or version is unavailable. |
+| **Vanilla Bicep** | `bicep/` | Lightweight modules using native Bicep resources directly. Default flavor. |
+| **AVM** | `avm/` | Modules wrapping [Azure Verified Modules](https://aka.ms/avm) for WAF-aligned, enterprise-grade deployments |
 
-Both flavors expose identical parameters and outputs. Selection is runtime-driven via the `deploymentFlavor` parameter on `main.bicep`.
+Both flavors follow the same folder structure and naming conventions, so switching between them requires minimal changes to your orchestrator.
 
 ---
 
-## Folder structure
+## Folder Structure
 
 ```
 infra/
-├── main.bicep                  # Router — selects avm/ or bicep/ via deploymentFlavor param
-├── main.json                   # Compiled router (used by "Deploy to Azure" / portal)
-├── main.parameters.json        # Default parameters (all WAF toggles OFF)
-├── main.waf.parameters.json    # WAF-aligned parameters (private networking + monitoring + scalability ON)
-├── README.md
 ├── avm/
-│   ├── main.bicep              # AVM-flavor orchestrator
-│   ├── main.json               # Compiled AVM orchestrator
+│   ├── main.bicep                    # Orchestrator (AVM flavor)
 │   └── modules/
-│       ├── ai/                 # openai, document-intelligence, ai-search
-│       ├── compute/            # aks, container-registry, virtual-machine (jumpbox)
-│       ├── data/               # storage-account, cosmos-db, app-configuration
-│       ├── identity/           # (reserved — SAI migration removed workload UAI)
-│       ├── monitoring/         # log-analytics, app-insights
-│       └── networking/         # virtual-network, private-dns-zone, private-endpoint, bastion-host
+│       ├── ai/                       # AI Search, OpenAI, Document Intelligence
+│       ├── compute/                  # AKS, Container Registry, Virtual Machine
+│       ├── data/                     # Storage Account, Cosmos DB, App Configuration
+│       ├── fabric/                   # Microsoft Fabric
+│       ├── identity/                 # RBAC, Managed Identities
+│       ├── monitoring/               # Log Analytics, App Insights
+│       ├── networking/               # VNet, Private Endpoints, Bastion
+│       └── security/                 # Key Vault
 ├── bicep/
-│   ├── main.bicep              # Vanilla-Bicep-flavor orchestrator
-│   ├── main.json               # Compiled vanilla orchestrator
-│   └── modules/                # Same domain folders as avm/
+│   ├── main.bicep                    # Orchestrator (Vanilla Bicep flavor)
+│   └── modules/                      # Same domain folders as AVM
 ├── scripts/
-│   ├── build/                  # build-bicep.{ps1,sh} — recompile all 3 entrypoints
-│   ├── pre-provision/          # Hooks (reserved for future scripts)
-│   ├── post-provision/         # Hooks (reserved for future scripts)
-│   └── utilities/              # Shared helpers (reserved)
-└── images/                     # Diagrams referenced from documentation
+│   ├── build/                        # build-bicep.{ps1,sh} — recompile entrypoints
+│   ├── pre-provision/                # Pre-provision hooks
+│   ├── post-provision/               # Post-provision hooks
+│   └── utilities/                    # Shared helpers
+├── images/                           # Diagrams referenced from documentation
+├── main.bicep                        # Router (selects avm/ or bicep/ based on param)
+├── main.json                         # Compiled router (used by "Deploy to Azure" / portal)
+├── main.parameters.json              # Default parameters
+└── main.waf.parameters.json          # WAF-aligned parameters (VNet, PE, etc.)
 ```
+
+Modules are organized by **service domain** (ai, compute, data, etc.). Both flavors expose identical parameters and outputs. Selection is runtime-driven via the `deploymentFlavor` parameter on `main.bicep`.
 
 ---
 
-## Quick start
+## How to Use
 
-### Option A — `azd` (recommended)
-
-```bash
-# 1. Authenticate
-azd auth login
-az login
-
-# 2. Create / select an azd environment
-azd env new dkm-dev      # or:   azd env select dkm-dev
-
-# 3. Set required environment variables
-azd env set AZURE_LOCATION                   eastus
-azd env set AZURE_ENV_AI_SERVICE_LOCATION    eastus2
-azd env set AZURE_ENV_MODEL_DEPLOYMENT_TYPE  GlobalStandard
-azd env set AZURE_ENV_GPT_MODEL_NAME         gpt-4.1-mini
-azd env set AZURE_ENV_GPT_MODEL_VERSION      2025-04-14
-azd env set AZURE_ENV_GPT_MODEL_CAPACITY     100
-azd env set AZURE_ENV_EMBEDDING_MODEL_NAME           text-embedding-3-large
-azd env set AZURE_ENV_EMBEDDING_MODEL_VERSION        1
-azd env set AZURE_ENV_EMBEDDING_DEPLOYMENT_CAPACITY  100
-azd env set AZURE_ENV_ENABLE_TELEMETRY       true
-
-# 4. Provision
-azd provision
-```
-
-`azd` reads parameter bindings from `infra/main.parameters.json`, substitutes the `${AZURE_ENV_*}` placeholders from your azd env, and submits `main.bicep` (the router) to Azure.
-
-### Option B — `az deployment group` (direct ARM)
+### 1. Choosing a flavor
 
 ```bash
-RG=rg-dkm-dev
-az group create -n $RG -l eastus
+# Vanilla Bicep (default)
+azd env set DEPLOYMENT_FLAVOR bicep
 
-az deployment group create \
-  -g $RG \
-  -f infra/main.bicep \
-  -p @infra/main.parameters.json \
-  -p solutionName=dkmdev \
-  -p azureAiServiceLocation=eastus2
-```
-
----
-
-## Choosing a flavor
-
-```bash
-# AVM (default)
+# AVM
 azd env set DEPLOYMENT_FLAVOR avm
 
 # AVM with WAF (private networking, monitoring, scalability)
 azd env set DEPLOYMENT_FLAVOR avm-waf
-
-# Vanilla Bicep
-azd env set DEPLOYMENT_FLAVOR bicep
 ```
 
-> **Note:** `deploymentFlavor` is hardcoded to `avm-waf` in both `main.parameters.json` and `main.waf.parameters.json`. Valid values: `avm`, `avm-waf`, `bicep`. The `avm-waf` flavor enables WAF toggles (private networking, monitoring, scalability) automatically. Override via `azd env set` or `-p deploymentFlavor=<value>` on `az deployment group create`.
+> **Note:** `deploymentFlavor` defaults to `bicep` in `main.parameters.json` and to `avm-waf` in `main.waf.parameters.json`. Valid values: `bicep`, `avm`, `avm-waf`. Override via `azd env set` or `-p deploymentFlavor=<value>` on `az deployment group create`.
+
+### 2. Use the router for dual-mode support
+
+The root `main.bicep` acts as a router — it selects between `avm/main.bicep` and `bicep/main.bicep` based on the `deploymentFlavor` parameter, allowing the same deployment command to target either flavor.
 
 ---
 
-## Deployment modes — default vs WAF
+## Role Assignments
 
-| File | Mode | Private networking | Monitoring | Redundancy | Scalability |
-|------|------|:---:|:---:|:---:|:---:|
-| `main.parameters.json`     | Default (dev / cost-optimized) | off | off | off | off |
-| `main.waf.parameters.json` | WAF-aligned (production)       | **on**  | **on**  | off | **on** |
-
-WAF mode flips the four `enable*` toggles in the router; both flavors honor them. To deploy in WAF mode with `azd`, point `azd provision` at the WAF parameter file, or with the CLI:
-
-```bash
-az deployment group create \
-  -g $RG \
-  -f infra/main.bicep \
-  -p @infra/main.waf.parameters.json
-```
-
-WAF mode additionally requires:
-
-- `AZURE_ENV_VM_ADMIN_USERNAME` and `AZURE_ENV_VM_ADMIN_PASSWORD` (jumpbox credentials)
-- `AZURE_ENV_VM_SIZE` (default `Standard_D2s_v5`)
+All role assignments are centralized in `identity/role-assignments.bicep` for auditability. Individual modules do **not** create their own RBAC — the orchestrator wires principal IDs and resource IDs into the single role-assignments module.
 
 ---
 
-## WAF feature toggles (router parameters)
+## Contributing New Modules
 
-The router accepts four independent toggles. Set any combination to mix features without committing to the full WAF preset.
+When adding a new module:
 
-| Param | Default | Effect when `true` |
-|-------|:---:|---|
-| `enablePrivateNetworking` | `false` | Deploy VNet + subnets + private endpoints + Bastion + jumpbox VM. **Note:** `publicNetworkAccess` remains `Enabled` on all resources because AKS pods cannot reliably resolve private DNS zones in shared subscriptions. Security is enforced via RBAC (System-Assigned Identity) + connection-string auth (Cosmos). Private endpoints provide optimized in-VNet routing where DNS resolution succeeds. |
-| `enableMonitoring`        | `false` | Deploy Log Analytics + Application Insights; wire diagnostic settings on bastion, AKS, AI Search, jumpbox. |
-| `enableRedundancy`        | `false` | Enable zone-redundancy and HA failover (e.g., Cosmos secondary region pair). |
-| `enableScalability`       | `false` | Use larger SKUs (e.g., AI Search `standard` instead of `basic`). |
-
----
-
-## Recompiling `main.json`
-
-After editing any `.bicep` file, regenerate the compiled `main.json` artifacts so the "Deploy to Azure" button and direct-ARM workflows pick up the change.
-
-```powershell
-# Windows / PowerShell
-pwsh -NoProfile -File infra\scripts\build\build-bicep.ps1
-```
-
-```bash
-# Linux / macOS / WSL
-bash infra/scripts/build/build-bicep.sh
-```
-
-The script compiles all three entrypoints (`main.bicep`, `avm/main.bicep`, `bicep/main.bicep`) and writes the resulting `main.json` next to each source. Requires the `az` CLI with the `bicep` extension installed.
-
----
-
-## Identity & authentication
-
-The DKM accelerator uses **System-Assigned Managed Identities (SAI)** for all runtime authentication:
-
-| Component | Identity | How pods authenticate |
-|-----------|----------|----------------------|
-| AKS workload pods | VMSS System-Assigned Identity | `DefaultAzureCredential` → IMDS (no `AZURE_CLIENT_ID` needed) |
-| AKS kubelet | Kubelet UAI (auto-created by AKS) | ACR image pulls only |
-| Deployer (you) | Azure AD User | `azd` / `az` CLI + PS1 docker push (AcrPush role) |
-
-RBAC roles are assigned by `Deployment/resourcedeployment.ps1` post-provision to the VMSS SAI. The 7 required data-plane roles are:
-
-1. App Configuration Data Reader (RG scope)
-2. Storage Blob Data Contributor (Storage account)
-3. Storage Queue Data Contributor (Storage account)
-4. Cognitive Services OpenAI User (OpenAI account)
-5. Search Index Data Contributor (AI Search)
-6. Search Service Contributor (AI Search)
-7. Cognitive Services User (Document Intelligence account)
-
-> **Note:** Cosmos DB uses connection-string auth (not RBAC). The connection string is stored in App Configuration at deploy time.
-
----
-
-## Known limitations (AKS + Private Endpoints)
-
-When `enablePrivateNetworking=true`, the AVM flavor deploys VNet, subnets, and private endpoints. However, AKS pods may not resolve private DNS zones correctly in all environments (e.g., CSA-CTO shared subscriptions where APIM hub intercepts DNS). To ensure reliable end-to-end connectivity:
-
-1. **Public access remains enabled** on all resources — pods connect via public endpoints.
-2. **Cosmos DB PE is intentionally disabled** — Cosmos enforces PE-only access when a PE exists, but AKS pods resolve the FQDN to the public IP (no A record in private DNS zone), causing `403 blocked by network firewall`.
-3. **Security is not compromised** — all access is gated by RBAC (SAI) or connection-string secrets stored in App Configuration (never exposed publicly).
-4. **Private endpoints still provide value** — optimized routing for traffic that does resolve via private DNS (e.g., VNet-integrated services, jumpbox).
-
-This matches the pattern used by the [Agentic SA reference repo](https://github.com/microsoft/agentic-applications-for-unified-data-foundation-solution-accelerator/tree/psl/infra-restructure-new), which also keeps `publicNetworkAccess: Enabled` on AI Search and AI Foundry for similar DNS resolution limitations.
-
----
-
-## Reference
-
-- **Structure pattern**: [`mcaps-microsoft/accelerator-toolkit-core`](https://github.com/mcaps-microsoft/accelerator-toolkit-core) — the canonical infra layout this repo follows.
-- **Azure Verified Modules**: [aka.ms/avm](https://aka.ms/avm) — registry of well-architected modules consumed by the AVM flavor.
-- **Bicep**: [aka.ms/bicep](https://aka.ms/bicep) — language documentation and CLI reference.
+1. Place it in the appropriate domain folder (`ai/`, `compute/`, `data/`, etc.)
+2. Accept `solutionName` as a parameter and derive the resource name internally
+3. Use descriptive `@description()` decorators on all parameters
+4. Output the resource's key properties (name, id, endpoint, principalId, etc.)
+5. Keep it generic — no app-specific or accelerator-specific logic
+6. Add it to both `avm/` and `bicep/` flavors where applicable
+7. Test with `az bicep build` before committing
