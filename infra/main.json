@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.43.8.12551",
-      "templateHash": "1044709840990635274"
+      "templateHash": "13132419284784288680"
     }
   },
   "parameters": {
@@ -21062,7 +21062,7 @@
             "value": [
               {
                 "principalId": "[reference('managedCluster').outputs.systemAssignedMIPrincipalId.value]",
-                "roleDefinitionIdOrName": "AcrPull",
+                "roleDefinitionIdOrName": "7f951dda-4ed3-4680-a7ca-43fe172d538d",
                 "principalType": "ServicePrincipal"
               }
             ]
@@ -31099,7 +31099,7 @@
             "value": [
               {
                 "principalId": "[reference('userAssignedIdentity').outputs.principalId.value]",
-                "roleDefinitionIdOrName": "App Configuration Data Reader",
+                "roleDefinitionIdOrName": "516239f1-63e1-4d78-a4de-a74fb236a071",
                 "principalType": "ServicePrincipal"
               }
             ]
@@ -35679,7 +35679,7 @@
             "value": [
               {
                 "principalId": "[reference('userAssignedIdentity').outputs.principalId.value]",
-                "roleDefinitionIdOrName": "Storage Blob Data Contributor",
+                "roleDefinitionIdOrName": "ba92f5b4-2d11-453d-a403-e96b0029c9fe",
                 "principalType": "ServicePrincipal"
               }
             ]
@@ -43863,12 +43863,12 @@
           "roleAssignments": {
             "value": [
               {
-                "roleDefinitionIdOrName": "Search Index Data Contributor",
+                "roleDefinitionIdOrName": "8ebe5a00-799e-43f5-93ac-243d3dce84a7",
                 "principalId": "[reference('userAssignedIdentity').outputs.principalId.value]",
                 "principalType": "ServicePrincipal"
               },
               {
-                "roleDefinitionIdOrName": "Search Index Data Reader",
+                "roleDefinitionIdOrName": "1407120a-92aa-4202-b7e9-c0e197c71c8f",
                 "principalId": "[reference('userAssignedIdentity').outputs.principalId.value]",
                 "principalType": "ServicePrincipal"
               }
@@ -45973,12 +45973,12 @@
             "value": [
               {
                 "principalId": "[reference('userAssignedIdentity').outputs.principalId.value]",
-                "roleDefinitionIdOrName": "Cognitive Services OpenAI Contributor",
+                "roleDefinitionIdOrName": "a001fd3d-188f-4b5d-821b-7da978bf7442",
                 "principalType": "ServicePrincipal"
               },
               {
                 "principalId": "[reference('userAssignedIdentity').outputs.principalId.value]",
-                "roleDefinitionIdOrName": "Cognitive Services OpenAI User",
+                "roleDefinitionIdOrName": "5e0bd9bd-7b93-4f28-af87-19fc36ad61bd",
                 "principalType": "ServicePrincipal"
               }
             ]
@@ -49166,7 +49166,7 @@
             "value": [
               {
                 "principalId": "[reference('userAssignedIdentity').outputs.principalId.value]",
-                "roleDefinitionIdOrName": "Cognitive Services User",
+                "roleDefinitionIdOrName": "a97b65f3-24c7-4388-baec-2e87135dc908",
                 "principalType": "ServicePrincipal"
               }
             ]
@@ -52398,7 +52398,7 @@
             "value": [
               {
                 "principalId": "[reference('userAssignedIdentity').outputs.principalId.value]",
-                "roleDefinitionIdOrName": "Contributor",
+                "roleDefinitionIdOrName": "b24988ac-6180-42a0-ab88-d2d7961dee9e",
                 "principalType": "ServicePrincipal"
               }
             ]

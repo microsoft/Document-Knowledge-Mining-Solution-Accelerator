@@ -426,7 +426,7 @@ module avmContainerRegistry './modules/container-registry.bicep' = {
     roleAssignments: [
       {
         principalId: managedCluster.outputs.systemAssignedMIPrincipalId
-        roleDefinitionIdOrName: 'AcrPull'
+        roleDefinitionIdOrName: '7f951dda-4ed3-4680-a7ca-43fe172d538d' // AcrPull
         principalType: 'ServicePrincipal'
       }
     ]
@@ -523,7 +523,7 @@ module avmAppConfig 'br/public:avm/res/app-configuration/configuration-store:0.9
     roleAssignments: [
       {
         principalId: userAssignedIdentity.outputs.principalId
-        roleDefinitionIdOrName: 'App Configuration Data Reader'
+        roleDefinitionIdOrName: '516239f1-63e1-4d78-a4de-a74fb236a071' // App Configuration Data Reader
         principalType: 'ServicePrincipal'
       }
     ]
@@ -687,7 +687,7 @@ module avmStorageAccount 'br/public:avm/res/storage/storage-account:0.32.0' = {
     roleAssignments: [
       {
         principalId: userAssignedIdentity.outputs.principalId
-        roleDefinitionIdOrName: 'Storage Blob Data Contributor'
+        roleDefinitionIdOrName: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
         principalType: 'ServicePrincipal'
       }
     ]
@@ -773,12 +773,12 @@ module avmSearchSearchServicesUpdate 'br/public:avm/res/search/search-service:0.
     partitionCount: 1
     roleAssignments: [
       {
-        roleDefinitionIdOrName: 'Search Index Data Contributor' // Cognitive Search Contributor
+        roleDefinitionIdOrName: '8ebe5a00-799e-43f5-93ac-243d3dce84a7' // Search Index Data Contributor
         principalId: userAssignedIdentity.outputs.principalId
         principalType: 'ServicePrincipal'
       }
       {
-        roleDefinitionIdOrName: 'Search Index Data Reader' //'5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'// Cognitive Services OpenAI User
+        roleDefinitionIdOrName: '1407120a-92aa-4202-b7e9-c0e197c71c8f' // Search Index Data Reader
         principalId: userAssignedIdentity.outputs.principalId
         principalType: 'ServicePrincipal'
       }
@@ -840,12 +840,12 @@ module avmOpenAi 'br/public:avm/res/cognitive-services/account:0.14.2' = {
     roleAssignments: [
       {
         principalId: userAssignedIdentity.outputs.principalId
-        roleDefinitionIdOrName: 'Cognitive Services OpenAI Contributor'
+        roleDefinitionIdOrName: 'a001fd3d-188f-4b5d-821b-7da978bf7442' // Cognitive Services OpenAI Contributor
         principalType: 'ServicePrincipal'
       }
       {
         principalId: userAssignedIdentity.outputs.principalId
-        roleDefinitionIdOrName: 'Cognitive Services OpenAI User'
+        roleDefinitionIdOrName: '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd' // Cognitive Services OpenAI User
         principalType: 'ServicePrincipal'
       }
     ]
@@ -917,7 +917,7 @@ module documentIntelligence 'br/public:avm/res/cognitive-services/account:0.14.2
     roleAssignments: [
       {
         principalId: userAssignedIdentity.outputs.principalId
-        roleDefinitionIdOrName: 'Cognitive Services User'
+        roleDefinitionIdOrName: 'a97b65f3-24c7-4388-baec-2e87135dc908' // Cognitive Services User
         principalType: 'ServicePrincipal'
       }
     ]
@@ -1038,7 +1038,7 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.13.
     roleAssignments: [
       {
         principalId: userAssignedIdentity.outputs.principalId
-        roleDefinitionIdOrName: 'Contributor'
+        roleDefinitionIdOrName: 'b24988ac-6180-42a0-ab88-d2d7961dee9e' // Contributor
         principalType: 'ServicePrincipal'
       }
     ]
