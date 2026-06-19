@@ -22,6 +22,11 @@ on:
         required: false
         default: false
         type: boolean
+      deployment_flavor:
+        description: 'Deployment Flavor (non-WAF only)'
+        required: false
+        default: 'avm'
+        type: string
       enable_scalability:
         description: 'Enable Scalability (WAF deployments only)'
         required: false
@@ -463,5 +468,6 @@ jobs:
       EXP: ${{ needs.azure-setup.outputs.EXP_ENABLED || inputs.EXP || 'false' }}
       WAF_ENABLED: ${{ inputs.waf_enabled == true && 'true' || 'false' }}
       ENABLE_SCALABILITY: ${{ inputs.enable_scalability == true && 'true' || 'false' }}
+      DEPLOYMENT_FLAVOR: ${{ inputs.deployment_flavor }}
       AZURE_ENV_EXISTING_LOG_ANALYTICS_WORKSPACE_RID: ${{ inputs.AZURE_ENV_EXISTING_LOG_ANALYTICS_WORKSPACE_RID }}
     secrets: inherit

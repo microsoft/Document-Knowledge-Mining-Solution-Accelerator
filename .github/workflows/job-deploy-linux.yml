@@ -29,6 +29,10 @@ on:
         required: false
         type: string
         default: 'false'
+      DEPLOYMENT_FLAVOR:
+        required: false
+        type: string
+        default: 'avm'
       AZURE_ENV_EXISTING_LOG_ANALYTICS_WORKSPACE_RID:
         required: false
         type: string
@@ -168,9 +172,10 @@ jobs:
         env:
           INPUT_WAF_ENABLED: ${{ inputs.WAF_ENABLED }}
           INPUT_ENABLE_SCALABILITY: ${{ inputs.ENABLE_SCALABILITY }}
+          INPUT_DEPLOYMENT_FLAVOR: ${{ inputs.DEPLOYMENT_FLAVOR }}
         run: |
           set -euo pipefail
-          if [[ "$INPUT_WAF_ENABLED" == "true" ]]; then
+          if [[ "$INPUT_WAF_ENABLED" == "true" || "$INPUT_DEPLOYMENT_FLAVOR" == "avm-waf" ]]; then
             cp infra/main.waf.parameters.json infra/main.parameters.json
             echo "✅ Successfully copied WAF parameters to main parameters file"
             SCALABILITY_VALUE="${INPUT_ENABLE_SCALABILITY:-false}"
@@ -263,6 +268,7 @@ jobs:
           INPUT_RESOURCE_GROUP_NAME: ${{ inputs.RESOURCE_GROUP_NAME }}
           INPUT_IMAGE_TAG: ${{ inputs.IMAGE_TAG }}
           INPUT_EXP: ${{ inputs.EXP }}
+          INPUT_DEPLOYMENT_FLAVOR: ${{ inputs.DEPLOYMENT_FLAVOR }}
           INPUT_AZURE_ENV_EXISTING_LOG_ANALYTICS_WORKSPACE_RID: ${{ inputs.AZURE_ENV_EXISTING_LOG_ANALYTICS_WORKSPACE_RID }}
         run: |
           # Create azd environment
@@ -279,6 +285,8 @@ jobs:
           # Set AI model capacity parameters
           azd env set AZURE_ENV_GPT_MODEL_CAPACITY="150"
           azd env set AZURE_ENV_EMBEDDING_DEPLOYMENT_CAPACITY="200"
+          azd env set DEPLOYMENT_FLAVOR="$env:INPUT_DEPLOYMENT_FLAVOR"
+          Write-Host "Deployment flavor set to: $env:INPUT_DEPLOYMENT_FLAVOR"
 
           if ($env:INPUT_EXP -eq "true") {
             Write-Host "✅ EXP ENABLED - Setting EXP parameters..."

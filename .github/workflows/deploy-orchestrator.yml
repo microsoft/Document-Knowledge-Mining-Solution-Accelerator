@@ -18,6 +18,11 @@ on:
         required: false
         default: false
         type: boolean
+      deployment_flavor:
+        description: 'Deployment Flavor (non-WAF only)'
+        required: false
+        default: 'avm'
+        type: string
       enable_scalability:
         description: 'Enable Scalability (WAF deployments only)'
         required: false
@@ -65,6 +70,7 @@ jobs:
       azure_location: ${{ inputs.azure_location }}
       resource_group_name: ${{ inputs.resource_group_name }}
       waf_enabled: ${{ inputs.waf_enabled }}
+      deployment_flavor: ${{ inputs.deployment_flavor }}
       enable_scalability: ${{ inputs.enable_scalability }}
       EXP: ${{ inputs.EXP }}
       existing_webapp_url: ${{ inputs.existing_webapp_url }}
