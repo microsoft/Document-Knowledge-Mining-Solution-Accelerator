@@ -121,10 +121,6 @@ param existingLogAnalyticsWorkspaceId string = ''
 // Parameters — Identity
 // ============================================================================
 
-@allowed(['User', 'ServicePrincipal'])
-@description('Optional. Principal type of the deploying user.')
-param deployingUserPrincipalType string = 'User'
-
 // ============================================================================
 // Variables
 // ============================================================================
@@ -151,6 +147,10 @@ var cosmosName = 'cosmos-${solutionSuffix}'
 
 var deployerInfo = deployer()
 var deployingUserPrincipalId = deployerInfo.objectId
+// Auto-detect the principal type: deployer() only returns a (non-empty) userPrincipalName
+// for interactive user sign-ins; CI/OIDC service principals have none, so they resolve
+// to 'ServicePrincipal'. This keeps role assignments valid in both local and pipeline runs.
+var deployingUserPrincipalType = (contains(deployerInfo, 'userPrincipalName') && !empty(deployerInfo.userPrincipalName)) ? 'User' : 'ServicePrincipal'
 var createdBy = contains(deployerInfo, 'userPrincipalName') ? split(deployerInfo.userPrincipalName, '@')[0] : deployerInfo.objectId
 
 // Tags: merge caller-supplied tags with standard metadata.
