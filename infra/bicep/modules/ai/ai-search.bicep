@@ -43,8 +43,14 @@ param semanticSearch string = 'free'
 @description('Whether to disable local authentication.')
 param disableLocalAuth bool = true
 
-@description('Managed identity type for the search service.')
-param managedIdentityType string = 'SystemAssigned'
+@description('Optional. Authentication options for the search service.')
+param authOptions object = {}
+
+@description('Optional. Network rule set for the search service.')
+param networkRuleSet object = {}
+
+@description('Optional. Managed identity configuration for the resource.')
+param identity object = { type: 'SystemAssigned' }
 
 @description('Public network access setting.')
 param publicNetworkAccess string = 'Enabled'
@@ -75,7 +81,9 @@ module searchServiceUpdate 'ai-search-identity.bicep' = {
     hostingMode: hostingMode
     semanticSearch: semanticSearch
     disableLocalAuth: disableLocalAuth
-    managedIdentityType: managedIdentityType
+    authOptions: authOptions
+    networkRuleSet: networkRuleSet
+    identity: identity
     publicNetworkAccess: publicNetworkAccess
   }
 }

@@ -18,7 +18,7 @@ param tags object = {}
 
 @description('SKU for the container registry.')
 @allowed(['Basic', 'Standard', 'Premium'])
-param sku string = 'Premium'
+param sku string = 'Standard'
 
 @description('Enable admin user.')
 param adminUserEnabled bool = false
@@ -30,6 +30,12 @@ param publicNetworkAccess string = 'Enabled'
 @description('Export policy status.')
 param exportPolicyStatus string = 'enabled'
 
+@description('Retention policy status.')
+param retentionPolicyStatus string = 'disabled'
+
+@description('Optional. Managed identity configuration for the resource.')
+param identity object = { type: 'SystemAssigned' }
+
 // ============================================================================
 // Resource Deployment
 // ============================================================================
@@ -40,6 +46,7 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2025-04-01' =
   sku: {
     name: sku
   }
+  identity: identity
   properties: {
     adminUserEnabled: adminUserEnabled
     publicNetworkAccess: publicNetworkAccess
@@ -50,7 +57,7 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2025-04-01' =
         status: exportPolicyStatus
       }
       retentionPolicy: {
-        status: 'enabled'
+        status: retentionPolicyStatus
         days: 7
       }
       trustPolicy: {

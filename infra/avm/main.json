@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.43.8.12551",
-      "templateHash": "18377253501944308525"
+      "templateHash": "7290438267838768360"
     }
   },
   "parameters": {
@@ -350,7 +350,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "16251925117755840545"
+              "templateHash": "12468750140344987427"
             }
           },
           "parameters": {
@@ -442,6 +442,15 @@
               "metadata": {
                 "description": "Data sources for VM monitoring (Windows events, perf counters)."
               }
+            },
+            "managedIdentities": {
+              "type": "object",
+              "defaultValue": {
+                "systemAssigned": true
+              },
+              "metadata": {
+                "description": "Optional. Managed identities for the resource."
+              }
             }
           },
           "resources": {
@@ -472,6 +481,9 @@
                   },
                   "enableTelemetry": {
                     "value": "[parameters('enableTelemetry')]"
+                  },
+                  "managedIdentities": {
+                    "value": "[parameters('managedIdentities')]"
                   },
                   "features": {
                     "value": {
@@ -9880,7 +9892,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "6886488278774717182"
+              "templateHash": "11949257152440763149"
             }
           },
           "parameters": {
@@ -9929,6 +9941,15 @@
               "metadata": {
                 "description": "Optional. Enable/Disable usage telemetry for module."
               }
+            },
+            "managedIdentities": {
+              "type": "object",
+              "defaultValue": {
+                "systemAssigned": true
+              },
+              "metadata": {
+                "description": "Optional. Managed identities for the resource."
+              }
             }
           },
           "variables": {
@@ -9956,6 +9977,9 @@
                   },
                   "location": {
                     "value": "[parameters('location')]"
+                  },
+                  "managedIdentities": {
+                    "value": "[parameters('managedIdentities')]"
                   },
                   "dataCollectionRuleProperties": {
                     "value": {
@@ -11846,7 +11870,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "5107725619414076729"
+              "templateHash": "5065664004582213565"
             }
           },
           "parameters": {
@@ -11994,6 +12018,15 @@
               "metadata": {
                 "description": "Role assignments to apply to the virtual machine."
               }
+            },
+            "managedIdentities": {
+              "type": "object",
+              "defaultValue": {
+                "systemAssigned": true
+              },
+              "metadata": {
+                "description": "Optional. Managed identities for the resource."
+              }
             }
           },
           "resources": {
@@ -12035,9 +12068,7 @@
                     "value": "[parameters('adminPassword')]"
                   },
                   "managedIdentities": {
-                    "value": {
-                      "systemAssigned": true
-                    }
+                    "value": "[parameters('managedIdentities')]"
                   },
                   "patchMode": {
                     "value": "AutomaticByPlatform"
@@ -24704,7 +24735,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "15264080419238996043"
+              "templateHash": "15514448460630823321"
             }
           },
           "parameters": {
@@ -24835,6 +24866,15 @@
               "metadata": {
                 "description": "Optional. Role assignments for the resource."
               }
+            },
+            "managedIdentities": {
+              "type": "object",
+              "defaultValue": {
+                "systemAssigned": true
+              },
+              "metadata": {
+                "description": "Optional. Managed identities for the resource."
+              }
             }
           },
           "variables": {
@@ -24886,9 +24926,7 @@
                     "value": "[parameters('disableLocalAuth')]"
                   },
                   "managedIdentities": {
-                    "value": {
-                      "systemAssigned": true
-                    }
+                    "value": "[parameters('managedIdentities')]"
                   },
                   "publicNetworkAccess": {
                     "value": "[parameters('publicNetworkAccess')]"
@@ -27385,8 +27423,8 @@
       },
       "dependsOn": [
         "log_analytics",
-        "[format('privateDnsZoneDeployments[{0}]', variables('dnsZoneIndex').openAI)]",
         "[format('privateDnsZoneDeployments[{0}]', variables('dnsZoneIndex').cognitiveServices)]",
+        "[format('privateDnsZoneDeployments[{0}]', variables('dnsZoneIndex').openAI)]",
         "virtualNetwork"
       ]
     },
@@ -27439,7 +27477,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "15264080419238996043"
+              "templateHash": "15514448460630823321"
             }
           },
           "parameters": {
@@ -27570,6 +27608,15 @@
               "metadata": {
                 "description": "Optional. Role assignments for the resource."
               }
+            },
+            "managedIdentities": {
+              "type": "object",
+              "defaultValue": {
+                "systemAssigned": true
+              },
+              "metadata": {
+                "description": "Optional. Managed identities for the resource."
+              }
             }
           },
           "variables": {
@@ -27621,9 +27668,7 @@
                     "value": "[parameters('disableLocalAuth')]"
                   },
                   "managedIdentities": {
-                    "value": {
-                      "systemAssigned": true
-                    }
+                    "value": "[parameters('managedIdentities')]"
                   },
                   "publicNetworkAccess": {
                     "value": "[parameters('publicNetworkAccess')]"
@@ -30308,7 +30353,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "16365701579699591512"
+              "templateHash": "4771097067245214446"
             }
           },
           "parameters": {
@@ -30413,11 +30458,13 @@
                 "description": "Optional. Network rule set for the search service (e.g., bypass: AzureServices)."
               }
             },
-            "managedIdentityType": {
-              "type": "string",
-              "defaultValue": "SystemAssigned",
+            "managedIdentities": {
+              "type": "object",
+              "defaultValue": {
+                "systemAssigned": true
+              },
               "metadata": {
-                "description": "Managed identity type for the search service."
+                "description": "Optional. Managed identities for the resource."
               }
             },
             "publicNetworkAccess": {
@@ -30512,9 +30559,7 @@
                     "value": "[parameters('publicNetworkAccess')]"
                   },
                   "managedIdentities": {
-                    "value": {
-                      "systemAssigned": "[equals(parameters('managedIdentityType'), 'SystemAssigned')]"
-                    }
+                    "value": "[parameters('managedIdentities')]"
                   },
                   "diagnosticSettings": "[if(not(empty(parameters('diagnosticSettings'))), createObject('value', parameters('diagnosticSettings')), createObject('value', createArray()))]",
                   "privateEndpoints": {
@@ -32658,7 +32703,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "17370424817287761651"
+              "templateHash": "10133006732164951974"
             }
           },
           "parameters": {
@@ -32804,6 +32849,15 @@
               "metadata": {
                 "description": "Optional. Array of role assignments to create on the Storage Account."
               }
+            },
+            "managedIdentities": {
+              "type": "object",
+              "defaultValue": {
+                "systemAssigned": true
+              },
+              "metadata": {
+                "description": "Optional. Managed identities for the resource."
+              }
             }
           },
           "variables": {
@@ -32873,6 +32927,9 @@
                   },
                   "networkAcls": {
                     "value": "[parameters('networkAcls')]"
+                  },
+                  "managedIdentities": {
+                    "value": "[parameters('managedIdentities')]"
                   },
                   "blobServices": {
                     "value": {
@@ -41133,7 +41190,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "7164288589507221445"
+              "templateHash": "18433091441681043435"
             }
           },
           "parameters": {
@@ -41273,6 +41330,15 @@
               "metadata": {
                 "description": "Optional. HA paired region for multi-region failover when redundancy is enabled."
               }
+            },
+            "managedIdentities": {
+              "type": "object",
+              "defaultValue": {
+                "systemAssigned": true
+              },
+              "metadata": {
+                "description": "Optional. Managed identities for the resource."
+              }
             }
           },
           "variables": {
@@ -41345,6 +41411,9 @@
                   },
                   "enableAutomaticFailover": {
                     "value": "[parameters('enableAutomaticFailover')]"
+                  },
+                  "managedIdentities": {
+                    "value": "[parameters('managedIdentities')]"
                   },
                   "failoverLocations": "[if(and(parameters('zoneRedundant'), not(empty(parameters('haLocation')))), createObject('value', createArray(createObject('failoverPriority', 0, 'isZoneRedundant', true(), 'locationName', parameters('location')), createObject('failoverPriority', 1, 'isZoneRedundant', true(), 'locationName', parameters('haLocation')))), createObject('value', createArray(createObject('locationName', parameters('location'), 'failoverPriority', 0, 'isZoneRedundant', false()))))]"
                 },
@@ -47340,7 +47409,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "13469764367313175405"
+              "templateHash": "9756779753264733359"
             }
           },
           "parameters": {
@@ -47542,6 +47611,15 @@
               "metadata": {
                 "description": "Enable Azure telemetry collection."
               }
+            },
+            "managedIdentities": {
+              "type": "object",
+              "defaultValue": {
+                "systemAssigned": true
+              },
+              "metadata": {
+                "description": "Optional. Managed identities for the resource."
+              }
             }
           },
           "variables": {
@@ -47623,9 +47701,7 @@
                     }
                   },
                   "managedIdentities": {
-                    "value": {
-                      "systemAssigned": true
-                    }
+                    "value": "[parameters('managedIdentities')]"
                   },
                   "omsAgentEnabled": {
                     "value": "[variables('enableMonitoring')]"
@@ -51245,7 +51321,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "14512792872571129321"
+              "templateHash": "15230359455171786469"
             }
           },
           "parameters": {
@@ -51277,7 +51353,7 @@
             },
             "sku": {
               "type": "string",
-              "defaultValue": "Premium",
+              "defaultValue": "Standard",
               "allowedValues": [
                 "Basic",
                 "Standard",
@@ -51376,6 +51452,15 @@
               "metadata": {
                 "description": "Enable Azure telemetry collection."
               }
+            },
+            "managedIdentities": {
+              "type": "object",
+              "defaultValue": {
+                "systemAssigned": true
+              },
+              "metadata": {
+                "description": "Optional. Managed identities for the resource."
+              }
             }
           },
           "variables": {
@@ -51453,6 +51538,9 @@
                   },
                   "networkRuleSetDefaultAction": {
                     "value": "[parameters('networkRuleSetDefaultAction')]"
+                  },
+                  "managedIdentities": {
+                    "value": "[parameters('managedIdentities')]"
                   }
                 },
                 "template": {
@@ -55442,7 +55530,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "13450156954279146455"
+              "templateHash": "14496631608775511357"
             }
           },
           "parameters": {
@@ -55513,9 +55601,11 @@
             },
             "managedIdentities": {
               "type": "object",
-              "defaultValue": {},
+              "defaultValue": {
+                "systemAssigned": true
+              },
               "metadata": {
-                "description": "Managed identity configuration."
+                "description": "Optional. Managed identities for the resource."
               }
             },
             "roleAssignments": {
@@ -55530,6 +55620,13 @@
               "defaultValue": [],
               "metadata": {
                 "description": "Key-value pairs to store in the configuration."
+              }
+            },
+            "publicNetworkAccess": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. Public network access override. Set to Enabled to allow ARM keyValues writes during deploy."
               }
             },
             "enablePrivateNetworking": {
@@ -55551,13 +55648,6 @@
               "defaultValue": [],
               "metadata": {
                 "description": "Private DNS zone resource IDs."
-              }
-            },
-            "publicNetworkAccess": {
-              "type": "string",
-              "defaultValue": "",
-              "metadata": {
-                "description": "Optional. Public network access override. Set to Enabled to allow ARM keyValues writes during deploy."
               }
             }
           },
@@ -55609,13 +55699,15 @@
                   "softDeleteRetentionInDays": {
                     "value": "[parameters('softDeleteRetentionInDays')]"
                   },
-                  "managedIdentities": "[if(not(empty(parameters('managedIdentities'))), createObject('value', parameters('managedIdentities')), createObject('value', createObject()))]",
+                  "managedIdentities": {
+                    "value": "[parameters('managedIdentities')]"
+                  },
                   "roleAssignments": "[if(not(empty(parameters('roleAssignments'))), createObject('value', parameters('roleAssignments')), createObject('value', createArray()))]",
                   "keyValues": "[if(not(empty(parameters('keyValues'))), createObject('value', parameters('keyValues')), createObject('value', createArray()))]",
+                  "publicNetworkAccess": "[if(not(empty(parameters('publicNetworkAccess'))), createObject('value', parameters('publicNetworkAccess')), createObject('value', null()))]",
                   "privateEndpoints": {
                     "value": "[variables('privateEndpointConfig')]"
-                  },
-                  "publicNetworkAccess": "[if(not(empty(parameters('publicNetworkAccess'))), createObject('value', parameters('publicNetworkAccess')), createObject('value', null()))]"
+                  }
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
