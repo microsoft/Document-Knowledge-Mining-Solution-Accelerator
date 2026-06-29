@@ -55,6 +55,6 @@ internal static class OpenAPI
 
         // URL: http://localhost:9001/swagger/index.html
         app.UseSwagger();
-        app.UseSwaggerUI();
+        //app.UseSwaggerUI(); Removed as part of Code QL issue (CodeQL [SM04686])
     }
 }
