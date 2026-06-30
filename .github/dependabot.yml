@@ -1,0 +1,87 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# For more details, refer to the documentation:
+# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+
+version: 2
+updates:
+  # GitHub Actions dependencies (grouped)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "build"
+    target-branch: "dependabotchanges"
+    open-pull-requests-limit: 10
+    groups:
+      all-actions:
+        patterns:
+          - "*"
+
+  # .NET NuGet dependencies (grouped)
+  - package-ecosystem: "nuget"
+    directory: "/App/backend-api/Microsoft.GS.DPS"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "build"
+    target-branch: "dependabotchanges"
+    open-pull-requests-limit: 10
+    groups:
+      nuget-deps:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "nuget"
+    directory: "/App/backend-api/Microsoft.GS.DPS.Host"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "build"
+    target-branch: "dependabotchanges"
+    open-pull-requests-limit: 10
+    groups:
+      nuget-deps:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "nuget"
+    directory: "/App/kernel-memory/clients/dotnet/SemanticKernelPlugin"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "build"
+    target-branch: "dependabotchanges"
+    open-pull-requests-limit: 10
+    groups:
+      nuget-deps:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "nuget"
+    directory: "/App/kernel-memory/clients/dotnet/WebClient"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "build"
+    target-branch: "dependabotchanges"
+    open-pull-requests-limit: 10
+    groups:
+      nuget-deps:
+        patterns:
+          - "*"
+
+  # npm dependencies for Frontend App (grouped)
+  - package-ecosystem: "npm"
+    directory: "/App/frontend-app"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "build"
+    target-branch: "dependabotchanges"
+    open-pull-requests-limit: 10
+    groups:
+      frontend-deps:
+        patterns:
+          - "*"

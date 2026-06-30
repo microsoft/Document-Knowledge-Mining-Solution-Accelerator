@@ -1,0 +1,98 @@
+import React, { forwardRef, useImperativeHandle, ChangeEvent, KeyboardEvent, useState } from "react";
+import { Input } from "@fluentui/react-input";
+import { useTranslation } from "react-i18next";
+import { InputOnChangeData, Tooltip, useId } from "@fluentui/react-components";
+import { useDebouncedCallback } from "use-debounce";
+import { Search24Regular } from "@fluentui/react-icons";
+import "./searchInput.scss";
+
+export interface SearchBoxHandle {
+    setValue(decodedQuery: string): unknown;
+    reset: () => void; // Expose the reset method
+}
+
+interface SearchBoxProps {
+    className?: string;
+    labelClassName?: string;
+    inputClassName?: string;
+    initialValue?: string;
+    placeholder?: string;
+    onSearchChanged: (searchValue: string) => void;
+    onKeyDown?: (event: KeyboardEvent<HTMLInputElement>) => void;  // Include onKeyDown as a prop
+}
+
+export const SearchBox = forwardRef<SearchBoxHandle, SearchBoxProps>((
+    { className, labelClassName, inputClassName, initialValue = "", placeholder, onSearchChanged, onKeyDown },
+    ref
+) => {
+    const { t } = useTranslation();
+    const [value, setValue] = useState(initialValue);
+    const inputId = useId("input");
+    
+    useImperativeHandle(ref, () => ({
+        setValue: (value: string) => {
+            setValue(value);
+            onSearchChanged(value);
+        },
+        reset: () => {
+            setValue("");
+            onSearchChanged("");
+        },
+    }));
+
+    const debounced = useDebouncedCallback(
+        (value) => {
+            onSearchChanged(value);
+        },
+        1000
+    );
+
+    function onChange(_ev: ChangeEvent<HTMLInputElement>, data: InputOnChangeData): void {
+        if (data.value.length <= 300) {
+            setValue(data.value);
+            debounced(data.value);
+        }
+    }
+
+    function handleKeyDown(ev: KeyboardEvent<HTMLInputElement>) {
+        if (onKeyDown) {
+            onKeyDown(ev);  // Call the parent-provided onKeyDown function if it exists
+        }
+
+        if (ev.key === "Enter") {
+            debounced.cancel();
+            setValue((ev.target as HTMLInputElement).value);
+            onSearchChanged((ev.target as HTMLInputElement).value);
+        }
+    }
+
+    return (
+        <div className="search_box">
+            {/* <label className={labelClassName || ""} htmlFor={inputId}>
+                {t("components.search-box.label")}
+            </label> */}
+            <Tooltip content="Type your search Keyword." relationship="label" withArrow>
+                <Input
+                    className={`input_wrapper`}
+                    contentBefore={<Search24Regular />}
+                    contentAfter={
+                        <div className="flex">
+                            {/* <KeyBoardButton />
+                            <MicButton />
+                            <SearchVisualButton /> */}
+                        </div>
+                    }
+                    size="large"
+                    placeholder={placeholder || t("components.search-box.placeholder")}
+                    id={inputId}
+                    onChange={onChange}
+                    onKeyDown={handleKeyDown}  // Use the handleKeyDown function
+                    value={value}
+                    type="search"
+                />
+            </Tooltip>
+        </div>
+    );
+});
+
+SearchBox.displayName = "SearchBox";

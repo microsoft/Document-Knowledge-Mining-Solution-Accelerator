@@ -1,0 +1,336 @@
+import {
+    Dialog,
+    DialogBody,
+    DialogSurface,
+    SelectTabData,
+    SelectTabEvent,
+    TabListProps,
+    makeStyles,
+    shorthands,
+} from "@fluentui/react-components";
+import { useEffect, useState } from "react";
+import { MetadataTable } from "./metadataTable";
+import { Document } from "../../api/apiTypes/embedded";
+import { IFrameComponent } from "./iFrameComponent";
+import { DialogContentComponent } from "./dialogContentComponent";
+import { PagesTab } from "./PagesTab";
+import { PageNumberTab } from "./pageNumberTab";
+import { DialogTitleBar } from "./dialogTitleBar";
+import { AIKnowledgeTab } from "./aIKnowledgeTab";
+
+const useStyles = makeStyles({
+    dialog: {
+        maxHeight: "none",
+        height: "95%",
+        maxWidth: "none",
+        width: "95%",
+        ...shorthands.borderRadius("1rem"),
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+    },
+    tabList: {
+        alignItems: "flex-start",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "flex-start",
+        ...shorthands.padding("0px", "0px"),
+        rowGap: "20px",
+    },
+
+    aiKnowledgeTab:{
+        height:"100%",
+        overflow:"auto"
+    }
+});
+
+interface DocDialogProps {
+    metadata: Document | null;
+    isOpen: boolean;
+    allChunkTexts: string[];
+    clearChatFlag: boolean;
+    onClose: () => void;
+}
+
+interface Cell {
+    text: string;
+    rowIndex: number;
+    rowSpan: number;
+    colIndex: number;
+    colSpan: number;
+    is_header: boolean;
+}
+
+export function DocDialog(
+    { metadata, isOpen, allChunkTexts, clearChatFlag, onClose, ...props }: DocDialogProps & Partial<TabListProps>
+) {
+    const styles = useStyles();
+    
+    const [selectedTab, setSelectedTab] = useState<string>("Document");
+    const [urlWithSasToken, setUrlWithSasToken] = useState<string | undefined>(undefined);
+    const [selectedPage, setSelectedPage] = useState<number | null>(null);
+    const [pageMetadata] = useState<Document[] | null>(null);
+    const [iframeKey, setIframeKey] = useState(0);
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [, setClearChatFlag] = useState(clearChatFlag);
+    const [iframeSrc, setIframeSrc] = useState<string | undefined>(undefined);
+    // const [aiKnowledgeMetadata, setAIKnowledgeMetadata] = useState<Document | null>(null);
+
+
+
+    const documentUrl: string | undefined = metadata?.document_url;
+
+    useEffect(() => {
+        if (metadata) {
+            const apiString = `${import.meta.env.VITE_API_ENDPOINT}/Documents/${metadata.documentId}/${encodeURIComponent(metadata.fileName)}`;
+            metadata.document_url = apiString;
+            setUrlWithSasToken(apiString);
+        } else {
+            setUrlWithSasToken(undefined);
+        }
+    }, [metadata]); // Only run when metadata changes
+
+    useEffect(() => {
+        if (metadata && metadata.fileName.endsWith(".txt")) {
+            fetch(metadata.document_url)
+                .then((response) => response.text())
+                .then((textContent) => {
+                    const blob = new Blob([textContent], { type: "text/plain" });
+                    const objectURL = URL.createObjectURL(blob);
+                    setIframeSrc(objectURL);
+
+                    // Cleanup the object URL when component unmounts or metadata changes
+                    return () => URL.revokeObjectURL(objectURL);
+                })
+                .catch((error) => console.error("Error fetching text file:", error));
+        } else {
+            setIframeSrc(metadata?.document_url);
+        }
+    }, [metadata]);
+    
+
+    const downloadFile = () => {
+        if (urlWithSasToken) {
+            window.open(urlWithSasToken, "_blank");
+        }
+    };
+
+    // useEffect(() => {
+    //     const fetchDocument = async () => {
+    //         
+    //         if (metadata) {
+    //             try {
+    //                 const { documentId, fileName } = metadata;
+    //                 const blob = await downloadDocument(documentId, fileName); // Fetch the document Blob
+
+    //                 // Create an object URL for the Blob and set it to state
+    //                 const objectURL = URL.createObjectURL(blob);
+    //                 //setUrlWithSasToken(resp.apiEndpoint);
+    //                 
+
+    //                 // Cleanup the object URL when the component unmounts or the metadata changes
+    //                 return () => URL.revokeObjectURL(objectURL);
+    //             } catch (error) {
+    //                 console.error(`Error fetching document:`, error);
+    //             }
+    //         }
+    //     };
+
+    //     fetchDocument();
+    // }, [metadata]);
+
+    const onTabSelect = (event: SelectTabEvent, data: SelectTabData) => {
+        setSelectedTab(data.value as string);
+    };
+
+    const handleDialogClose = () => {
+        onClose();
+    };
+
+    // const handleIsOpen = async () => {
+    //     if (metadata) {
+    //         //const response: Embedded = await getEmbedded(metadata.index_key);
+
+    //         const response: Embedded = await getEmbedded(metadata.documentId);
+    //         const pageMetadata: Document[] = response.results.map((page: Result) => page.Document);
+    //         setPageMetadata(pageMetadata);
+    //     } else {
+    //         console.error("Document is undefined");
+    //     }
+    // };
+
+    // useEffect(() => {
+    //     if (isOpen) {
+    //         handleIsOpen();
+    //     }
+    // }, [isOpen]);
+
+    const handlePageClick = (page: Document) => (event: React.MouseEvent<HTMLDivElement>) => {
+        setSelectedPage(Number(page.page_number));
+        setSelectedTab("Page Number");
+        //setTablesData(page.tables);
+    };
+
+    // const nextPageTables = (pageNumber: number) => {
+    //     const page = pageMetadata?.find((page) => page.page_number === pageNumber + 1);
+    //     if (page) {
+    //         setSelectedPage(page.page_number);
+    //         setTablesData(page.tables);
+    //         setSelectedTab("Page Number");
+    //     }
+    // };
+
+    // const previousPageTables = (pageNumber: number) => {
+    //     const page = pageMetadata?.find((page) => page.page_number === pageNumber - 1);
+    //     if (page) {
+    //         setSelectedPage(page.page_number);
+    //         setTablesData(page.tables);
+    //     }
+    // };
+
+    const selectedPageMetadata =
+        selectedPage != null ? pageMetadata?.find((page) => page.page_number === selectedPage) : null;
+
+    const handleReturnToDocumentTab = () => {
+        setSelectedPage(null);
+        setIframeKey((prevKey) => prevKey + 1);
+    };
+
+    // useEffect(() => {
+    //     setSelectedTab("Page Number");
+    // }, [selectedPageMetadata?.tables]);
+
+    useEffect(() => {
+        setSelectedTab("Document");
+    }, [iframeKey]);
+
+    const AI_KNOWLEDGE_FIELDS = window.ENV.AI_KNOWLEDGE_FIELDS;
+
+    let aiKnowledgeMetadata = {};
+
+    AI_KNOWLEDGE_FIELDS.forEach((field: keyof typeof metadata) => {
+        if (metadata?.hasOwnProperty(field)) {
+            aiKnowledgeMetadata[field] = metadata[field];
+        }
+    });
+
+    // let newMetadata: Partial<Document> = {};
+    // if (metadata) {
+    //     Object.keys(metadata).forEach((key) => {
+    //         if (!METADATA_EXCLUSION_LIST.includes(key)) {
+    //             newMetadata[key as keyof Document] = metadata[key as keyof Document];
+    //         }
+    //     });
+    // }
+
+    return (
+        <Dialog open={isOpen}>
+            <DialogSurface className={styles.dialog}>
+                <div className="flex" style={{ flexShrink: 0 }}>
+                    <DialogTitleBar
+                        metadata={metadata}
+                        selectedPage={selectedPage}
+                        selectedTab={selectedTab}
+                        pageMetadata={pageMetadata}
+                        onTabSelect={onTabSelect}
+                        handleReturnToDocumentTab={handleReturnToDocumentTab}
+                        downloadFile={downloadFile}
+                        urlWithSasToken={urlWithSasToken}
+                        handleDialogClose={handleDialogClose}
+                        selectedPageMetadata={selectedPageMetadata}
+                        styles={styles}
+                        props={props}
+                        clearChatFlag={clearChatFlag} 
+                        setClearChatFlag={setClearChatFlag}
+                        />
+                </div>
+
+                <DialogBody style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, width: "100%", overflow: "auto", padding: 0 }}>
+                    {selectedTab === "Document" && (
+                        <div className="flex shadow-xl" style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+                            <IFrameComponent
+                                className="h-[100%] w-[70%]"
+                                metadata={metadata}
+                                urlWithSasToken={iframeSrc}
+                                iframeKey={iframeKey}
+                            />
+                            <DialogContentComponent
+                                className="w-[30%] overflow-y-auto flex-shrink-0"
+                                metadata={metadata}
+                                allChunkTexts={allChunkTexts}
+                                isExpanded={isExpanded}
+                                setIsExpanded={setIsExpanded}
+                            />
+                        </div>
+                    )}
+{/* 
+                    {selectedTab === "Metadata" && (
+                        <div className="flex w-full justify-between" style={{ width: "200%" }}>
+                            <MetadataTable metadata={newMetadata} />
+                        </div>
+                    )} */}
+
+                    {selectedTab === "Pages" && (
+                        <>
+                            <PagesTab className="" pageMetadata={pageMetadata} handlePageClick={handlePageClick} />
+                        </>
+                    )}
+
+{selectedTab === "AI Knowledge" && (
+    <div className={`flex w-full ${styles.aiKnowledgeTab}`}>
+    <AIKnowledgeTab 
+        metadata={metadata?.keywords ? Object.fromEntries(
+            Object.entries(metadata.keywords).map(([key, value]) => [
+                key, 
+                Array.isArray(value) ? value : [value]  // Ensure all values are arrays
+            ])
+        ) : {}}
+        
+    />
+    </div>
+)}
+
+
+
+
+                    {selectedTab === "Page Number" && selectedPageMetadata && documentUrl != undefined && (
+                        <>
+                            <PageNumberTab
+                                selectedTab={selectedTab}
+                                selectedPageMetadata={selectedPageMetadata}
+                                documentUrl={documentUrl}
+                            />
+                        </>
+                    )}
+
+                    {/* {selectedTab === "Tables" && selectedPageMetadata && (
+                        <div className="h-[80%] w-[200%] justify-between overflow-y-auto">
+                            {selectedPageMetadata.tables?.map((tableData, index) => (
+                                <div
+                                    style={{
+                                        display: "block",
+                                        padding: "10px",
+                                        margin: "10px",
+                                    }}
+                                    key={index}
+                                >
+                                    <Text size={400} weight="bold">
+                                        Table {index + 1}
+                                    </Text>
+                                    <TableTab tableValues={JSON.parse(tableData)} />
+                                    {index < tablesData.length - 1 && <Divider appearance="strong" />}
+                                </div>
+                            ))}
+                        </div>
+                    )} */}
+
+                    {selectedTab === "PageMetadata" && selectedPageMetadata && (
+                        <div className="flex w-full justify-between" style={{ width: "200%" }}>
+                            <MetadataTable metadata={selectedPageMetadata} />
+                        </div>
+                    )}
+                </DialogBody>
+            </DialogSurface>
+        </Dialog>
+    );
+}

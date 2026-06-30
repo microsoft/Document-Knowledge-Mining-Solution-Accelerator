@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "solutionName": {
+      "value": "${AZURE_ENV_NAME}"
+    },
+    "location": {
+      "value": "${AZURE_LOCATION}"
+    },
+    "azureAiServiceLocation": {
+      "value": "${AZURE_ENV_AI_SERVICE_LOCATION}"
+    },
+    "deploymentType": {
+      "value": "${AZURE_ENV_MODEL_DEPLOYMENT_TYPE}"
+    },
+    "gptModelName": {
+      "value": "${AZURE_ENV_GPT_MODEL_NAME}"
+    },
+    "gptDeploymentCapacity": {
+      "value": "${AZURE_ENV_GPT_MODEL_CAPACITY}"
+    },
+    "gptModelVersion": {
+      "value": "${AZURE_ENV_GPT_MODEL_VERSION}"
+    },
+    "embeddingModelName": {
+      "value": "${AZURE_ENV_EMBEDDING_MODEL_NAME}"
+    },
+    "embeddingModelVersion": {
+      "value": "${AZURE_ENV_EMBEDDING_MODEL_VERSION}"
+    },
+    "embeddingDeploymentCapacity": {
+      "value": "${AZURE_ENV_EMBEDDING_DEPLOYMENT_CAPACITY}"
+    },
+    "existingLogAnalyticsWorkspaceId": {
+      "value": "${AZURE_ENV_EXISTING_LOG_ANALYTICS_WORKSPACE_RID}"
+    },
+    "enableTelemetry": {
+      "value": "${AZURE_ENV_ENABLE_TELEMETRY}"
+    },
+    "tags": {
+      "value": {
+        "solutionName": "${AZURE_ENV_NAME}"
+      }
+    }
+  }
+}
