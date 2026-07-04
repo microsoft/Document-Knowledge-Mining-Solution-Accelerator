@@ -1,5 +1,3 @@
-import { useTranslation } from "react-i18next";
-
 interface ModelSwitchProps {
     onSwitchChange: (model: string) => void;
 }

@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useRef } from "react";
+import React, { useCallback, useState } from "react";
 import { Field, makeStyles } from "@fluentui/react-components";
 import { DatePicker, DatePickerProps } from "@fluentui/react-datepicker-compat"; // Latest date picker
 
@@ -20,9 +20,6 @@ export function CustomDatePicker(props: Partial<DatePickerProps>) {
     
     // Internal state to store the selected date
     const [value, setValue] = useState<Date | null | undefined>(null);
-    
-    // Reference to the input element (if needed)
-    const datePickerRef = useRef<HTMLInputElement>(null);
 
     // Function to parse the date from string format (e.g., from user input)
     const onParseDateFromString = useCallback(
