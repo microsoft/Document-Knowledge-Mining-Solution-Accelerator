@@ -15,7 +15,7 @@ preprovision:
       Write-Host ""
       Write-Host "  ---------------------------------------------------------------------------------------------------" -ForegroundColor Yellow
       Write-Host "  Note: If deployment fails or you encounter an issue, please open an issue with the deployment logs." -ForegroundColor Yellow
-      Write-Host "  https://github.com/microsoft/content-processing-solution-accelerator/issues" -ForegroundColor Cyan
+      Write-Host "  https://github.com/microsoft/Document-Knowledge-Mining-Solution-Accelerator/issues" -ForegroundColor Cyan
       Write-Host "  ---------------------------------------------------------------------------------------------------" -ForegroundColor Yellow
       Write-Host ""
     shell: pwsh
@@ -25,7 +25,7 @@ preprovision:
       echo ""
       echo "  ---------------------------------------------------------------------------------------------------"
       echo "  Note: If deployment fails or you encounter an issue, please open an issue with the deployment logs."
-      echo "  https://github.com/microsoft/content-processing-solution-accelerator/issues"
+      echo "  https://github.com/microsoft/Document-Knowledge-Mining-Solution-Accelerator/issues"
       echo "  ---------------------------------------------------------------------------------------------------"
       echo ""
     shell: sh
