@@ -12,9 +12,9 @@ By default this template will use the environment name as the prefix to prevent 
 | `AZURE_LOCATION`                | string | `<User selects during deployment>`   | Location of the Azure resources. Controls where the infrastructure will be deployed.                |
 | `AZURE_ENV_AI_SERVICE_LOCATION`     | string | `<User selects during deployment>`   | Location for Azure OpenAI resources. Can be different from AZURE_LOCATION for optimized AI service placement. |
 | `AZURE_ENV_MODEL_DEPLOYMENT_TYPE` | string | `GlobalStandard` | Defines the deployment type for the AI model (e.g., Standard, GlobalStandard).                     |
-| `AZURE_ENV_GPT_MODEL_NAME`          | string | `gpt-4.1-mini`          | Specifies the name of the GPT model to be deployed.                                                |
+| `AZURE_ENV_GPT_MODEL_NAME`          | string | `gpt-5-mini`          | Specifies the name of the GPT model to be deployed.                                                |
 | `AZURE_ENV_GPT_MODEL_CAPACITY`       | int | `100`      | Sets the GPT model capacity (in thousands of tokens per minute).                                                |
-| `AZURE_ENV_GPT_MODEL_VERSION`       | string | `2025-04-14`      | Version of the GPT model to be used for deployment.                                                |
+| `AZURE_ENV_GPT_MODEL_VERSION`       | string | `2025-08-07`      | Version of the GPT model to be used for deployment.                                                |
 | `AZURE_ENV_EMBEDDING_MODEL_NAME`          | string | `text-embedding-3-large`          | Sets the name of the embedding model to use.                                                |
 | `AZURE_ENV_EMBEDDING_MODEL_VERSION`            | string | `1`          | Version of the embedding model to be used for deployment.                                                   |
 | `AZURE_ENV_EMBEDDING_DEPLOYMENT_CAPACITY`            | int | `100`         | Capacity for embedding model deployment (in thousands of tokens per minute).                                                   |
