@@ -52353,7 +52353,7 @@
             "value": [
               {
                 "name": "agentpool",
-                "vmSize": "Standard_D4ds_v6",
+                "vmSize": "Standard_D4ds_v5",
                 "count": 2,
                 "osType": "Linux",
                 "mode": "System",
