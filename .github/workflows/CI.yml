@@ -211,9 +211,9 @@ jobs:
                 location=${{ env.AZURE_LOCATION }} \
                 azureAiServiceLocation=${{ env.AZURE_LOCATION }} \
                 deploymentType="GlobalStandard" \
-                gptModelName="gpt-4.1-mini" \
+                gptModelName="gpt-5-mini" \
                 gptDeploymentCapacity=${{ env.GPT_CAPACITY }} \
-                gptModelVersion="2025-04-14" \
+                gptModelVersion="2025-08-07" \
                 embeddingModelName="text-embedding-3-large" \
                 embeddingDeploymentCapacity=${{ env.TEXT_EMBEDDING_CAPACITY }} \
                 embeddingModelVersion="1" \

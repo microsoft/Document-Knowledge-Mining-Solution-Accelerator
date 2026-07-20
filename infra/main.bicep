@@ -34,12 +34,12 @@ param deploymentType string = 'GlobalStandard'
 @minLength(1)
 @description('Optional. Name of the GPT model to deploy:')
 @allowed([
-  'gpt-4.1-mini'
+  'gpt-5-mini'
 ])
-param gptModelName string = 'gpt-4.1-mini'
+param gptModelName string = 'gpt-5-mini'
 
 @description('Optional. Version of the GPT model to deploy.')
-param gptModelVersion string = '2025-04-14'
+param gptModelVersion string = '2025-08-07'
 
 @description('Optional. Capacity of the GPT model deployment:')
 @minValue(10)
@@ -95,7 +95,7 @@ param enableScalability bool = false
   azd: {
     type: 'location'
     usageName: [
-      'OpenAI.GlobalStandard.gpt4.1-mini,150'
+      'OpenAI.GlobalStandard.gpt-5-mini,150'
       'OpenAI.GlobalStandard.text-embedding-3-large,100'
     ]
   }
@@ -983,6 +983,9 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.13.
         type: 'VirtualMachineScaleSets'
         minCount: 1
         maxCount: 2
+
+        // Disable zonal placement; not all regions/subscriptions expose availability zones for the agent pool SKU
+        availabilityZones: []
 
         // WAF aligned configuration for Private Networking
         enableAutoScaling: true
