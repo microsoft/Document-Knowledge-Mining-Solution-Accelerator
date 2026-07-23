@@ -71,7 +71,7 @@ namespace Microsoft.KernelMemory.DataFormats.Image
             {
                 ExtensionData = new Dictionary<string, object>
                                 {
-                                    { "Temperature", 0 }
+                                    { "Temperature", 1 }
                                 }
             };
 

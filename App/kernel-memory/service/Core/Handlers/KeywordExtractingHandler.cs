@@ -110,7 +110,7 @@ public sealed class KeywordExtractingHandler : IPipelineStepHandler
                     {
                         ExtensionData = new Dictionary<string, object>
                                 {
-                                    { "Temperature", 0 }
+                                    { "Temperature", 1 }
                                 }
                     };
 

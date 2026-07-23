@@ -123,16 +123,23 @@ public sealed class AzureOpenAITextGenerator : ITextGenerator
         {
             this._log.LogTrace("Sending text generation request, deployment '{0}'", this._deployment);
 
+            var isGpt5Deployment = this._deployment.StartsWith("gpt-5", StringComparison.OrdinalIgnoreCase);
+
             var openaiOptions = new CompletionsOptions
             {
                 DeploymentName = this._deployment,
                 MaxTokens = options.MaxTokens,
-                Temperature = (float)options.Temperature,
-                NucleusSamplingFactor = (float)options.NucleusSampling,
-                FrequencyPenalty = (float)options.FrequencyPenalty,
-                PresencePenalty = (float)options.PresencePenalty,
                 ChoicesPerPrompt = 1,
             };
+
+            // GPT-5 deployments reject several legacy sampling parameters.
+            if (!isGpt5Deployment)
+            {
+                openaiOptions.Temperature = (float)options.Temperature;
+                openaiOptions.NucleusSamplingFactor = (float)options.NucleusSampling;
+                openaiOptions.FrequencyPenalty = (float)options.FrequencyPenalty;
+                openaiOptions.PresencePenalty = (float)options.PresencePenalty;
+            }
 
             if (options.StopSequences is { Count: > 0 })
             {
@@ -157,16 +164,23 @@ public sealed class AzureOpenAITextGenerator : ITextGenerator
         {
             this._log.LogTrace("Sending chat message generation request, deployment '{0}'", this._deployment);
 
+            var isGpt5Deployment = this._deployment.StartsWith("gpt-5", StringComparison.OrdinalIgnoreCase);
+
             var openaiOptions = new ChatCompletionsOptions
             {
                 DeploymentName = this._deployment,
                 MaxTokens = options.MaxTokens,
-                Temperature = (float)options.Temperature,
-                NucleusSamplingFactor = (float)options.NucleusSampling,
-                FrequencyPenalty = (float)options.FrequencyPenalty,
-                PresencePenalty = (float)options.PresencePenalty,
                 // ChoiceCount = 1,
             };
+
+            // GPT-5 deployments reject several legacy sampling parameters.
+            if (!isGpt5Deployment)
+            {
+                openaiOptions.Temperature = (float)options.Temperature;
+                openaiOptions.NucleusSamplingFactor = (float)options.NucleusSampling;
+                openaiOptions.FrequencyPenalty = (float)options.FrequencyPenalty;
+                openaiOptions.PresencePenalty = (float)options.PresencePenalty;
+            }
 
             if (options.StopSequences is { Count: > 0 })
             {
