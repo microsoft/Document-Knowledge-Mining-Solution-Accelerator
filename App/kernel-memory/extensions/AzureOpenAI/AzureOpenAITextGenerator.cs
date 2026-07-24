@@ -128,14 +128,15 @@ public sealed class AzureOpenAITextGenerator : ITextGenerator
             var openaiOptions = new CompletionsOptions
             {
                 DeploymentName = this._deployment,
-                MaxTokens = options.MaxTokens,
                 ChoicesPerPrompt = 1,
             };
 
-            // GPT-5 deployments require Temperature = 1.0 and reject other legacy sampling parameters.
+            // GPT-5 deployments use max_completion_tokens instead of max_tokens
+            // and require Temperature = 1.0, rejecting other legacy sampling parameters.
             // GPT-5 also does NOT support streaming.
             if (isGpt5Deployment)
             {
+                // Note: max_tokens is not supported for GPT-5, use defaults or max_completion_tokens via request options
                 openaiOptions.Temperature = 1.0f;
                 
                 if (options.StopSequences is { Count: > 0 })
@@ -152,6 +153,7 @@ public sealed class AzureOpenAITextGenerator : ITextGenerator
             }
             else
             {
+                openaiOptions.MaxTokens = options.MaxTokens;
                 openaiOptions.Temperature = (float)options.Temperature;
                 openaiOptions.NucleusSamplingFactor = (float)options.NucleusSampling;
                 openaiOptions.FrequencyPenalty = (float)options.FrequencyPenalty;
@@ -187,18 +189,20 @@ public sealed class AzureOpenAITextGenerator : ITextGenerator
             var openaiOptions = new ChatCompletionsOptions
             {
                 DeploymentName = this._deployment,
-                MaxTokens = options.MaxTokens,
                 // ChoiceCount = 1,
             };
 
-            // GPT-5 deployments require Temperature = 1.0 and reject other legacy sampling parameters.
+            // GPT-5 deployments use max_completion_tokens instead of max_tokens
+            // and require Temperature = 1.0, rejecting other legacy sampling parameters.
             // GPT-5 also does NOT support streaming, so we use non-streaming API for GPT-5.
             if (isGpt5Deployment)
             {
+                // Note: max_tokens is not supported for GPT-5, use defaults or max_completion_tokens via request options
                 openaiOptions.Temperature = 1.0f;
             }
             else
             {
+                openaiOptions.MaxTokens = options.MaxTokens;
                 openaiOptions.Temperature = (float)options.Temperature;
                 openaiOptions.NucleusSamplingFactor = (float)options.NucleusSampling;
                 openaiOptions.FrequencyPenalty = (float)options.FrequencyPenalty;
