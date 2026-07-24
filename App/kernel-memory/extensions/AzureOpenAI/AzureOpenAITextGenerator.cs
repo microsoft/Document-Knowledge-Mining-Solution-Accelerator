@@ -132,18 +132,30 @@ public sealed class AzureOpenAITextGenerator : ITextGenerator
             };
 
             // GPT-5 deployments use max_completion_tokens instead of max_tokens
-            // and require Temperature = 1.0, rejecting other legacy sampling parameters.
+            // and require Temperature = 1.0 (default), rejecting other legacy sampling parameters.
             // GPT-5 also does NOT support streaming.
+            if (!isGpt5Deployment)
+            {
+                openaiOptions.MaxTokens = options.MaxTokens;
+                openaiOptions.Temperature = (float)options.Temperature;
+                openaiOptions.NucleusSamplingFactor = (float)options.NucleusSampling;
+                openaiOptions.FrequencyPenalty = (float)options.FrequencyPenalty;
+                openaiOptions.PresencePenalty = (float)options.PresencePenalty;
+
+                if (options.TokenSelectionBiases is { Count: > 0 })
+                {
+                    foreach (var (token, bias) in options.TokenSelectionBiases) { openaiOptions.TokenSelectionBiases.Add(token, (int)bias); }
+                }
+            }
+            // For GPT-5: Don't set Temperature or sampling parameters - use API defaults
+            
+            if (options.StopSequences is { Count: > 0 })
+            {
+                foreach (var s in options.StopSequences) { openaiOptions.StopSequences.Add(s); }
+            }
+
             if (isGpt5Deployment)
             {
-                // Note: max_tokens is not supported for GPT-5, use defaults or max_completion_tokens via request options
-                openaiOptions.Temperature = 1.0f;
-                
-                if (options.StopSequences is { Count: > 0 })
-                {
-                    foreach (var s in options.StopSequences) { openaiOptions.StopSequences.Add(s); }
-                }
-
                 // Use non-streaming API for GPT-5
                 Response<Completions>? response = await this._client.GetCompletionsAsync(openaiOptions, cancellationToken).ConfigureAwait(false);
                 if (response?.Value?.Choices.Count > 0)
@@ -153,22 +165,6 @@ public sealed class AzureOpenAITextGenerator : ITextGenerator
             }
             else
             {
-                openaiOptions.MaxTokens = options.MaxTokens;
-                openaiOptions.Temperature = (float)options.Temperature;
-                openaiOptions.NucleusSamplingFactor = (float)options.NucleusSampling;
-                openaiOptions.FrequencyPenalty = (float)options.FrequencyPenalty;
-                openaiOptions.PresencePenalty = (float)options.PresencePenalty;
-
-                if (options.StopSequences is { Count: > 0 })
-                {
-                    foreach (var s in options.StopSequences) { openaiOptions.StopSequences.Add(s); }
-                }
-
-                if (options.TokenSelectionBiases is { Count: > 0 })
-                {
-                    foreach (var (token, bias) in options.TokenSelectionBiases) { openaiOptions.TokenSelectionBiases.Add(token, (int)bias); }
-                }
-
                 // Use streaming API for non-GPT-5 models
                 StreamingResponse<Completions>? response = await this._client.GetCompletionsStreamingAsync(openaiOptions, cancellationToken).ConfigureAwait(false);
                 await foreach (Completions? completions in response.EnumerateValues().WithCancellation(cancellationToken).ConfigureAwait(false))
@@ -193,14 +189,9 @@ public sealed class AzureOpenAITextGenerator : ITextGenerator
             };
 
             // GPT-5 deployments use max_completion_tokens instead of max_tokens
-            // and require Temperature = 1.0, rejecting other legacy sampling parameters.
+            // and require Temperature = 1.0 (default), rejecting other legacy sampling parameters.
             // GPT-5 also does NOT support streaming, so we use non-streaming API for GPT-5.
-            if (isGpt5Deployment)
-            {
-                // Note: max_tokens is not supported for GPT-5, use defaults or max_completion_tokens via request options
-                openaiOptions.Temperature = 1.0f;
-            }
-            else
+            if (!isGpt5Deployment)
             {
                 openaiOptions.MaxTokens = options.MaxTokens;
                 openaiOptions.Temperature = (float)options.Temperature;
@@ -208,6 +199,7 @@ public sealed class AzureOpenAITextGenerator : ITextGenerator
                 openaiOptions.FrequencyPenalty = (float)options.FrequencyPenalty;
                 openaiOptions.PresencePenalty = (float)options.PresencePenalty;
             }
+            // For GPT-5: Don't set Temperature or sampling parameters - use API defaults
 
             if (options.StopSequences is { Count: > 0 })
             {
