@@ -132,31 +132,49 @@ public sealed class AzureOpenAITextGenerator : ITextGenerator
                 ChoicesPerPrompt = 1,
             };
 
-            // GPT-5 deployments reject several legacy sampling parameters.
-            if (!isGpt5Deployment)
+            // GPT-5 deployments require Temperature = 1.0 and reject other legacy sampling parameters.
+            // GPT-5 also does NOT support streaming.
+            if (isGpt5Deployment)
+            {
+                openaiOptions.Temperature = 1.0f;
+                
+                if (options.StopSequences is { Count: > 0 })
+                {
+                    foreach (var s in options.StopSequences) { openaiOptions.StopSequences.Add(s); }
+                }
+
+                // Use non-streaming API for GPT-5
+                Response<Completions>? response = await this._client.GetCompletionsAsync(openaiOptions, cancellationToken).ConfigureAwait(false);
+                if (response?.Value?.Choices.Count > 0)
+                {
+                    yield return response.Value.Choices[0].Text;
+                }
+            }
+            else
             {
                 openaiOptions.Temperature = (float)options.Temperature;
                 openaiOptions.NucleusSamplingFactor = (float)options.NucleusSampling;
                 openaiOptions.FrequencyPenalty = (float)options.FrequencyPenalty;
                 openaiOptions.PresencePenalty = (float)options.PresencePenalty;
-            }
 
-            if (options.StopSequences is { Count: > 0 })
-            {
-                foreach (var s in options.StopSequences) { openaiOptions.StopSequences.Add(s); }
-            }
-
-            if (options.TokenSelectionBiases is { Count: > 0 })
-            {
-                foreach (var (token, bias) in options.TokenSelectionBiases) { openaiOptions.TokenSelectionBiases.Add(token, (int)bias); }
-            }
-
-            StreamingResponse<Completions>? response = await this._client.GetCompletionsStreamingAsync(openaiOptions, cancellationToken).ConfigureAwait(false);
-            await foreach (Completions? completions in response.EnumerateValues().WithCancellation(cancellationToken).ConfigureAwait(false))
-            {
-                foreach (Choice? choice in completions.Choices)
+                if (options.StopSequences is { Count: > 0 })
                 {
-                    yield return choice.Text;
+                    foreach (var s in options.StopSequences) { openaiOptions.StopSequences.Add(s); }
+                }
+
+                if (options.TokenSelectionBiases is { Count: > 0 })
+                {
+                    foreach (var (token, bias) in options.TokenSelectionBiases) { openaiOptions.TokenSelectionBiases.Add(token, (int)bias); }
+                }
+
+                // Use streaming API for non-GPT-5 models
+                StreamingResponse<Completions>? response = await this._client.GetCompletionsStreamingAsync(openaiOptions, cancellationToken).ConfigureAwait(false);
+                await foreach (Completions? completions in response.EnumerateValues().WithCancellation(cancellationToken).ConfigureAwait(false))
+                {
+                    foreach (Choice? choice in completions.Choices)
+                    {
+                        yield return choice.Text;
+                    }
                 }
             }
         }
@@ -173,8 +191,13 @@ public sealed class AzureOpenAITextGenerator : ITextGenerator
                 // ChoiceCount = 1,
             };
 
-            // GPT-5 deployments reject several legacy sampling parameters.
-            if (!isGpt5Deployment)
+            // GPT-5 deployments require Temperature = 1.0 and reject other legacy sampling parameters.
+            // GPT-5 also does NOT support streaming, so we use non-streaming API for GPT-5.
+            if (isGpt5Deployment)
+            {
+                openaiOptions.Temperature = 1.0f;
+            }
+            else
             {
                 openaiOptions.Temperature = (float)options.Temperature;
                 openaiOptions.NucleusSamplingFactor = (float)options.NucleusSampling;
@@ -194,10 +217,22 @@ public sealed class AzureOpenAITextGenerator : ITextGenerator
 
             openaiOptions.Messages.Add(new ChatRequestSystemMessage(prompt));
 
-            StreamingResponse<StreamingChatCompletionsUpdate>? response = await this._client.GetChatCompletionsStreamingAsync(openaiOptions, cancellationToken).ConfigureAwait(false);
-            await foreach (StreamingChatCompletionsUpdate? update in response.EnumerateValues().WithCancellation(cancellationToken).ConfigureAwait(false))
+            // GPT-5 does not support streaming - use non-streaming API
+            if (isGpt5Deployment)
             {
-                yield return update.ContentUpdate;
+                Response<ChatCompletions>? response = await this._client.GetChatCompletionsAsync(openaiOptions, cancellationToken).ConfigureAwait(false);
+                if (response?.Value?.Choices.Count > 0)
+                {
+                    yield return response.Value.Choices[0].Message.Content;
+                }
+            }
+            else
+            {
+                StreamingResponse<StreamingChatCompletionsUpdate>? response = await this._client.GetChatCompletionsStreamingAsync(openaiOptions, cancellationToken).ConfigureAwait(false);
+                await foreach (StreamingChatCompletionsUpdate? update in response.EnumerateValues().WithCancellation(cancellationToken).ConfigureAwait(false))
+                {
+                    yield return update.ContentUpdate;
+                }
             }
         }
     }
