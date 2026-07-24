@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.43.8.12551",
-      "templateHash": "9930092765515882543"
+      "templateHash": "5797490851931362105"
     }
   },
   "parameters": {
@@ -48,9 +48,9 @@
     },
     "gptModelName": {
       "type": "string",
-      "defaultValue": "gpt-4.1-mini",
+      "defaultValue": "gpt-5-mini",
       "allowedValues": [
-        "gpt-4.1-mini"
+        "gpt-5-mini"
       ],
       "minLength": 1,
       "metadata": {
@@ -59,7 +59,7 @@
     },
     "gptModelVersion": {
       "type": "string",
-      "defaultValue": "2025-04-14",
+      "defaultValue": "2025-08-07",
       "metadata": {
         "description": "Optional. Version of the GPT model to deploy."
       }
@@ -177,7 +177,7 @@
         "azd": {
           "type": "location",
           "usageName": [
-            "OpenAI.GlobalStandard.gpt4.1-mini,150",
+            "OpenAI.GlobalStandard.gpt-5-mini,150",
             "OpenAI.GlobalStandard.text-embedding-3-large,100"
           ]
         },
@@ -43817,8 +43817,8 @@
         }
       },
       "dependsOn": [
-        "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').storageBlob)]",
         "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').storageQueue)]",
+        "[format('avmPrivateDnsZones[{0}]', variables('dnsZoneIndex').storageBlob)]",
         "userAssignedIdentity",
         "virtualNetwork"
       ]
@@ -52360,6 +52360,7 @@
                 "type": "VirtualMachineScaleSets",
                 "minCount": 1,
                 "maxCount": 2,
+                "availabilityZones": [],
                 "enableAutoScaling": true,
                 "scaleSetEvictionPolicy": "Delete",
                 "scaleSetPriority": "Regular",
