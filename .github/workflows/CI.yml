@@ -37,7 +37,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6 # Checks out your repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       - name: Install Kubernetes CLI (kubectl)
         shell: bash
@@ -76,12 +76,12 @@ jobs:
           helm version          
 
       - name: Set up Docker
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
         with:
           driver: docker
 
       - name: Login to Azure
-        uses: azure/login@v2
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2.3.0
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -148,7 +148,7 @@ jobs:
         run: az bicep install
 
       - name: Install azd
-        uses: Azure/setup-azd@v2
+        uses: Azure/setup-azd@634ad924cf8baef2257898ba5663be8d19f15aca # v2.3.0
         
       - name: Set Deployment Region
         run: |
@@ -405,7 +405,7 @@ jobs:
 
     steps:
       - name: Login to Azure
-        uses: azure/login@v2
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2.3.0
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}

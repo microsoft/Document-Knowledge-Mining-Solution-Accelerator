@@ -20,6 +20,8 @@ updates:
           - "*"
 
   # .NET NuGet dependencies (grouped)
+    cooldown:
+      default-days: 7
   - package-ecosystem: "nuget"
     directory: "/App/backend-api/Microsoft.GS.DPS"
     schedule:
