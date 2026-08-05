@@ -172,12 +172,12 @@ namespace Microsoft.GS.DPS.API
                 this.chatHistory.RemoveRange(2, this.chatHistory.Count - (historyCount));
             }
 
-            //UpdateAsync PromptExecutionSettings with the temperature
+            //UpdateAsync PromptExecutionSettings with model-specific settings
+            // Note: Temperature is not set here to avoid compatibility issues with GPT-5 which requires Temperature=1.0 (default)
             var executionSettings = new PromptExecutionSettings()
             {
                 ExtensionData = new Dictionary<string, object>
                                         {
-                                            { "Temperature", 0.5 },
                                             { "MaxTokens", 16384  }
                                         }
             };
