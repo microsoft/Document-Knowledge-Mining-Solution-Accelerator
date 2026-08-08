@@ -7,6 +7,12 @@ using Microsoft.GS.DPS.Storage.Document;
 using NSwag.AspNetCore;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.ApplicationInsights.AspNetCore.Extensions;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Serializers;
+
+// Configure MongoDB GuidRepresentation before any MongoDB operations
+BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard));
 
 var builder = WebApplication.CreateBuilder(args);
 
