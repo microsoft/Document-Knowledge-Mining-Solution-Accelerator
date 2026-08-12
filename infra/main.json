@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.43.8.12551",
-      "templateHash": "5797490851931362105"
+      "templateHash": "15662892611334223236"
     }
   },
   "parameters": {
@@ -66,7 +66,7 @@
     },
     "gptDeploymentCapacity": {
       "type": "int",
-      "defaultValue": 100,
+      "defaultValue": 150,
       "minValue": 10,
       "metadata": {
         "description": "Optional. Capacity of the GPT model deployment:"

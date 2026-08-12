@@ -43,7 +43,7 @@ param gptModelVersion string = '2025-08-07'
 
 @description('Optional. Capacity of the GPT model deployment:')
 @minValue(10)
-param gptDeploymentCapacity int = 100
+param gptDeploymentCapacity int = 150
 
 @minLength(1)
 @description('Optional. Name of the Text Embedding model to deploy:')

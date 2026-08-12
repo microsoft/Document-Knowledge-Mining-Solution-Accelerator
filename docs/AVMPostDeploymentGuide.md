@@ -147,7 +147,7 @@ Upon successful completion, you'll see a success message with important informat
 
 | Model Name             | Recommended TPM | Minimum TPM |
 |------------------------|----------------|-------------|
-| gpt-5-mini            | 100K TPM       | 10K TPM     |
+| gpt-5-mini            | 150K TPM       | 10K TPM     |
 | text-embedding-3-large | 200K TPM       | 50K TPM     |
 
 > **⚠️ Warning**: Insufficient quota will cause failures during document upload and processing. Ensure adequate capacity before proceeding.
