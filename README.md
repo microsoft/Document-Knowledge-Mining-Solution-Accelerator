@@ -82,8 +82,8 @@ To deploy this solution accelerator, ensure you have access to an [Azure subscri
 
 *Note: Due to model availability within various data center regions, the following services have been hard-coded to specific regions:*
 
-* **Azure Open AI (GPT 4o mini):**<br>
-The solution relies on `GPT-4o mini` and `text-embedding-3-large` models which are all currently available in the 'WestUS3', 'EastUS', 'EastUS2', 'SwedenCentral' region.  
+* **Azure OpenAI (gpt-5-mini):**<br>
+The solution relies on `gpt-5-mini` and `text-embedding-3-large` models which are all currently available in the 'WestUS3', 'EastUS', 'EastUS2', 'SwedenCentral' region.
 Please check the
 [model summary table and region availability](https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models#embeddings) if needed.
 

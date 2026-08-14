@@ -41,8 +41,8 @@ Processed and extracted document information is added to an Azure AI Search veco
 ### Azure Document Intelligence
 One step of the data processing workflow where documents have Optical Character Recognition (OCR) applied to extract data. This includes text and handwriting extraction from documents.
 
-### GPT 4o mini
-Using Azure OpenAI, a deployment of the GPT 4o mini model (version 2024-07-18) is used during the data processing workflow to extract content, context, keywords, knowledge, topics and summarization. This model is also used in the web app's chat experience. This model can be changed to a different Azure OpenAI model if desired, but this has not been thoroughly tested and may be affected by the output token limits.
+### gpt-5-mini
+Using Azure OpenAI, a deployment of the gpt-5-mini model (version 2025-08-07) is used during the data processing workflow to extract content, context, keywords, knowledge, topics and summarization. This model is also used in the web app's chat experience. This model can be changed to a different Azure OpenAI model if desired, but this has not been thoroughly tested and may be affected by the output token limits.
 
 ### Blob Storage
 Using Azure Blog Storage, unprocessed document are stored as blobs. The data processing workflow reads the file and saves a JSON, text chunks, markdown, embedded text, and meta data including keywords and sumamrization of the processed data back to blob storage. Files uploaded through the web app's upload capabilities are uploaded here.
