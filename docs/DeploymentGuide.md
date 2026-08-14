@@ -331,7 +331,7 @@ Don't miss this URL information. This is the application's endpoint URL and shou
 | Model Name             | TPM Threshold |
 |------------------------|---------------|
 | gpt-5-mini             | 150K TPM      |
-| text-embedding-3-large | 200K TPM      |
+| text-embedding-3-large | 100K TPM      |
 
 > **⚠️ Warning:**  **Insufficient quota can cause failures during the upload process.** Please ensure you have the recommended capacity or request for additional capacity before start uploading the files.
 
