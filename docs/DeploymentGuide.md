@@ -241,7 +241,7 @@ azd up
 **During deployment, you'll be prompted for:**
 1. **Environment name** (e.g., "dkmsa") - Must be 3-16 characters long, alphanumeric only
 2. **Azure subscription** selection
-3. **Azure AI Deployment Location** - Select a region with available Azure OpenAI Service quota for GPT-4.1-mini and text-embedding-3-large models
+3. **Azure AI Deployment Location** - Select a region with available Azure OpenAI Service quota for gpt-5-mini and text-embedding-3-large models
 4. **Primary location** - Select the region where your infrastructure resources will be deployed
 5. **Resource group** selection (create new or use existing)
 
@@ -323,15 +323,15 @@ Don't miss this URL information. This is the application's endpoint URL and shou
 ### 5.3 Configure Azure OpenAI Rate Limits
 
 > **Capacity Note:**
-> * The deployment script creates models with a setting of 1 token per minute (TPM) rate limit.
+> * The deployment creates the gpt-5-mini model with a 150K tokens per minute (TPM) capacity by default.
 > * Faster performance can be achieved by increasing the TPM limit with Azure AI Foundry.
 > * Capacity varies for [regional quota limits](https://learn.microsoft.com/en-us/azure/ai-services/openai/quotas-limits#regional-quota-limits) as well as for [provisioned throughput](https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/provisioned-throughput).
 > * As a starting point, we recommend the following quota threshold be set up for this service run.
 
 | Model Name             | TPM Threshold |
 |------------------------|---------------|
-| GPT-4.1-mini           | 100K TPM      |
-| text-embedding-3-large | 200K TPM      |
+| gpt-5-mini             | 150K TPM      |
+| text-embedding-3-large | 100K TPM      |
 
 > **⚠️ Warning:**  **Insufficient quota can cause failures during the upload process.** Please ensure you have the recommended capacity or request for additional capacity before start uploading the files.
 
