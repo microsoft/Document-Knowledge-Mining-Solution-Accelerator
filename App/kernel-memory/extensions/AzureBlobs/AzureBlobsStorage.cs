@@ -61,7 +61,7 @@ public sealed class AzureBlobsStorage : IDocumentStorage
             {
                 this.ValidateAccountName(config.Account);
                 var suffix = this.ValidateEndpointSuffix(config.EndpointSuffix);
-                client = new BlobServiceClient(new Uri($"https://{config.Account}.blob.{suffix}"), new DefaultAzureCredential());
+                client = new BlobServiceClient(new Uri($"https://{config.Account}.blob.{suffix}"), new  ManagedIdentityCredential());
                 break;
             }
 
