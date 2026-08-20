@@ -38,7 +38,7 @@
         "km-app": "file:",
         "marked": "^16.3.0",
         "notistack": "^3.0.2",
-        "pdfjs-dist": "^5.4.149",
+        "pdfjs-dist": "^6.2.108",
         "react": "^19.1.1",
         "react-dom": "^19.1.1",
         "react-dropzone": "^14.3.5",
