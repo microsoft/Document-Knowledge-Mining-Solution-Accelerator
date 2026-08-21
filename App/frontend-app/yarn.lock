@@ -5471,10 +5471,10 @@ i18next-browser-languagedetector@^8.2.0:
   dependencies:
     "@babel/runtime" "^7.23.2"
 
-i18next-http-backend@^3.0.2:
-  version "3.0.4"
-  resolved "https://registry.yarnpkg.com/i18next-http-backend/-/i18next-http-backend-3.0.4.tgz#bcc6cd97bae1277016f01ef0706cd442418024cf"
-  integrity sha512-udwrBIE6cNpqn1gRAqRULq3+7MzIIuaiKRWrz++dVz5SqWW2VwXmPJtAgkI0JtMLFaADC9qNmnZAxWAhsxXx2g==
+i18next-http-backend@^3.0.5:
+  version "3.0.5"
+  resolved "https://registry.yarnpkg.com/i18next-http-backend/-/i18next-http-backend-3.0.5.tgz#b1763149492fb68b601da227db986eb046896530"
+  integrity sha512-QaWHnsxieEDcqKe+vo/RFqpiIFRi/KBqlOSPcUlvinBaISCeiTRCbtrazHAjtHtsLC66oDsROAH8frWkQzfMMQ==
   dependencies:
     cross-fetch "4.1.0"
 
@@ -6415,8 +6415,8 @@ keyv@^4.5.4:
     dropzone "^6.0.0-beta.2"
     i18next "^25.5.3"
     i18next-browser-languagedetector "^8.2.0"
-    i18next-http-backend "^3.0.2"
-    km-app "file:../../../../AppData/Local/Yarn/Cache/v6/npm-km-app-1.0.0-ad318aad-432f-45ee-9c2a-5e91558c86e2-1775210439581/node_modules/km-app"
+    i18next-http-backend "^3.0.5"
+    km-app "file:."
     marked "^16.3.0"
     notistack "^3.0.2"
     pdfjs-dist "^5.4.149"
