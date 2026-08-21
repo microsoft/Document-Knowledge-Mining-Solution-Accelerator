@@ -4,8 +4,8 @@ FROM node:20
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json to the working directory
-COPY package.json yarn.lock ./
+# Copy package.json, yarn.lock and .npmrc (registry config) to the working directory
+COPY package.json yarn.lock .npmrc ./
 
 # Install dependencies
 RUN yarn install
