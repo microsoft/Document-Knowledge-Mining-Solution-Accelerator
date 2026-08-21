@@ -11,9 +11,10 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 
 WORKDIR /src
+COPY ["nuget.config", "./"]
 COPY ["Microsoft.GS.DPS.Host/Microsoft.GS.DPS.Host.csproj", "./Microsoft.GS.DPS.Host/"]
 COPY ["Microsoft.GS.DPS/Microsoft.GS.DPS.csproj", "./Microsoft.GS.DPS/"]
-RUN dotnet restore "./Microsoft.GS.DPS.Host/Microsoft.GS.DPS.Host.csproj"
+RUN dotnet restore "./Microsoft.GS.DPS.Host/Microsoft.GS.DPS.Host.csproj" --configfile "./nuget.config"
 COPY . .
 WORKDIR "/src/Microsoft.GS.DPS.Host"
 RUN dotnet build "./Microsoft.GS.DPS.Host.csproj" -c $BUILD_CONFIGURATION -o /app/build
