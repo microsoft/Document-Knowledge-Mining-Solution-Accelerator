@@ -37,7 +37,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6 # Checks out your repository
+        uses: actions/checkout@v7 # Checks out your repository
 
       - name: Install Kubernetes CLI (kubectl)
         shell: bash
