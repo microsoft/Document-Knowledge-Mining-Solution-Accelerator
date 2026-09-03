@@ -139,7 +139,8 @@ namespace Microsoft.GS.DPS.Storage.Document
 
         public async Task<Entities.Document> RegisterAsync(Entities.Document document)
         {
-            await _collection.InsertOneAsync(document);
+            var filter = Builders<Entities.Document>.Filter.Eq(x => x.DocumentId, document.DocumentId);
+            await _collection.ReplaceOneAsync(filter, document, new ReplaceOptions { IsUpsert = true });
             return document;
         }
 

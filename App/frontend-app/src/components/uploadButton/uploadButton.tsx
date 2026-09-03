@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useDropzone } from "react-dropzone";
 import {
   Button,
@@ -23,10 +23,11 @@ import { getFileTypeIconProps } from "@fluentui/react-file-type-icons";
 const UploadDocumentsDialog = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<
-    { name: string; progress: number; status: string; errorMsg: string }[]
+    { key: string; name: string; progress: number; status: string; errorMsg: string }[]
   >([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadBtnVisible, setIsUploadBtnVisible] = useState<boolean>(false);
+  const uploadedFileKeys = useRef(new Set<string>());
 
 
   function toBoolean(value: unknown): boolean {
@@ -41,18 +42,36 @@ const UploadDocumentsDialog = () => {
   }, [import.meta.env.VITE_ENABLE_UPLOAD_BUTTON])
 
   // Handle file drop and simulate upload
-  const onDrop = useCallback(async (acceptedFiles: any[]) => {
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    const uniqueFiles = acceptedFiles.filter((file) => {
+      const key = `${file.name}:${file.size}:${file.lastModified}`;
+      if (uploadedFileKeys.current.has(key)) return false;
+
+      uploadedFileKeys.current.add(key);
+      return true;
+    });
+
+    if (uniqueFiles.length === 0) return;
+
     setIsUploading(true);
-    const newFiles = acceptedFiles.map((file: { name: any; }) => ({
+    const newFiles = uniqueFiles.map((file) => ({
+      key: `${file.name}:${file.size}:${file.lastModified}`,
       name: file.name,
       progress: 0,
       status: "uploading",
       errorMsg: ""
     }));
-    setUploadingFiles((prev) => [...prev, ...newFiles]);
+    setUploadingFiles((prev) => [
+      ...prev.map((uploadedFile) =>
+        newFiles.find((newFile) => newFile.key === uploadedFile.key) ?? uploadedFile
+      ),
+      ...newFiles.filter((newFile) =>
+        !prev.some((uploadedFile) => uploadedFile.key === newFile.key)
+      )
+    ]);
 
-    for (let i = 0; i < acceptedFiles.length; i++) {
-      const file = acceptedFiles[i];
+    for (const file of uniqueFiles) {
+      const fileKey = `${file.name}:${file.size}:${file.lastModified}`;
       const formData = new FormData();
       formData.append("file", file);
 
@@ -64,22 +83,23 @@ const UploadDocumentsDialog = () => {
 
         // Update file status to success
         setUploadingFiles((prev) =>
-          prev.map((f, index) =>
-            index === prev.length - acceptedFiles.length + i
-              ? { ...f, progress: 100, status: "success", errorMsg: "" }
-              : f
+          prev.map((uploadedFile) =>
+            uploadedFile.key === fileKey
+              ? { ...uploadedFile, progress: 100, status: "success", errorMsg: "" }
+              : uploadedFile
           )
         );
       } catch (error: any) {
         const errorMessage = error.message.replace(/^Error:\s*/, ""); // Remove "Error: " prefix
         const parsedError = JSON.parse(errorMessage);
+        uploadedFileKeys.current.delete(fileKey);
 
         // Update file status to error
         setUploadingFiles((prev) =>
-          prev.map((f, index) =>
-            index === prev.length - acceptedFiles.length + i
-              ? { ...f, progress: 100, status: "error", errorMsg: parsedError.summary }
-              : f
+          prev.map((uploadedFile) =>
+            uploadedFile.key === fileKey
+              ? { ...uploadedFile, progress: 100, status: "error", errorMsg: parsedError.summary }
+              : uploadedFile
           )
         );
       }
@@ -97,6 +117,7 @@ const UploadDocumentsDialog = () => {
   const handleDialogClose = () => {
     setIsOpen(false);
     setUploadingFiles([]); // Clear the uploaded files
+    uploadedFileKeys.current.clear();
     setIsUploading(false); // Reset uploading state
   };
 
@@ -187,9 +208,9 @@ const UploadDocumentsDialog = () => {
             </div> */}
 
               {/* File progress display */}
-              {uploadingFiles.map((file, index) => (
+              {uploadingFiles.map((file) => (
                 <div
-                  key={index}
+                  key={file.key}
                   style={{
                     marginTop: "20px",
                     border: "1px solid #ccc",

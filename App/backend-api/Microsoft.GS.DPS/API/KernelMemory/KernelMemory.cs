@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -53,8 +54,28 @@ namespace Microsoft.GS.DPS.API
                                                                  string fileName, 
                                                                  string contentType)
         {
+            var initialPosition = documentStream.Position;
+            var contentHash = await SHA256.HashDataAsync(documentStream);
+            documentStream.Position = initialPosition;
+            var documentId = Convert.ToHexString(contentHash).ToLowerInvariant();
+
+            var existingDocument = await _documentRepository.FindByDocumentIdAsync(documentId);
+            if (existingDocument != null)
+            {
+                return new DocumentImportedResult
+                {
+                    DocumentId = existingDocument.DocumentId,
+                    ImportedTime = existingDocument.ImportedTime,
+                    MimeType = existingDocument.MimeType,
+                    FileName = existingDocument.FileName,
+                    ProcessingTime = existingDocument.ProcessingTime,
+                    Keywords = existingDocument.Keywords,
+                    Summary = existingDocument.Summary
+                };
+            }
+
             // Implementation of the file upload
-            var documentId = await _kmClient.ImportDocumentAsync(documentStream, fileName, steps: [
+            await _kmClient.ImportDocumentAsync(documentStream, fileName, documentId: documentId, steps: [
                                     Constants.PipelineStepsExtract,
                                     "keyword_extract",
                                     Constants.PipelineStepsSummarize,
