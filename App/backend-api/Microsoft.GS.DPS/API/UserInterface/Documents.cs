@@ -143,7 +143,9 @@ namespace Microsoft.GS.DPS.API.UserInterface
                 {
                     query = null;
                 }
-                
+
+                query = query?.ToLowerInvariant();
+
                 SearchResult result = await this._memoryWebClient.SearchAsync(query ?? String.Empty, filters: filters, minRelevance: 0.0166666676);
 
                 //Get Document Ids from result
