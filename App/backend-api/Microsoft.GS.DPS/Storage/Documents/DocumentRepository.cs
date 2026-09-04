@@ -139,7 +139,14 @@ namespace Microsoft.GS.DPS.Storage.Document
 
         public async Task<Entities.Document> RegisterAsync(Entities.Document document)
         {
-            var filter = Builders<Entities.Document>.Filter.Eq(x => x.DocumentId, document.DocumentId);
+            var existingDocument = await FindByDocumentIdAsync(document.DocumentId);
+            if (existingDocument != null)
+            {
+                document.id = existingDocument.id;
+                document.__partitionkey = existingDocument.__partitionkey;
+            }
+
+            var filter = Builders<Entities.Document>.Filter.Eq(x => x.id, document.id);
             var update = Builders<Entities.Document>.Update
                 .Set(x => x.FileName, document.FileName)
                 .Set(x => x.ImportedTime, document.ImportedTime)
@@ -148,7 +155,6 @@ namespace Microsoft.GS.DPS.Storage.Document
                 .Set(x => x.Summary, document.Summary)
                 .Set(x => x.Keywords, document.Keywords)
                 .SetOnInsert(x => x.DocumentId, document.DocumentId)
-                .SetOnInsert(x => x.id, document.id)
                 .SetOnInsert(x => x.__partitionkey, document.__partitionkey);
 
             return await _collection.FindOneAndUpdateAsync(

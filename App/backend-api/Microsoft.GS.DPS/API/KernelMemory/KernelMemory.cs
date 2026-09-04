@@ -1,12 +1,14 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.GS.DPS.Images;
 using Microsoft.GS.DPS.Model.KernelMemory;
+using Microsoft.GS.DPS.Storage.Components;
 using Microsoft.GS.DPS.Storage.Document;
 using Microsoft.KernelMemory;
 using Microsoft.KernelMemory.Context;
 using Microsoft.KernelMemory.Pipeline;
 using MongoDB.Bson;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -29,6 +31,7 @@ namespace Microsoft.GS.DPS.API
         private readonly DataCacheManager _dataCache;
         private readonly TagUpdater _tagUpdator;
         private readonly ILogger<KernelMemory>? _logger;
+        private readonly ConcurrentDictionary<string, Lazy<Task<DocumentImportedResult>>> _documentImports = new();
         private static readonly string keywordExtractorPrompt = "";
 
         static KernelMemory()
@@ -68,6 +71,28 @@ namespace Microsoft.GS.DPS.API
             importStream.Position = 0;
             var documentId = Convert.ToHexString(contentHash).ToLowerInvariant();
 
+            var documentImport = _documentImports.GetOrAdd(
+                documentId,
+                _ => new Lazy<Task<DocumentImportedResult>>(
+                    () => ImportDocumentCore(importStream, fileName, contentType, documentId),
+                    LazyThreadSafetyMode.ExecutionAndPublication));
+
+            try
+            {
+                return await documentImport.Value;
+            }
+            finally
+            {
+                ((ICollection<KeyValuePair<string, Lazy<Task<DocumentImportedResult>>>>)_documentImports)
+                    .Remove(new KeyValuePair<string, Lazy<Task<DocumentImportedResult>>>(documentId, documentImport));
+            }
+        }
+
+        private async Task<DocumentImportedResult> ImportDocumentCore(Stream importStream,
+                                                                       string fileName,
+                                                                       string contentType,
+                                                                       string documentId)
+        {
             var existingDocument = await _documentRepository.FindByDocumentIdAsync(documentId);
             if (existingDocument != null)
             {
@@ -127,6 +152,7 @@ namespace Microsoft.GS.DPS.API
             // Save the document to the repository
             Document document = new Document
             {
+                id = new Guid(Convert.FromHexString(documentId[..32])),
                 DocumentId = documentId,
                 FileName = fileName,
                 ImportedTime = importedResult.ImportedTime,
@@ -135,6 +161,7 @@ namespace Microsoft.GS.DPS.API
                 Summary = importedResult.Summary,
                 Keywords = importedResult.Keywords
             };
+            document.__partitionkey = CosmosDBEntityBase.GetKey(document.id, 9999);
 
             await _documentRepository.RegisterAsync(document);
 
