@@ -8,6 +8,37 @@ import { httpClient } from "../utils/httpClient/httpClient";
 //     return response;
 // }
 
+function getDisplayAnswer(answer: string): string {
+    const content = answer
+        .trim()
+        .replace(/^```json\s*/i, "")
+        .replace(/\s*```$/, "");
+
+    try {
+        const parsed: unknown = JSON.parse(content);
+        if (
+            typeof parsed === "object" &&
+            parsed !== null &&
+            "response" in parsed &&
+            typeof parsed.response === "string"
+        ) {
+            return parsed.response;
+        }
+    } catch (error) {
+        if (!(error instanceof SyntaxError)) {
+            throw error;
+        }
+        const responseMatch = content.match(/"response"\s*:\s*"([\s\S]*?)"\s*,\s*"followings"\s*:/i);
+        if (responseMatch) {
+            return responseMatch[1]
+                .replace(/\\n/g, "\n")
+                .replace(/\\"/g, '"');
+        }
+    }
+
+    return answer;
+}
+
 export async function Completion(request: ChatRequest): Promise<ChatApiResponse> {
     try {
       // Assuming httpClient is similar to Axios, we pass the request body and expect a ChatApiResponse
@@ -21,8 +52,7 @@ export async function Completion(request: ChatRequest): Promise<ChatApiResponse>
           }
       );
   
-      // Return the actual response data (assuming Axios-style response structure)
-      return response;
+      return { ...response, answer: getDisplayAnswer(response.answer) };
     } catch (error) {
       console.error('Error during API request:', error);
       throw new Error('Failed to fetch the API response.');
