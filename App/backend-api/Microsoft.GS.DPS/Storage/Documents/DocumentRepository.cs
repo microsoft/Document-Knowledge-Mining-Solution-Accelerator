@@ -140,8 +140,25 @@ namespace Microsoft.GS.DPS.Storage.Document
         public async Task<Entities.Document> RegisterAsync(Entities.Document document)
         {
             var filter = Builders<Entities.Document>.Filter.Eq(x => x.DocumentId, document.DocumentId);
-            await _collection.ReplaceOneAsync(filter, document, new ReplaceOptions { IsUpsert = true });
-            return document;
+            var update = Builders<Entities.Document>.Update
+                .Set(x => x.FileName, document.FileName)
+                .Set(x => x.ImportedTime, document.ImportedTime)
+                .Set(x => x.MimeType, document.MimeType)
+                .Set(x => x.ProcessingTime, document.ProcessingTime)
+                .Set(x => x.Summary, document.Summary)
+                .Set(x => x.Keywords, document.Keywords)
+                .SetOnInsert(x => x.DocumentId, document.DocumentId)
+                .SetOnInsert(x => x.id, document.id)
+                .SetOnInsert(x => x.__partitionkey, document.__partitionkey);
+
+            return await _collection.FindOneAndUpdateAsync(
+                filter,
+                update,
+                new FindOneAndUpdateOptions<Entities.Document>
+                {
+                    IsUpsert = true,
+                    ReturnDocument = ReturnDocument.After
+                });
         }
 
         public async Task<Entities.Document> UpdateAsync(Entities.Document document)

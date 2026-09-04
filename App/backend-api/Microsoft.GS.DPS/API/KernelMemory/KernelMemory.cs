@@ -54,9 +54,18 @@ namespace Microsoft.GS.DPS.API
                                                                  string fileName, 
                                                                  string contentType)
         {
-            var initialPosition = documentStream.Position;
-            var contentHash = await SHA256.HashDataAsync(documentStream);
-            documentStream.Position = initialPosition;
+            using var bufferedStream = documentStream.CanSeek ? null : new MemoryStream();
+            Stream importStream = documentStream;
+
+            if (bufferedStream != null)
+            {
+                await documentStream.CopyToAsync(bufferedStream);
+                importStream = bufferedStream;
+            }
+
+            importStream.Position = 0;
+            var contentHash = await SHA256.HashDataAsync(importStream);
+            importStream.Position = 0;
             var documentId = Convert.ToHexString(contentHash).ToLowerInvariant();
 
             var existingDocument = await _documentRepository.FindByDocumentIdAsync(documentId);
@@ -75,7 +84,7 @@ namespace Microsoft.GS.DPS.API
             }
 
             // Implementation of the file upload
-            await _kmClient.ImportDocumentAsync(documentStream, fileName, documentId: documentId, steps: [
+            await _kmClient.ImportDocumentAsync(importStream, fileName, documentId: documentId, steps: [
                                     Constants.PipelineStepsExtract,
                                     "keyword_extract",
                                     Constants.PipelineStepsSummarize,

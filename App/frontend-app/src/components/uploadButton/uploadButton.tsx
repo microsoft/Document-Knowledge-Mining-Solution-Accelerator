@@ -20,6 +20,30 @@ import { Icon } from "@fluentui/react";
 import { importDocuments } from "../../api/documentsService";
 import { getFileTypeIconProps } from "@fluentui/react-file-type-icons";
 
+const getUploadErrorMessage = (error: unknown): string => {
+  const message = error instanceof Error
+    ? error.message.replace(/^Error:\s*/, "")
+    : typeof error === "string"
+      ? error
+      : "Document upload failed.";
+
+  try {
+    const parsedError: unknown = JSON.parse(message);
+    if (
+      typeof parsedError === "object" &&
+      parsedError !== null &&
+      "summary" in parsedError &&
+      typeof parsedError.summary === "string"
+    ) {
+      return parsedError.summary;
+    }
+  } catch {
+    return message;
+  }
+
+  return message;
+};
+
 const UploadDocumentsDialog = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<
@@ -89,16 +113,15 @@ const UploadDocumentsDialog = () => {
               : uploadedFile
           )
         );
-      } catch (error: any) {
-        const errorMessage = error.message.replace(/^Error:\s*/, ""); // Remove "Error: " prefix
-        const parsedError = JSON.parse(errorMessage);
+      } catch (error: unknown) {
         uploadedFileKeys.current.delete(fileKey);
+        const errorMessage = getUploadErrorMessage(error);
 
         // Update file status to error
         setUploadingFiles((prev) =>
           prev.map((uploadedFile) =>
             uploadedFile.key === fileKey
-              ? { ...uploadedFile, progress: 100, status: "error", errorMsg: parsedError.summary }
+              ? { ...uploadedFile, progress: 100, status: "error", errorMsg: errorMessage }
               : uploadedFile
           )
         );
