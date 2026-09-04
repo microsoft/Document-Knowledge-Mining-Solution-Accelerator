@@ -57,7 +57,7 @@ namespace Microsoft.GS.DPS.API
                                                                  string fileName, 
                                                                  string contentType)
         {
-            using var bufferedStream = documentStream.CanSeek ? null : new MemoryStream();
+            using var bufferedStream = documentStream.CanSeek ? null : CreateTemporaryFileStream();
             Stream importStream = documentStream;
 
             if (bufferedStream != null)
@@ -86,6 +86,18 @@ namespace Microsoft.GS.DPS.API
                 ((ICollection<KeyValuePair<string, Lazy<Task<DocumentImportedResult>>>>)_documentImports)
                     .Remove(new KeyValuePair<string, Lazy<Task<DocumentImportedResult>>>(documentId, documentImport));
             }
+        }
+
+        private static FileStream CreateTemporaryFileStream()
+        {
+            var temporaryFilePath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            return new FileStream(
+                temporaryFilePath,
+                FileMode.CreateNew,
+                FileAccess.ReadWrite,
+                FileShare.None,
+                bufferSize: 81920,
+                FileOptions.Asynchronous | FileOptions.SequentialScan | FileOptions.DeleteOnClose);
         }
 
         private async Task<DocumentImportedResult> ImportDocumentCore(Stream importStream,
