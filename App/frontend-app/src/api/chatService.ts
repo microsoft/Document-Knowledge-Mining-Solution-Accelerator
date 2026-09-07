@@ -31,6 +31,9 @@ function getDisplayAnswer(answer: unknown): string {
 
     try {
         const parsed: unknown = JSON.parse(content);
+        if (typeof parsed === "string") {
+            return parsed;
+        }
         if (parsed && typeof parsed === "object") {
             const parsedRecord = parsed as Record<string, unknown>;
             const response = parsedRecord["response"];
