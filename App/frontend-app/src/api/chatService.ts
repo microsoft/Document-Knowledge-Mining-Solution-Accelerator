@@ -20,7 +20,7 @@ function getDisplayAnswer(answer: unknown): string {
         } catch {
             answerText = String(answer);
         }
-    } else {c
+    } else {
         answerText = String(answer);
     }
 
