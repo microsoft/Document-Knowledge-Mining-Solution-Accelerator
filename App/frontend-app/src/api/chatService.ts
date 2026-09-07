@@ -43,11 +43,15 @@ function getDisplayAnswer(answer: unknown): string {
         if (!(error instanceof SyntaxError)) {
             throw error;
         }
-        const responseMatch = content.match(/"response"\s*:\s*"([\s\S]*?)"\s*,\s*"followings"\s*:/i);
+        const responseMatch = content.match(/"response"\s*:\s*"((?:\\.|[^"\\])*)"\s*,\s*"followings"\s*:/i);
         if (responseMatch) {
-            return responseMatch[1]
-                .replace(/\\n/g, "\n")
-                .replace(/\\"/g, '"');
+            try {
+                return JSON.parse(`"${responseMatch[1]}"`);
+            } catch {
+                return responseMatch[1]
+                    .replace(/\\n/g, "\n")
+                    .replace(/\\"/g, '"');
+            }
         }
     }
 
