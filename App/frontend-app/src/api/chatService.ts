@@ -26,8 +26,8 @@ function getDisplayAnswer(answer: unknown): string {
 
     const content = answerText
         .trim()
-        .replace(/^```json\s*/i, "")
-        .replace(/\s*```$/, "");
+        .replace(/^```[a-z0-9_-]*\s*/i, "")
+        .replace(/\s*```\s*$/, "");
 
     try {
         const parsed: unknown = JSON.parse(content);
