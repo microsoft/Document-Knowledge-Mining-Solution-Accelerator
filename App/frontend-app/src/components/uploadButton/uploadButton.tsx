@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import {
   Button,
@@ -19,6 +19,16 @@ import {
 import { Icon } from "@fluentui/react";
 import { importDocuments } from "../../api/documentsService";
 import { getFileTypeIconProps } from "@fluentui/react-file-type-icons";
+
+type UploadingFile = {
+  key: string;
+  name: string;
+  progress: number;
+  status: "uploading" | "success" | "error";
+  errorMsg: string;
+};
+
+type UploadAttempt = UploadingFile & { file: File };
 
 const getUploadErrorMessage = (error: unknown): string => {
   const message = error instanceof Error
@@ -46,12 +56,9 @@ const getUploadErrorMessage = (error: unknown): string => {
 
 const UploadDocumentsDialog = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [uploadingFiles, setUploadingFiles] = useState<
-    { key: string; name: string; progress: number; status: string; errorMsg: string }[]
-  >([]);
+  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadBtnVisible, setIsUploadBtnVisible] = useState<boolean>(false);
-  const uploadedFileKeys = useRef(new Set<string>());
 
 
   function toBoolean(value: unknown): boolean {
@@ -67,35 +74,22 @@ const UploadDocumentsDialog = () => {
 
   // Handle file drop and simulate upload
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    const uniqueFiles = acceptedFiles.filter((file) => {
-      const key = `${file.name}:${file.size}:${file.lastModified}`;
-      if (uploadedFileKeys.current.has(key)) return false;
-
-      uploadedFileKeys.current.add(key);
-      return true;
-    });
-
-    if (uniqueFiles.length === 0) return;
+    if (acceptedFiles.length === 0) return;
 
     setIsUploading(true);
-    const newFiles = uniqueFiles.map((file) => ({
-      key: `${file.name}:${file.size}:${file.lastModified}`,
+    const newFiles: UploadAttempt[] = acceptedFiles.map((file) => ({
+      key: crypto.randomUUID(),
+      file,
       name: file.name,
       progress: 0,
       status: "uploading",
       errorMsg: ""
     }));
-    setUploadingFiles((prev) => [
-      ...prev.map((uploadedFile) =>
-        newFiles.find((newFile) => newFile.key === uploadedFile.key) ?? uploadedFile
-      ),
-      ...newFiles.filter((newFile) =>
-        !prev.some((uploadedFile) => uploadedFile.key === newFile.key)
-      )
-    ]);
+    setUploadingFiles((prev) => [...prev, ...newFiles]);
 
-    for (const file of uniqueFiles) {
-      const fileKey = `${file.name}:${file.size}:${file.lastModified}`;
+    for (const upload of newFiles) {
+      const file = upload.file;
+      const fileKey = upload.key;
       const formData = new FormData();
       formData.append("file", file);
 
@@ -114,7 +108,6 @@ const UploadDocumentsDialog = () => {
           )
         );
       } catch (error: unknown) {
-        uploadedFileKeys.current.delete(fileKey);
         const errorMessage = getUploadErrorMessage(error);
 
         // Update file status to error
@@ -140,7 +133,6 @@ const UploadDocumentsDialog = () => {
   const handleDialogClose = () => {
     setIsOpen(false);
     setUploadingFiles([]); // Clear the uploaded files
-    uploadedFileKeys.current.clear();
     setIsUploading(false); // Reset uploading state
   };
 

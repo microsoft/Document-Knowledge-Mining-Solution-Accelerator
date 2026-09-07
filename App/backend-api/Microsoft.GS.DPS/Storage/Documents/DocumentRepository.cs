@@ -6,6 +6,7 @@ using System.Collections.Specialized;
 using MongoDB.Driver;
 using System.ComponentModel;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace Microsoft.GS.DPS.Storage.Document
 {
@@ -14,9 +15,20 @@ namespace Microsoft.GS.DPS.Storage.Document
     public class DocumentRepository 
     {
         private readonly IMongoCollection<Entities.Document> _collection;
+        private readonly IMongoCollection<DocumentImportLease> _importLeases;
+
+        private sealed class DocumentImportLease
+        {
+            [BsonId]
+            public string DocumentId { get; set; } = string.Empty;
+            public string OwnerId { get; set; } = string.Empty;
+            public DateTime ExpiresAt { get; set; }
+        }
+
         public DocumentRepository(IMongoDatabase database, string collectionName) 
         {
             _collection = database.GetCollection<Entities.Document>(collectionName);
+            _importLeases = database.GetCollection<DocumentImportLease>($"{collectionName}_ImportLeases");
 
             // if Database is empty, create a new collection
             if (_collection == null)
@@ -165,6 +177,59 @@ namespace Microsoft.GS.DPS.Storage.Document
                     IsUpsert = true,
                     ReturnDocument = ReturnDocument.After
                 });
+        }
+
+        public async Task<bool> TryAcquireImportLeaseAsync(string documentId, string ownerId, DateTime expiresAt)
+        {
+            var lease = new DocumentImportLease
+            {
+                DocumentId = documentId,
+                OwnerId = ownerId,
+                ExpiresAt = expiresAt
+            };
+
+            try
+            {
+                await _importLeases.InsertOneAsync(lease);
+                return true;
+            }
+            catch (MongoWriteException exception) when (exception.WriteError?.Category == ServerErrorCategory.DuplicateKey)
+            {
+            }
+            catch (MongoCommandException exception) when (exception.Code == 11000)
+            {
+            }
+
+            var expiredLeaseFilter = Builders<DocumentImportLease>.Filter.Eq(x => x.DocumentId, documentId) &
+                                     Builders<DocumentImportLease>.Filter.Lte(x => x.ExpiresAt, DateTime.UtcNow);
+            var update = Builders<DocumentImportLease>.Update
+                .Set(x => x.OwnerId, ownerId)
+                .Set(x => x.ExpiresAt, expiresAt);
+            var acquiredLease = await _importLeases.FindOneAndUpdateAsync(
+                expiredLeaseFilter,
+                update,
+                new FindOneAndUpdateOptions<DocumentImportLease>
+                {
+                    ReturnDocument = ReturnDocument.After
+                });
+
+            return acquiredLease?.OwnerId == ownerId;
+        }
+
+        public async Task ReleaseImportLeaseAsync(string documentId, string ownerId)
+        {
+            var filter = Builders<DocumentImportLease>.Filter.Eq(x => x.DocumentId, documentId) &
+                         Builders<DocumentImportLease>.Filter.Eq(x => x.OwnerId, ownerId);
+            await _importLeases.DeleteOneAsync(filter);
+        }
+
+        public async Task<bool> RenewImportLeaseAsync(string documentId, string ownerId, DateTime expiresAt)
+        {
+            var filter = Builders<DocumentImportLease>.Filter.Eq(x => x.DocumentId, documentId) &
+                         Builders<DocumentImportLease>.Filter.Eq(x => x.OwnerId, ownerId);
+            var update = Builders<DocumentImportLease>.Update.Set(x => x.ExpiresAt, expiresAt);
+            var result = await _importLeases.UpdateOneAsync(filter, update);
+            return result.MatchedCount == 1;
         }
 
         public async Task<Entities.Document> UpdateAsync(Entities.Document document)
