@@ -36,9 +36,13 @@ function getDisplayAnswer(answer: unknown): string {
         }
         if (parsed && typeof parsed === "object") {
             const parsedRecord = parsed as Record<string, unknown>;
-            const response = parsedRecord["response"];
+            const response =
+                parsedRecord["response"] ??
+                parsedRecord["Response"] ??
+                parsedRecord["answer"] ??
+                parsedRecord["Answer"];
             if (typeof response === "string") {
-                return response;
+                return getDisplayAnswer(response);
             }
         }
     } catch (error) {
