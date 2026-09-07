@@ -13,7 +13,7 @@ function getDisplayAnswer(answer: unknown): string {
     if (typeof answer === "string") {
         answerText = answer;
     } else if (answer === null || answer === undefined) {
-        answerText = "";
+        answerText = "No answer was returned by the chat service. Please try again.";
     } else if (typeof answer === "object") {
         try {
             answerText = JSON.stringify(answer) ?? String(answer);
