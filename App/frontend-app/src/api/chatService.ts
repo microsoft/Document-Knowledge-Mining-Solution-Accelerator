@@ -8,8 +8,23 @@ import { httpClient } from "../utils/httpClient/httpClient";
 //     return response;
 // }
 
-function getDisplayAnswer(answer: string): string {
-    const content = answer
+function getDisplayAnswer(answer: unknown): string {
+    let answerText: string;
+    if (typeof answer === "string") {
+        answerText = answer;
+    } else if (answer === null || answer === undefined) {
+        answerText = "";
+    } else if (typeof answer === "object") {
+        try {
+            answerText = JSON.stringify(answer) ?? String(answer);
+        } catch {
+            answerText = String(answer);
+        }
+    } else {
+        answerText = String(answer);
+    }
+
+    const content = answerText
         .trim()
         .replace(/^```json\s*/i, "")
         .replace(/\s*```$/, "");
@@ -36,7 +51,7 @@ function getDisplayAnswer(answer: string): string {
         }
     }
 
-    return answer;
+    return answerText;
 }
 
 export async function Completion(request: ChatRequest): Promise<ChatApiResponse> {
