@@ -31,13 +31,12 @@ function getDisplayAnswer(answer: unknown): string {
 
     try {
         const parsed: unknown = JSON.parse(content);
-        if (
-            typeof parsed === "object" &&
-            parsed !== null &&
-            "response" in parsed &&
-            typeof parsed.response === "string"
-        ) {
-            return parsed.response;
+        if (parsed && typeof parsed === "object") {
+            const parsedRecord = parsed as Record<string, unknown>;
+            const response = parsedRecord["response"];
+            if (typeof response === "string") {
+                return response;
+            }
         }
     } catch (error) {
         if (!(error instanceof SyntaxError)) {
@@ -55,7 +54,7 @@ function getDisplayAnswer(answer: unknown): string {
         }
     }
 
-    return answerText;
+    return content;
 }
 
 export async function Completion(request: ChatRequest): Promise<ChatApiResponse> {
