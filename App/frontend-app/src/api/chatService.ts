@@ -8,6 +8,62 @@ import { httpClient } from "../utils/httpClient/httpClient";
 //     return response;
 // }
 
+function getDisplayAnswer(answer: unknown): string {
+    let answerText: string;
+    if (typeof answer === "string") {
+        answerText = answer;
+    } else if (answer === null || answer === undefined) {
+        answerText = "No answer was returned. Please try again.";
+    } else if (typeof answer === "object") {
+        try {
+            answerText = JSON.stringify(answer) ?? String(answer);
+        } catch {
+            answerText = String(answer);
+        }
+    } else {
+        answerText = String(answer);
+    }
+
+    const content = answerText
+        .trim()
+        .replace(/^```[a-z0-9_-]*\s*/i, "")
+        .replace(/\s*```\s*$/, "");
+
+    try {
+        const parsed: unknown = JSON.parse(content);
+        if (typeof parsed === "string") {
+            return getDisplayAnswer(parsed);
+        }
+        if (parsed && typeof parsed === "object") {
+            const parsedRecord = parsed as Record<string, unknown>;
+            const response =
+                parsedRecord["response"] ??
+                parsedRecord["Response"] ??
+                parsedRecord["answer"] ??
+                parsedRecord["Answer"];
+            if (typeof response === "string") {
+                return getDisplayAnswer(response);
+            }
+        }
+    } catch (error) {
+        if (!(error instanceof SyntaxError)) {
+            throw error;
+        }
+        const responseMatch = content.match(/"response"\s*:\s*"((?:\\.|[^"\\])*)"\s*,\s*"followings"\s*:/i);
+        if (responseMatch) {
+            try {
+                return JSON.parse(`"${responseMatch[1]}"`);
+            } catch {
+                return responseMatch[1]
+                    .replace(/\\n/g, "\n")
+                    .replace(/\\"/g, '"');
+            }
+        }
+    }
+
+    return content;
+}
+
 export async function Completion(request: ChatRequest): Promise<ChatApiResponse> {
     try {
       // Assuming httpClient is similar to Axios, we pass the request body and expect a ChatApiResponse
@@ -21,8 +77,7 @@ export async function Completion(request: ChatRequest): Promise<ChatApiResponse>
           }
       );
   
-      // Return the actual response data (assuming Axios-style response structure)
-      return response;
+      return { ...response, answer: getDisplayAnswer(response.answer) };
     } catch (error) {
       console.error('Error during API request:', error);
       throw new Error('Failed to fetch the API response.');
