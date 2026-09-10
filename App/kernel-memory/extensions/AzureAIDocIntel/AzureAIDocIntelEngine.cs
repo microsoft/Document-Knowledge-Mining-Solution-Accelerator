@@ -36,7 +36,7 @@ public sealed class AzureAIDocIntelEngine : IOcrEngine
         switch (config.Auth)
         {
             case AzureAIDocIntelConfig.AuthTypes.AzureIdentity:
-                this._recognizerClient = new DocumentAnalysisClient(new Uri(config.Endpoint), new DefaultAzureCredential());
+                this._recognizerClient = new DocumentAnalysisClient(new Uri(config.Endpoint), new  ManagedIdentityCredential());
                 break;
 
             case AzureAIDocIntelConfig.AuthTypes.APIKey:
