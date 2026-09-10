@@ -329,34 +329,49 @@ public sealed class SearchClient : ISearchClient
             return noAnswerFound;
         }
 
-        var text = new StringBuilder();
-        var charsGenerated = 0;
+        // The LLM can be inconsistent: given the exact same facts, it sometimes produces a proper
+        // answer and sometimes falls back to the "empty answer" text, even on repeated identical
+        // calls. Since we know relevant facts were actually retrieved and injected into the prompt
+        // (factsUsedCount > 0), retry generation a few times before giving up, instead of
+        // immediately surfacing a false-negative "not enough information" to the user.
+        const int maxAttempts = 3;
         var watch = new Stopwatch();
-        watch.Restart();
-        await foreach (var x in this.GenerateAnswer(question, facts.ToString(), context, cancellationToken).ConfigureAwait(false))
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
-            text.Append(x);
-
-            if (this._log.IsEnabled(LogLevel.Trace) && text.Length - charsGenerated >= 30)
+            var text = new StringBuilder();
+            var charsGenerated = 0;
+            watch.Restart();
+            await foreach (var x in this.GenerateAnswer(question, facts.ToString(), context, cancellationToken).ConfigureAwait(false))
             {
-                charsGenerated = text.Length;
-                this._log.LogTrace("{0} chars generated", charsGenerated);
+                text.Append(x);
+
+                if (this._log.IsEnabled(LogLevel.Trace) && text.Length - charsGenerated >= 30)
+                {
+                    charsGenerated = text.Length;
+                    this._log.LogTrace("{0} chars generated", charsGenerated);
+                }
+            }
+
+            watch.Stop();
+
+            answer.Result = text.ToString();
+            answer.NoResult = ValueIsEquivalentTo(answer.Result, this._config.EmptyAnswer);
+            if (!answer.NoResult)
+            {
+                this._log.LogTrace("Answer generated in {0} msecs (attempt {1}/{2})", watch.ElapsedMilliseconds, attempt, maxAttempts);
+                return answer;
+            }
+
+            if (attempt < maxAttempts)
+            {
+                this._log.LogWarning(
+                    "Answer generated in {0} msecs but got empty-answer fallback despite {1} facts being available. Retrying ({2}/{3}).",
+                    watch.ElapsedMilliseconds, factsUsedCount, attempt, maxAttempts);
             }
         }
 
-        watch.Stop();
-
-        answer.Result = text.ToString();
-        answer.NoResult = ValueIsEquivalentTo(answer.Result, this._config.EmptyAnswer);
-        if (answer.NoResult)
-        {
-            answer.NoResultReason = "No relevant memories found";
-            this._log.LogTrace("Answer generated in {0} msecs. No relevant memories found", watch.ElapsedMilliseconds);
-        }
-        else
-        {
-            this._log.LogTrace("Answer generated in {0} msecs", watch.ElapsedMilliseconds);
-        }
+        answer.NoResultReason = "No relevant memories found";
+        this._log.LogTrace("Answer generated in {0} msecs. No relevant memories found after {1} attempts", watch.ElapsedMilliseconds, maxAttempts);
 
         return answer;
     }

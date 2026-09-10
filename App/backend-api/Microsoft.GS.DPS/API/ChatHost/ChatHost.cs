@@ -148,7 +148,7 @@ namespace Microsoft.GS.DPS.API
 
 
             //Get the answer from the Kernel Memory
-            var answer = await _kernelMemory.Ask(chatRequest.Question + ChatHost.s_additionalPrompt, chatRequest.DocumentIds, context: context);
+            var answer = await _kernelMemory.Ask(chatRequest.Question, chatRequest.DocumentIds, context: context);
 
             answer.Result = System.Text.Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(answer.Result));
             Console.WriteLine($"Question: {answer.Question}");
@@ -182,36 +182,58 @@ namespace Microsoft.GS.DPS.API
                                         }
             };
 
-            ChatMessageContent returnedChatMessageContent;
-            try
+            ChatMessageContent returnedChatMessageContent = null;
+            // Kernel Memory already found genuine content (answer.NoResult == false), but this
+            // formatting/completion call is a second, independent LLM decision point using its own
+            // system prompt - which can also non-deterministically bail out with "I don't have enough
+            // information" even though real content was provided in {$answer}. Retry a few times in
+            // that case before giving up, since we know an answer should be derivable.
+            const int maxChatAttempts = 3;
+            for (var chatAttempt = 1; chatAttempt <= maxChatAttempts; chatAttempt++)
             {
-
-                //Get Response from ChatCompletionService
-                returnedChatMessageContent = await _chatCompletionService.GetChatMessageContentAsync(chatHistory, executionSettings);
-            }
-            catch (HttpOperationException ex) when (ex.Message.Contains("content_filter", StringComparison.OrdinalIgnoreCase))
-            {
-                
-                Console.WriteLine($"Exception Message: {ex.Message}");
-                
-                //if content filter triggered providing fallback response
-                returnedChatMessageContent = new ChatMessageContent
+                try
                 {
-                    Content = "Sorry, your request couldn't be processed as it may contain sensitive or restricted content. Please rephrase your query and try again."
-                };
-            }
-            #pragma warning disable CA1031 // Top-level chat-completion safety net: convert any failure to a user-facing fallback response
-            catch(Exception ex)
-            {
-                Console.WriteLine($"unexpected error: {ex.Message}");
-             
+
+                    //Get Response from ChatCompletionService
+                    returnedChatMessageContent = await _chatCompletionService.GetChatMessageContentAsync(chatHistory, executionSettings);
+                }
+                catch (HttpOperationException ex) when (ex.Message.Contains("content_filter", StringComparison.OrdinalIgnoreCase))
+                {
+
+                    Console.WriteLine($"Exception Message: {ex.Message}");
+
+                    //if content filter triggered providing fallback response
                     returnedChatMessageContent = new ChatMessageContent
                     {
-                        Content = "An error occurred while processing request, try again"
+                        Content = "Sorry, your request couldn't be processed as it may contain sensitive or restricted content. Please rephrase your query and try again."
                     };
-                
+                    break;
+                }
+                #pragma warning disable CA1031 // Top-level chat-completion safety net: convert any failure to a user-facing fallback response
+                catch(Exception ex)
+                {
+                    Console.WriteLine($"unexpected error: {ex.Message}");
+
+                        returnedChatMessageContent = new ChatMessageContent
+                        {
+                            Content = "An error occurred while processing request, try again"
+                        };
+                    break;
+                }
+                #pragma warning restore CA1031
+
+                var isFallback = returnedChatMessageContent?.Content != null &&
+                    (returnedChatMessageContent.Content.Contains("I don't have enough information to provide an answer.", StringComparison.OrdinalIgnoreCase) ||
+                     returnedChatMessageContent.Content.Contains("No Information", StringComparison.OrdinalIgnoreCase));
+
+                if (!isFallback || answer.NoResult || chatAttempt == maxChatAttempts)
+                {
+                    break;
+                }
+
+                Console.WriteLine($"Chat completion returned empty-answer fallback despite Kernel Memory providing content. Retrying ({chatAttempt}/{maxChatAttempts}).");
             }
-            #pragma warning restore CA1031
+
             if (returnedChatMessageContent == null)
             {
                 returnedChatMessageContent = new ChatMessageContent

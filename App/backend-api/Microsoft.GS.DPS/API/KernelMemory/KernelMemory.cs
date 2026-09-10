@@ -383,7 +383,12 @@ namespace Microsoft.GS.DPS.API
                 }
             }
 
-            var answer = await _kmClient.AskAsync(question: question, filters: memFilters, context: context, minRelevance: 0.012);
+            // Raised from 0.012: at the previous threshold, hybrid-search queries were returning 100+
+            // barely-relevant chunks (scores as low as 0.012), bloating the RAG prompt to 75K-109K tokens.
+            // This caused (a) non-deterministic "not enough information" fallbacks from the LLM when fed
+            // a huge, noisy context, and (b) 429 rate-limit errors since a single request could exceed the
+            // entire per-minute token quota. Raising the bar keeps only meaningfully relevant chunks.
+            var answer = await _kmClient.AskAsync(question: question, filters: memFilters, context: context, minRelevance: 0.02);
             return answer;
         }
 
