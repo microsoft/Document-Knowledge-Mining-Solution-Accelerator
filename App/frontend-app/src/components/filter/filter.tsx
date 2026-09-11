@@ -40,6 +40,16 @@ interface FilterProps {
     onFilterCleared: () => void; // New prop to notify parent that filters have been cleared
 }
 
+const formatLabel = (label: string): string => {
+    return label
+        .replace(/_/g, ' ')
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/^./, str => str.toUpperCase());
+}
+
 export function Filter({ 
     className, 
     keywordFilterInfo = {}, 
@@ -142,9 +152,9 @@ export function Filter({
                     openItems={openItems}
                     onToggle={handleAccordionToggle}
                 >
-                    {keywordFilterInfo && Object.entries(keywordFilterInfo).slice(0,10).map(([category, keywords], index) => (
+                    {keywordFilterInfo && Object.entries(keywordFilterInfo).map(([category, keywords], index) => (
                         <AccordionItem key={index} value={index.toString()}>
-                            <AccordionHeader inline>{category}</AccordionHeader>
+                            <AccordionHeader inline>{formatLabel(category)}</AccordionHeader>
                             <AccordionPanel className={classes.accordionPanel}>
                                 {keywords.map((keyword, keywordIndex) => {
                                     const isChecked = selectedKeywords[category]?.includes(keyword) || false;
