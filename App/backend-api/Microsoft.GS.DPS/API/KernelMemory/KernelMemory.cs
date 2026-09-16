@@ -1,16 +1,19 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.GS.DPS.Images;
 using Microsoft.GS.DPS.Model.KernelMemory;
+using Microsoft.GS.DPS.Storage.Components;
 using Microsoft.GS.DPS.Storage.Document;
 using Microsoft.KernelMemory;
 using Microsoft.KernelMemory.Context;
 using Microsoft.KernelMemory.Pipeline;
 using MongoDB.Bson;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -28,7 +31,11 @@ namespace Microsoft.GS.DPS.API
         private readonly DataCacheManager _dataCache;
         private readonly TagUpdater _tagUpdator;
         private readonly ILogger<KernelMemory>? _logger;
+        private readonly ConcurrentDictionary<string, Lazy<Task<DocumentImportedResult>>> _documentImports = new();
         private static readonly string keywordExtractorPrompt = "";
+        private static readonly TimeSpan importLeaseDuration = TimeSpan.FromMinutes(10);
+        private static readonly TimeSpan importLeaseRenewalInterval = TimeSpan.FromMinutes(1);
+        private static readonly TimeSpan importLeaseWaitTimeout = TimeSpan.FromMinutes(70);
 
         static KernelMemory()
         {
@@ -53,8 +60,94 @@ namespace Microsoft.GS.DPS.API
                                                                  string fileName, 
                                                                  string contentType)
         {
-            // Implementation of the file upload
-            var documentId = await _kmClient.ImportDocumentAsync(documentStream, fileName, steps: [
+            using var bufferedStream = documentStream.CanSeek ? null : CreateTemporaryFileStream();
+            Stream importStream = documentStream;
+
+            if (bufferedStream != null)
+            {
+                await documentStream.CopyToAsync(bufferedStream);
+                importStream = bufferedStream;
+            }
+
+            importStream.Position = 0;
+            var contentHash = await SHA256.HashDataAsync(importStream);
+            importStream.Position = 0;
+            var documentId = Convert.ToHexString(contentHash).ToLowerInvariant();
+
+            var documentImport = _documentImports.GetOrAdd(
+                documentId,
+                _ => new Lazy<Task<DocumentImportedResult>>(
+                    () => ImportDocumentCore(importStream, fileName, contentType, documentId),
+                    LazyThreadSafetyMode.ExecutionAndPublication));
+
+            try
+            {
+                return await documentImport.Value;
+            }
+            finally
+            {
+                ((ICollection<KeyValuePair<string, Lazy<Task<DocumentImportedResult>>>>)_documentImports)
+                    .Remove(new KeyValuePair<string, Lazy<Task<DocumentImportedResult>>>(documentId, documentImport));
+            }
+        }
+
+        private static FileStream CreateTemporaryFileStream()
+        {
+            var temporaryFilePath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            return new FileStream(
+                temporaryFilePath,
+                FileMode.CreateNew,
+                FileAccess.ReadWrite,
+                FileShare.None,
+                bufferSize: 81920,
+                FileOptions.Asynchronous | FileOptions.SequentialScan | FileOptions.DeleteOnClose);
+        }
+
+        private async Task<DocumentImportedResult> ImportDocumentCore(Stream importStream,
+                                                                       string fileName,
+                                                                       string contentType,
+                                                                       string documentId)
+        {
+            var existingDocument = await _documentRepository.FindByDocumentIdAsync(documentId);
+            if (existingDocument != null)
+            {
+                return ToImportedResult(existingDocument);
+            }
+
+            var leaseOwnerId = Guid.NewGuid().ToString("N");
+            var leaseWaitDeadline = DateTime.UtcNow.Add(importLeaseWaitTimeout);
+
+            while (!await _documentRepository.TryAcquireImportLeaseAsync(
+                       documentId,
+                       leaseOwnerId,
+                       DateTime.UtcNow.Add(importLeaseDuration)))
+            {
+                if (DateTime.UtcNow >= leaseWaitDeadline)
+                {
+                    throw new TimeoutException("Timed out waiting for another import of this document to complete.");
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(2));
+                existingDocument = await _documentRepository.FindByDocumentIdAsync(documentId);
+                if (existingDocument != null)
+                {
+                    return ToImportedResult(existingDocument);
+                }
+            }
+
+            using var leaseRenewalCancellation = new CancellationTokenSource();
+            var leaseRenewalTask = RenewImportLeaseAsync(documentId, leaseOwnerId, leaseRenewalCancellation.Token);
+
+            try
+            {
+                existingDocument = await _documentRepository.FindByDocumentIdAsync(documentId);
+                if (existingDocument != null)
+                {
+                    return ToImportedResult(existingDocument);
+                }
+
+                // Implementation of the file upload
+                await _kmClient.ImportDocumentAsync(importStream, fileName, documentId: documentId, steps: [
                                     Constants.PipelineStepsExtract,
                                     "keyword_extract",
                                     Constants.PipelineStepsSummarize,
@@ -97,6 +190,7 @@ namespace Microsoft.GS.DPS.API
             // Save the document to the repository
             Document document = new Document
             {
+                id = new Guid(Convert.FromHexString(documentId[..32])),
                 DocumentId = documentId,
                 FileName = fileName,
                 ImportedTime = importedResult.ImportedTime,
@@ -105,13 +199,71 @@ namespace Microsoft.GS.DPS.API
                 Summary = importedResult.Summary,
                 Keywords = importedResult.Keywords
             };
+            document.__partitionkey = CosmosDBEntityBase.GetKey(document.id, 9999);
 
-            await _documentRepository.RegisterAsync(document);
+                await _documentRepository.RegisterAsync(document);
 
-            //Cache Refresh
-            _dataCache.ManualRefresh();
+                //Cache Refresh
+                _dataCache.ManualRefresh();
 
-            return importedResult;
+                return importedResult;
+            }
+            finally
+            {
+                leaseRenewalCancellation.Cancel();
+
+                try
+                {
+                    await leaseRenewalTask;
+                }
+                catch (OperationCanceledException) when (leaseRenewalCancellation.IsCancellationRequested)
+                {
+                }
+                catch (Exception exception)
+                {
+                    _logger?.LogWarning(exception, "Failed to renew the import lease for document {DocumentId}", documentId);
+                }
+
+                try
+                {
+                    await _documentRepository.ReleaseImportLeaseAsync(documentId, leaseOwnerId);
+                }
+                catch (Exception exception)
+                {
+                    _logger?.LogWarning(exception, "Failed to release the import lease for document {DocumentId}", documentId);
+                }
+            }
+        }
+
+        private async Task RenewImportLeaseAsync(string documentId, string ownerId, CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                await Task.Delay(importLeaseRenewalInterval, cancellationToken);
+                var renewed = await _documentRepository.RenewImportLeaseAsync(
+                    documentId,
+                    ownerId,
+                    DateTime.UtcNow.Add(importLeaseDuration));
+
+                if (!renewed)
+                {
+                    throw new InvalidOperationException($"The import lease for document {documentId} is no longer owned by this process.");
+                }
+            }
+        }
+
+        private static DocumentImportedResult ToImportedResult(Document document)
+        {
+            return new DocumentImportedResult
+            {
+                DocumentId = document.DocumentId,
+                ImportedTime = document.ImportedTime,
+                MimeType = document.MimeType,
+                FileName = document.FileName,
+                ProcessingTime = document.ProcessingTime,
+                Keywords = document.Keywords,
+                Summary = document.Summary
+            };
         }
 
         public async Task<bool> DeleteDocument(string documentId)

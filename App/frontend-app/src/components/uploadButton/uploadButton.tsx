@@ -20,11 +20,43 @@ import { Icon } from "@fluentui/react";
 import { importDocuments } from "../../api/documentsService";
 import { getFileTypeIconProps } from "@fluentui/react-file-type-icons";
 
+type UploadingFile = {
+  key: string;
+  name: string;
+  progress: number;
+  status: "uploading" | "success" | "error";
+  errorMsg: string;
+};
+
+type UploadAttempt = UploadingFile & { file: File };
+
+const getUploadErrorMessage = (error: unknown): string => {
+  const message = error instanceof Error
+    ? error.message.replace(/^Error:\s*/, "")
+    : typeof error === "string"
+      ? error
+      : "Document upload failed.";
+
+  try {
+    const parsedError: unknown = JSON.parse(message);
+    if (
+      typeof parsedError === "object" &&
+      parsedError !== null &&
+      "summary" in parsedError &&
+      typeof parsedError.summary === "string"
+    ) {
+      return parsedError.summary;
+    }
+  } catch {
+    return message;
+  }
+
+  return message;
+};
+
 const UploadDocumentsDialog = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [uploadingFiles, setUploadingFiles] = useState<
-    { name: string; progress: number; status: string; errorMsg: string }[]
-  >([]);
+  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadBtnVisible, setIsUploadBtnVisible] = useState<boolean>(false);
 
@@ -41,9 +73,13 @@ const UploadDocumentsDialog = () => {
   }, [import.meta.env.VITE_ENABLE_UPLOAD_BUTTON])
 
   // Handle file drop and simulate upload
-  const onDrop = useCallback(async (acceptedFiles: any[]) => {
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length === 0) return;
+
     setIsUploading(true);
-    const newFiles = acceptedFiles.map((file: { name: any; }) => ({
+    const newFiles: UploadAttempt[] = acceptedFiles.map((file) => ({
+      key: crypto.randomUUID(),
+      file,
       name: file.name,
       progress: 0,
       status: "uploading",
@@ -51,8 +87,9 @@ const UploadDocumentsDialog = () => {
     }));
     setUploadingFiles((prev) => [...prev, ...newFiles]);
 
-    for (let i = 0; i < acceptedFiles.length; i++) {
-      const file = acceptedFiles[i];
+    for (const upload of newFiles) {
+      const file = upload.file;
+      const fileKey = upload.key;
       const formData = new FormData();
       formData.append("file", file);
 
@@ -64,22 +101,21 @@ const UploadDocumentsDialog = () => {
 
         // Update file status to success
         setUploadingFiles((prev) =>
-          prev.map((f, index) =>
-            index === prev.length - acceptedFiles.length + i
-              ? { ...f, progress: 100, status: "success", errorMsg: "" }
-              : f
+          prev.map((uploadedFile) =>
+            uploadedFile.key === fileKey
+              ? { ...uploadedFile, progress: 100, status: "success", errorMsg: "" }
+              : uploadedFile
           )
         );
-      } catch (error: any) {
-        const errorMessage = error.message.replace(/^Error:\s*/, ""); // Remove "Error: " prefix
-        const parsedError = JSON.parse(errorMessage);
+      } catch (error: unknown) {
+        const errorMessage = getUploadErrorMessage(error);
 
         // Update file status to error
         setUploadingFiles((prev) =>
-          prev.map((f, index) =>
-            index === prev.length - acceptedFiles.length + i
-              ? { ...f, progress: 100, status: "error", errorMsg: parsedError.summary }
-              : f
+          prev.map((uploadedFile) =>
+            uploadedFile.key === fileKey
+              ? { ...uploadedFile, progress: 100, status: "error", errorMsg: errorMessage }
+              : uploadedFile
           )
         );
       }
@@ -187,9 +223,9 @@ const UploadDocumentsDialog = () => {
             </div> */}
 
               {/* File progress display */}
-              {uploadingFiles.map((file, index) => (
+              {uploadingFiles.map((file) => (
                 <div
-                  key={index}
+                  key={file.key}
                   style={{
                     marginTop: "20px",
                     border: "1px solid #ccc",
